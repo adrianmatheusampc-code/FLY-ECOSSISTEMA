@@ -1,0 +1,2913 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FLY — 7 ANOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+  :root {
+    --gold:        #f5b842;
+    --gold-bright: #ffd070;
+    --gold-pale:   #fff3c8;
+    --gold-deep:   #b88318;
+    --gold-glow:   rgba(245, 184, 66, 0.75);
+  }
+
+  html, body {
+    height: 100%;
+    background: #000;
+    color: #fff;
+    font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background: radial-gradient(ellipse at 50% 50%, #0c0c0c 0%, #050505 55%, #000 100%);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 12% 22%,  rgba(255,255,255,0.45) 50%, transparent 51%),
+      radial-gradient(1px 1px at 78% 88%,  rgba(255,255,255,0.30) 50%, transparent 51%),
+      radial-gradient(1px 1px at 88% 14%,  rgba(255,255,255,0.35) 50%, transparent 51%),
+      radial-gradient(1px 1px at 28% 78%,  rgba(255,255,255,0.25) 50%, transparent 51%),
+      radial-gradient(1px 1px at 56% 52%,  rgba(255,255,255,0.20) 50%, transparent 51%),
+      radial-gradient(1px 1px at 8%  62%,  rgba(255,255,255,0.30) 50%, transparent 51%),
+      radial-gradient(1px 1px at 92% 48%,  rgba(255,255,255,0.25) 50%, transparent 51%),
+      radial-gradient(1px 1px at 42% 12%,  rgba(255,255,255,0.30) 50%, transparent 51%),
+      radial-gradient(1px 1px at 68% 30%,  rgba(255,255,255,0.20) 50%, transparent 51%),
+      radial-gradient(1px 1px at 18% 92%,  rgba(255,255,255,0.25) 50%, transparent 51%);
+    pointer-events: none;
+    opacity: 0.6;
+    z-index: 0;
+  }
+
+  .view {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.4s ease;
+    z-index: 1;
+  }
+  .view.hidden { opacity: 0; pointer-events: none; }
+
+  /* ============================================================
+     VIEW 1 · LINEAR ROW (7 circles)
+     ============================================================ */
+  .grid-view {
+    flex-direction: column;
+    gap: clamp(40px, 6vh, 80px);
+    padding: 0 24px;
+  }
+  .grid-title { text-align: center; }
+  .grid-title .brand {
+    font-size: clamp(11px, 1.3vmin, 14px);
+    letter-spacing: 8px;
+    color: rgba(255,255,255,0.55);
+    font-weight: 600;
+  }
+  .grid-title .title {
+    font-size: clamp(48px, 9vmin, 110px);
+    font-weight: 900;
+    letter-spacing: 12px;
+    background: linear-gradient(180deg, var(--gold-pale) 0%, var(--gold-bright) 35%, var(--gold) 65%, var(--gold-deep) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    line-height: 1;
+    margin-top: 10px;
+  }
+  .grid-title .sub {
+    font-size: clamp(12px, 1.4vmin, 16px);
+    letter-spacing: 6px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 14px;
+  }
+
+  .grid-row {
+    display: flex;
+    gap: clamp(18px, 2.5vw, 40px);
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+    position: relative;
+  }
+  .grid-row::before {
+    content: '';
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    top: 50%;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(245,184,66,0.45) 10%,
+      rgba(245,184,66,0.45) 90%,
+      transparent 100%);
+    z-index: 0;
+  }
+
+  .grid-circle {
+    position: relative;
+    width: clamp(80px, 10.5vw, 140px);
+    height: clamp(80px, 10.5vw, 140px);
+    border-radius: 50%;
+    background: #000;
+    border: 2px solid var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 800;
+    font-size: clamp(14px, 1.7vw, 22px);
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    box-shadow:
+      0 0 18px rgba(245, 184, 66, 0.35),
+      inset 0 0 18px rgba(245, 184, 66, 0.08);
+    z-index: 1;
+  }
+  .grid-circle:hover {
+    transform: translateY(-8px);
+    box-shadow:
+      0 0 35px rgba(245, 184, 66, 0.7),
+      inset 0 0 22px rgba(245, 184, 66, 0.18);
+  }
+  .grid-circle.gold {
+    background:
+      radial-gradient(circle at 32% 28%,
+        var(--gold-pale) 0%,
+        var(--gold-bright) 28%,
+        var(--gold) 55%,
+        var(--gold-deep) 100%);
+    color: #1a1000;
+    border-color: var(--gold-bright);
+    letter-spacing: 4px;
+    box-shadow:
+      0 0 30px var(--gold),
+      0 0 65px rgba(245, 184, 66, 0.55),
+      inset 0 2px 15px rgba(255,255,255,0.4);
+  }
+  .grid-circle.gold::before {
+    content: '';
+    position: absolute;
+    inset: 8%;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    pointer-events: none;
+  }
+
+  .grid-hint {
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 8px;
+  }
+
+  /* ============================================================
+     VIEW 2 · DETAIL (single circle + 7 topics on ring)
+     ============================================================ */
+  .stage {
+    position: relative;
+    width: min(78vmin, 780px);
+    aspect-ratio: 1 / 1;
+    overflow: visible;
+  }
+  .halo {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 78%; height: 78%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(245,184,66,0.22) 0%, rgba(245,184,66,0.06) 55%, transparent 72%);
+    filter: blur(10px);
+    pointer-events: none;
+  }
+  .ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 70%; height: 70%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 2px solid var(--gold);
+    background: radial-gradient(circle, transparent 60%, rgba(245,184,66,0.06) 100%);
+    box-shadow:
+      0 0 28px var(--gold-glow),
+      0 0 60px rgba(245, 184, 66, 0.35),
+      inset 0 0 35px rgba(245, 184, 66, 0.10);
+  }
+  .ring::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 1px solid rgba(245, 184, 66, 0.45);
+    filter: blur(3px);
+  }
+  .ring::after {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border-radius: 50%;
+    border: 1px solid rgba(245, 184, 66, 0.18);
+  }
+  .center-circle {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 38%; height: 38%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 35%, #1c1c1c 0%, #060606 80%);
+    border: 1px solid rgba(245, 184, 66, 0.25);
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+  }
+  .center-circle .glyph {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(16px, 2.4vmin, 26px);
+    font-weight: 800;
+    letter-spacing: 6px;
+    color: rgba(245,184,66,0.55);
+  }
+  .center-text {
+    position: absolute;
+    top: 22%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    text-align: center;
+    pointer-events: none;
+    z-index: 4;
+  }
+  .center-text .ano {
+    font-size: clamp(40px, 7vmin, 86px);
+    font-weight: 900;
+    letter-spacing: 8px;
+    color: #fff;
+    line-height: 1;
+  }
+  .center-text .ano.long {
+    font-size: clamp(20px, 3.4vmin, 38px);
+    letter-spacing: 4px;
+  }
+  .center-text .period {
+    font-size: clamp(13px, 1.7vmin, 22px);
+    letter-spacing: 4px;
+    color: #fff;
+    margin-top: 12px;
+    font-weight: 700;
+  }
+  .top-mark {
+    position: absolute;
+    top: 8.5%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 6px;
+    font-size: clamp(11px, 1.5vmin, 16px);
+    z-index: 5;
+    white-space: nowrap;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .top-mark .gold-text { color: var(--gold); font-weight: 600; }
+
+  .dot {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--gold-bright);
+    box-shadow:
+      0 0 10px var(--gold),
+      0 0 22px var(--gold-bright),
+      0 0 40px rgba(245, 184, 66, 0.55);
+    transform: translate(-50%, -50%);
+    z-index: 2;
+  }
+
+  .topic-link {
+    position: absolute;
+    top: 50%; left: 50%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(245,184,66,0.0), rgba(245,184,66,0.85));
+    transform-origin: 0 50%;
+    z-index: 1;
+  }
+
+  .topic {
+    position: absolute;
+    color: #fff;
+    font-weight: 800;
+    font-size: clamp(11px, 1.55vmin, 17px);
+    letter-spacing: 3px;
+    line-height: 1.25;
+    z-index: 4;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.2s, text-shadow 0.2s;
+  }
+  .topic:hover {
+    color: var(--gold-bright);
+    text-shadow: 0 0 20px var(--gold-bright);
+  }
+
+  /* ============================================================
+     VIEW 3 · TOPIC CONTENT (banner + grid of cards)
+     ============================================================ */
+  .topic-view {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 80px 40px 60px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .topic-view.hidden { display: none; }
+
+  .topic-banner {
+    position: relative;
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto 40px;
+    border: 2px solid var(--gold);
+    border-radius: 18px;
+    padding: 36px 44px;
+    background:
+      linear-gradient(135deg, rgba(245,184,66,0.06) 0%, rgba(0,0,0,0.85) 60%),
+      radial-gradient(circle at 8% 50%, rgba(245,184,66,0.25), transparent 35%),
+      #000;
+    background-size: cover;
+    background-position: center;
+    box-shadow:
+      0 0 40px rgba(245, 184, 66, 0.35),
+      inset 0 0 60px rgba(0,0,0,0.6);
+    overflow: hidden;
+    min-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .topic-banner.has-image::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--banner-image) center/cover no-repeat;
+    opacity: 0.35;
+    z-index: 0;
+  }
+  .topic-banner.has-image::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 100%);
+    z-index: 0;
+  }
+  .topic-banner > * { position: relative; z-index: 1; }
+
+  .topic-banner h1 {
+    font-size: clamp(36px, 5.5vw, 80px);
+    font-weight: 900;
+    letter-spacing: 6px;
+    color: #fff;
+    text-shadow: 0 4px 25px rgba(245,184,66,0.5);
+  }
+  .topic-banner .banner-icons {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .banner-icon {
+    width: 110px;
+    height: 70px;
+    border: 2px solid var(--gold);
+    border-radius: 10px;
+    background-size: cover;
+    background-position: center;
+    background-color: #111;
+    position: relative;
+    box-shadow: 0 0 14px rgba(245,184,66,0.35);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .banner-icon span {
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.85));
+    width: 100%;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    padding: 12px 4px 4px;
+    color: #fff;
+  }
+
+  .pacotes-section {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto 40px;
+    border: 2px solid var(--gold);
+    border-radius: 18px;
+    padding: 28px;
+    background: rgba(0,0,0,0.4);
+    box-shadow: 0 0 30px rgba(245,184,66,0.25);
+  }
+  .pacotes-title {
+    text-align: center;
+    font-size: clamp(22px, 3vw, 38px);
+    font-weight: 900;
+    letter-spacing: 6px;
+    color: #fff;
+    margin-bottom: 22px;
+  }
+  .pacotes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .pacote-card {
+    aspect-ratio: 1 / 1.2;
+    border: 2px solid var(--gold);
+    border-radius: 14px;
+    background: #111 var(--card-image) center/cover no-repeat;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 14px rgba(245,184,66,0.3);
+    transition: transform 0.25s, box-shadow 0.25s;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .pacote-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 0 30px rgba(245,184,66,0.6);
+  }
+  .pacote-card .name {
+    width: 100%;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.9));
+    text-align: center;
+    color: #fff;
+    font-weight: 900;
+    letter-spacing: 3px;
+    font-size: clamp(13px, 1.4vw, 18px);
+    padding: 30px 8px 14px;
+  }
+  .pacote-card .delete-btn,
+  .item-card .delete-btn {
+    position: absolute;
+    top: 6px; right: 6px;
+    background: rgba(255, 60, 60, 0.85);
+    border: none;
+    color: #fff;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 800;
+    display: none;
+    z-index: 5;
+  }
+  body.admin-mode .pacote-card .delete-btn,
+  body.admin-mode .item-card .delete-btn { display: flex; align-items: center; justify-content: center; }
+
+  .items-grid {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+  }
+  .item-card {
+    aspect-ratio: 4 / 3;
+    border: 2px solid var(--gold);
+    border-radius: 14px;
+    background: #111 var(--card-image) center/cover no-repeat;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 12px rgba(245,184,66,0.3);
+    transition: transform 0.25s, box-shadow 0.25s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .item-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 24px rgba(245,184,66,0.55);
+  }
+  .item-card .name {
+    width: 100%;
+    text-align: center;
+    color: #fff;
+    font-weight: 900;
+    letter-spacing: 2px;
+    font-size: clamp(12px, 1.2vw, 16px);
+    padding: 10px 6px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.9));
+    position: absolute;
+    bottom: 0; left: 0;
+  }
+
+  .add-card {
+    aspect-ratio: 4 / 3;
+    border: 2px dashed var(--gold);
+    border-radius: 14px;
+    background: rgba(245,184,66,0.05);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold);
+    font-size: 36px;
+    font-weight: 200;
+    transition: background 0.2s;
+  }
+  body.admin-mode .add-card { display: flex; }
+  .add-card:hover { background: rgba(245,184,66,0.15); }
+
+  .topic-section-title {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto 16px;
+    color: #fff;
+    font-size: clamp(16px, 2vw, 22px);
+    font-weight: 900;
+    letter-spacing: 4px;
+    padding-left: 8px;
+    border-left: 4px solid var(--gold);
+  }
+
+  /* ============================================================
+     VIEW 4 · ITEM HUB (tabbed)
+     ============================================================ */
+  .item-view {
+    flex-direction: column;
+    padding: 80px 24px 60px;
+    overflow-y: auto;
+    align-items: center;
+  }
+  .item-view.hidden { display: none; }
+
+  .hub { width: 100%; max-width: 1200px; }
+
+  .hub-banner {
+    position: relative;
+    width: 100%;
+    border: 2px solid var(--gold);
+    border-radius: 18px;
+    background: #111 var(--hub-image) center/cover no-repeat;
+    height: 280px;
+    box-shadow: 0 0 50px rgba(245,184,66,0.4);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .hub-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.85) 100%);
+  }
+  .hub-banner .meta {
+    position: absolute;
+    left: 32px; right: 32px; bottom: 24px;
+    z-index: 1;
+  }
+  .hub-banner h2 {
+    font-size: clamp(28px, 4.5vw, 56px);
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: #fff;
+    text-shadow: 0 4px 25px rgba(0,0,0,0.8);
+  }
+  .hub-banner .cat {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    padding: 5px 14px;
+    border-radius: 30px;
+    background: rgba(0,0,0,0.6);
+  }
+
+  .hub-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid rgba(245,184,66,0.3);
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .hub-tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(255,255,255,0.55);
+    padding: 14px 22px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .hub-tab:hover { color: #fff; }
+  .hub-tab.active {
+    color: var(--gold-bright);
+    border-bottom-color: var(--gold);
+  }
+
+  .hub-panel { animation: fadeIn 0.3s ease; }
+  .hub-panel.hidden { display: none; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .hub-field {
+    border: 1px solid rgba(245,184,66,0.25);
+    border-radius: 12px;
+    padding: 18px 20px;
+    background: rgba(0,0,0,0.5);
+  }
+  .hub-field .label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .hub-field .value {
+    font-size: clamp(18px, 2.2vw, 26px);
+    font-weight: 800;
+    color: #fff;
+    word-break: break-word;
+  }
+  .hub-field .value.muted { color: rgba(255,255,255,0.4); font-size: 14px; font-weight: 400; }
+  .hub-field.kpi .value { font-size: clamp(22px, 2.8vw, 34px); }
+  .hub-field.kpi.positive .value { color: #5cd97a; }
+  .hub-field.kpi.negative .value { color: #ff6b6b; }
+
+  .hub-block {
+    border: 1px solid rgba(245,184,66,0.25);
+    border-radius: 12px;
+    padding: 22px 26px;
+    background: rgba(0,0,0,0.5);
+    margin-bottom: 16px;
+  }
+  .hub-block h4 {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: var(--gold);
+    margin-bottom: 14px;
+  }
+  .hub-block p, .hub-block li {
+    font-size: 14px;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.85);
+  }
+  .hub-block ul, .hub-block ol { padding-left: 22px; }
+  .hub-block li { margin-bottom: 6px; }
+  .hub-block .empty { color: rgba(255,255,255,0.35); font-style: italic; }
+
+  .hub-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--gold);
+    color: #000 !important;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    font-size: 12px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .hub-link:hover { background: var(--gold-bright); transform: translateY(-2px); }
+  .hub-link.outline {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold) !important;
+  }
+  .hub-link.outline:hover { background: rgba(245,184,66,0.12); }
+
+  .hub-edit {
+    margin-bottom: 20px;
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 10px 22px;
+    border-radius: 30px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    cursor: pointer;
+    display: none;
+  }
+  body.admin-mode .hub-edit { display: inline-block; }
+  .hub-edit:hover { background: rgba(245,184,66,0.15); }
+
+  .save-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--gold);
+    color: #000;
+    padding: 14px 28px;
+    border-radius: 30px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    font-size: 12px;
+    z-index: 300;
+    box-shadow: 0 10px 30px rgba(245,184,66,0.5);
+    transition: transform 0.3s ease;
+    pointer-events: none;
+  }
+  .save-toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Media gallery */
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+  .media-thumb {
+    aspect-ratio: 1 / 1;
+    background: #111 center/cover no-repeat;
+    border: 1px solid var(--gold);
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s;
+    overflow: hidden;
+  }
+  .media-thumb:hover { transform: scale(1.04); box-shadow: 0 0 18px rgba(245,184,66,0.5); }
+  .media-thumb .rm {
+    position: absolute;
+    top: 4px; right: 4px;
+    background: rgba(255, 60, 60, 0.9);
+    color: #fff;
+    border: none;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 2;
+  }
+  body.admin-mode .media-thumb .rm { display: flex; }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 30px;
+    margin-top: 4px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px; top: 6px; bottom: 6px;
+    width: 2px;
+    background: linear-gradient(180deg, var(--gold), rgba(245,184,66,0.2));
+  }
+  .timeline-item {
+    position: relative;
+    padding-bottom: 22px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -27px; top: 4px;
+    width: 12px; height: 12px;
+    background: var(--gold-bright);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--gold), 0 0 22px rgba(245,184,66,0.4);
+  }
+  .timeline-date {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+  .timeline-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .timeline-desc {
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.6;
+  }
+
+  /* Sub-itens (subsetores) */
+  .sub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+  .sub-card {
+    border: 1px solid var(--gold);
+    border-radius: 14px;
+    padding: 18px 20px;
+    background: linear-gradient(180deg, rgba(245,184,66,0.05) 0%, rgba(0,0,0,0.6) 100%);
+    box-shadow: 0 0 14px rgba(245,184,66,0.2);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+  .sub-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 28px rgba(245,184,66,0.5);
+  }
+  .sub-card .sub-name {
+    font-weight: 800;
+    color: #fff;
+    font-size: 15px;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+  .sub-card .sub-resp {
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 2px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .sub-card .sub-desc {
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .sub-card .delete-btn {
+    position: absolute;
+    top: 6px; right: 6px;
+    background: rgba(255,60,60,0.85);
+    border: none; color: #fff;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 800;
+    display: none;
+    align-items: center; justify-content: center;
+  }
+  body.admin-mode .sub-card .delete-btn { display: flex; }
+
+  .sub-detail {
+    border: 1px solid var(--gold);
+    border-radius: 14px;
+    padding: 24px 28px;
+    background: rgba(0,0,0,0.55);
+    margin-top: 14px;
+  }
+  .sub-detail h5 {
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: var(--gold-bright);
+    margin-bottom: 10px;
+  }
+  .sub-detail .resp-line {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+  .sub-detail p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 12px;
+  }
+  .sub-detail ul { padding-left: 22px; }
+  .sub-detail ul li {
+    font-size: 13px;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 4px;
+  }
+  .sub-detail .close {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+
+  /* Lightbox */
+  .lightbox {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.93);
+    z-index: 400;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 30px;
+    cursor: zoom-out;
+  }
+  .lightbox.active { display: flex; }
+  .lightbox img { max-width: 95%; max-height: 95%; border-radius: 8px; box-shadow: 0 0 60px rgba(245,184,66,0.4); }
+
+  /* Editor: composite rows */
+  .input-row-vertical {
+    border: 1px solid rgba(245,184,66,0.25);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: rgba(0,0,0,0.4);
+    position: relative;
+  }
+  .input-row-vertical input,
+  .input-row-vertical textarea { margin-bottom: 6px; }
+  .input-row-vertical .rm-row {
+    position: absolute;
+    top: 6px; right: 6px;
+    background: rgba(255,60,60,0.85);
+    border: none; color: #fff;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .modal input[type=date] {
+    width: 100%;
+    background: #000;
+    border: 1px solid rgba(245,184,66,0.4);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    color-scheme: dark;
+  }
+  .modal input[type=date]:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 12px rgba(245,184,66,0.3);
+  }
+  .upload-zone {
+    border: 2px dashed rgba(245,184,66,0.4);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+    cursor: pointer;
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    transition: background 0.2s;
+  }
+  .upload-zone:hover { background: rgba(245,184,66,0.08); }
+
+  /* ============================================================
+     CHROME (back button, corner mark, admin)
+     ============================================================ */
+  .corner {
+    position: fixed;
+    top: 28px;
+    left: 32px;
+    font-size: 12px;
+    letter-spacing: 5px;
+    color: rgba(255,255,255,0.55);
+    font-weight: 600;
+    z-index: 50;
+  }
+  .corner span { color: var(--gold); }
+
+  .back-btn {
+    position: fixed;
+    top: 24px;
+    left: 28px;
+    z-index: 100;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(245,184,66,0.45);
+    color: var(--gold);
+    padding: 12px 22px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    cursor: pointer;
+    border-radius: 30px;
+    transition: all 0.2s ease;
+    display: none;
+  }
+  .back-btn:hover {
+    background: rgba(245,184,66,0.12);
+    border-color: var(--gold-bright);
+    color: var(--gold-bright);
+  }
+
+  body.detail-mode .corner,
+  body.topic-mode .corner,
+  body.item-mode .corner { display: none; }
+  body.detail-mode .back-btn,
+  body.topic-mode .back-btn,
+  body.item-mode .back-btn { display: block; }
+
+  .admin-toggle {
+    position: fixed;
+    top: 24px;
+    right: 28px;
+    z-index: 100;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(245,184,66,0.45);
+    color: var(--gold);
+    padding: 10px 18px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    cursor: pointer;
+    border-radius: 30px;
+    transition: all 0.2s;
+  }
+  .admin-toggle:hover { background: rgba(245,184,66,0.12); color: var(--gold-bright); }
+  body.admin-mode .admin-toggle {
+    background: var(--gold);
+    color: #000;
+  }
+
+  .edit-banner-btn {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    display: none;
+    z-index: 5;
+  }
+  body.admin-mode .edit-banner-btn { display: block; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(6px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: #0a0a0a;
+    border: 2px solid var(--gold);
+    border-radius: 18px;
+    max-width: 540px;
+    width: 100%;
+    padding: 32px;
+    box-shadow: 0 0 60px rgba(245,184,66,0.5);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal h3 {
+    color: #fff;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(245,184,66,0.3);
+    padding-bottom: 12px;
+  }
+  .modal label {
+    display: block;
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+  .modal input[type=text],
+  .modal input[type=file],
+  .modal textarea {
+    width: 100%;
+    background: #000;
+    border: 1px solid rgba(245,184,66,0.4);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .modal textarea { min-height: 120px; resize: vertical; }
+  .modal input[type=text]:focus,
+  .modal textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 12px rgba(245,184,66,0.3);
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 24px;
+  }
+  .modal-btn {
+    background: transparent;
+    border: 1px solid rgba(245,184,66,0.4);
+    color: #fff;
+    padding: 10px 22px;
+    border-radius: 24px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .modal-btn.primary {
+    background: var(--gold);
+    color: #000;
+    border-color: var(--gold);
+  }
+  .modal-btn:hover { background: rgba(245,184,66,0.15); }
+  .modal-btn.primary:hover { background: var(--gold-bright); }
+
+  .preview-img {
+    width: 100%;
+    height: 140px;
+    background: #111 center/cover no-repeat;
+    border: 1px solid rgba(245,184,66,0.3);
+    border-radius: 8px;
+    margin-top: 8px;
+  }
+
+  .modal.wide { max-width: 760px; }
+  .modal-tabs {
+    display: flex;
+    gap: 2px;
+    border-bottom: 1px solid rgba(245,184,66,0.3);
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .modal-tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(255,255,255,0.55);
+    padding: 10px 14px;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    cursor: pointer;
+  }
+  .modal-tab:hover { color: #fff; }
+  .modal-tab.active { color: var(--gold-bright); border-bottom-color: var(--gold); }
+  .modal-panel.hidden { display: none; }
+  .modal input[type=number] {
+    width: 100%;
+    background: #000;
+    border: 1px solid rgba(245,184,66,0.4);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .modal input[type=number]:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 12px rgba(245,184,66,0.3);
+  }
+  .list-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 6px;
+    align-items: center;
+  }
+  .list-row input { flex: 1; }
+  .list-row .modal-btn { padding: 8px 12px; font-size: 14px; }
+  .list-add {
+    margin-top: 6px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 8px 16px;
+  }
+
+  @media (max-width: 720px) {
+    .grid-row { gap: 12px; }
+    .grid-circle { width: 64px; height: 64px; font-size: 12px; letter-spacing: 1px; }
+    .topic-banner { padding: 24px; }
+    .topic-banner h1 { font-size: 32px; letter-spacing: 3px; }
+    .banner-icon { width: 80px; height: 54px; }
+  }
+</style>
+</head>
+<body>
+  <div class="corner">A FLY <span>COMPANY ✈</span></div>
+  <button class="back-btn" id="backBtn">← VOLTAR</button>
+  <button class="admin-toggle" id="adminToggle">ADMIN</button>
+
+  <!-- VIEW 1: linear circles -->
+  <div class="view grid-view" id="gridView">
+    <div class="grid-title">
+      <div class="brand">A FLY COMPANY</div>
+      <div class="title">7 ANOS</div>
+      <div class="sub">SET 2025 — ABR 2032</div>
+    </div>
+    <div class="grid-row" id="gridRow"></div>
+    <div class="grid-hint">CLIQUE EM UM DOS CÍRCULOS PARA VER OS DETALHES</div>
+  </div>
+
+  <!-- VIEW 2: detail circle with topics -->
+  <div class="view detail-view hidden" id="detailView">
+    <div class="stage" id="stage"></div>
+  </div>
+
+  <!-- VIEW 3: topic content (banner + grid) -->
+  <div class="view topic-view hidden" id="topicView"></div>
+
+  <!-- VIEW 4: item description -->
+  <div class="view item-view hidden" id="itemView"></div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal"></div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox"><img id="lightboxImg" src="" alt="" /></div>
+
+  <script>
+    const years = [
+      { label: 'FLY',  ano: 'ECOSSISTEMA FLY', period: 'SET 2025 — ABR 2026' },
+      { label: '2026', ano: 'ANO 2',           period: 'MAI 2026 — ABR 2027' },
+      { label: '2027', ano: 'ANO 3',           period: 'MAI 2027 — ABR 2028' },
+      { label: '2028', ano: 'ANO 4',           period: 'MAI 2028 — ABR 2029' },
+      { label: '2029', ano: 'ANO 5',           period: 'MAI 2029 — ABR 2030' },
+      { label: '2030', ano: 'ANO 6',           period: 'MAI 2030 — ABR 2031' },
+      { label: '2031', ano: 'ANO 7',           period: 'MAI 2031 — ABR 2032' }
+    ];
+
+    const topics = [
+      { name: 'ESTRUTURA<br>CORPORATIVA', key: 'ESTRUTURA CORPORATIVA', angle: -135 },
+      { name: 'REDE<br>COMERCIAL',        key: 'REDE COMERCIAL',         angle: -180 },
+      { name: 'PARCEIROS<br>ESTRATÉGICOS',key: 'PARCEIROS ESTRATEGICOS', angle:  135 },
+      { name: 'PROJETOS',                 key: 'PROJETOS',                angle:   90 },
+      { name: 'MARKETING',                key: 'MARKETING',               angle:   45 },
+      { name: 'SUSTENTABILIDADE',         key: 'SUSTENTABILIDADE',        angle:    0 },
+      { name: 'PRODUTOS',                 key: 'PRODUTOS',                angle:  -45 }
+    ];
+
+    /* =====================  STORAGE  ===================== */
+    const STORAGE_KEY = 'fly_7anos_data_v1';
+
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return {};
+    }
+    function saveData() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+      catch (e) { alert('Não foi possível salvar (armazenamento cheio?). Tente imagens menores.'); }
+    }
+    function getTopic(yearKey, topicKey) {
+      data[yearKey] = data[yearKey] || {};
+      if (!data[yearKey][topicKey]) {
+        data[yearKey][topicKey] = {
+          banner: { title: topicKey, image: '', icons: [] },
+          pacotes: [],
+          items: []
+        };
+      }
+      const t = data[yearKey][topicKey];
+      t.banner = t.banner || { title: topicKey, image: '', icons: [] };
+      t.banner.icons = t.banner.icons || [];
+      t.pacotes = t.pacotes || [];
+      t.items = t.items || [];
+      // Auto-seed ECOSSISTEMA FLY → ESTRUTURA CORPORATIVA on first access
+      if (yearKey === 'ECOSSISTEMA FLY' && topicKey === 'ESTRUTURA CORPORATIVA' && t.items.length === 0) {
+        t.banner.title = 'ESTRUTURA CORPORATIVA';
+        t.items = ESTRUTURA_CORP_SEED.map(seed => {
+          const item = defaultItemShape(seed.name);
+          item.descricao = seed.descricao || '';
+          item.inclui = seed.inclui || [];
+          item.responsavel = seed.responsavel || '';
+          item.subitens = (seed.subitens || []).map(s => ({
+            id: genId(),
+            name: s.name || '',
+            descricao: s.descricao || '',
+            responsavel: s.responsavel || '',
+            responsabilidades: s.responsabilidades || []
+          }));
+          return item;
+        });
+        saveData();
+      }
+      // Auto-seed ECOSSISTEMA FLY → PRODUTOS on first access
+      if (yearKey === 'ECOSSISTEMA FLY' && topicKey === 'PRODUTOS' && t.items.length === 0) {
+        t.banner.title = 'PRODUTOS';
+        t.banner.icons = [
+          { label: 'ATRAÇÕES',    image: '' },
+          { label: 'HOSPEDAGEM',  image: '' },
+          { label: 'ALIMENTAÇÃO', image: '' },
+          { label: 'TRANSPORTES', image: '' }
+        ];
+        t.items = PRODUTOS_SEED.map(seed => {
+          const item = defaultItemShape(seed.name);
+          item.categoria = seed.categoria || '';
+          item.descricao = seed.descricao || '';
+          return item;
+        });
+        saveData();
+      }
+      return t;
+    }
+
+    /* =====================  PRODUTOS — SEED  ===================== */
+    const PRODUTOS_SEED = [
+      // Categorias superiores
+      { name: 'ATRAÇÕES',          categoria: 'Categoria',       descricao: 'Categoria superior — atrações em Dubai e ecossistema FLY.' },
+      { name: 'HOSPEDAGEM',        categoria: 'Categoria',       descricao: 'Categoria superior — opções de hospedagem.' },
+      { name: 'ALIMENTAÇÃO',       categoria: 'Categoria',       descricao: 'Categoria superior — alimentação e gastronomia.' },
+      { name: 'TRANSPORTES',       categoria: 'Categoria',       descricao: 'Categoria superior — transportes e mobilidade.' },
+      // Pacotes disponíveis
+      { name: 'DUBAI GTA',         categoria: 'Pacote',          descricao: 'Pacote Dubai GTA.' },
+      { name: 'DUBAI EXPLORER',    categoria: 'Pacote',          descricao: 'Pacote Dubai Explorer.' },
+      { name: 'BILLIONAIRE',       categoria: 'Pacote',          descricao: 'Pacote Billionaire — alto luxo.' },
+      { name: 'DUBAI FAMILY',      categoria: 'Pacote',          descricao: 'Pacote Dubai Family.' },
+      { name: 'DUBAI IN LOVE',     categoria: 'Pacote',          descricao: 'Pacote Dubai in Love — viagem romântica.' },
+      // Produtos e Serviços
+      { name: 'WELCOME EVENT',     categoria: 'Produto/Serviço', descricao: 'Evento de boas-vindas FLY.' },
+      { name: 'PRESSKIT',          categoria: 'Produto/Serviço', descricao: 'Presskit oficial FLY.' },
+      { name: 'APP',               categoria: 'Produto/Serviço', descricao: 'Aplicativo da FLY Company.' },
+      { name: 'SITE',              categoria: 'Produto/Serviço', descricao: 'Site oficial.' },
+      { name: 'FLY ELITE',         categoria: 'Produto/Serviço', descricao: 'Programa Fly Elite.' },
+      { name: 'FLY CLUB',          categoria: 'Produto/Serviço', descricao: 'Clube de membros FLY.' },
+      { name: 'CLUBE DOS IMORTAIS',categoria: 'Produto/Serviço', descricao: 'Clube dos Imortais — top tier.' },
+      { name: 'DUBAI FLYPASS',     categoria: 'Produto/Serviço', descricao: 'Passe Dubai FlyPass.' },
+      { name: 'ENTRETENIMENTO',    categoria: 'Produto/Serviço', descricao: 'Vertical de entretenimento.' },
+      { name: 'CORPORATIVO',       categoria: 'Produto/Serviço', descricao: 'Pacotes corporativos.' },
+      { name: 'PERSONALIZADOS',    categoria: 'Produto/Serviço', descricao: 'Pacotes personalizados.' },
+      { name: 'INTERCÂMBIO',       categoria: 'Produto/Serviço', descricao: 'Programa de intercâmbio.' },
+      { name: 'EVENTOS',           categoria: 'Produto/Serviço', descricao: 'Produção de eventos.' },
+      { name: 'EXCURSÕES',         categoria: 'Produto/Serviço', descricao: 'Excursões em grupo.' },
+      { name: 'PRODUTOS FÍSICOS',  categoria: 'Produto/Serviço', descricao: 'Linha de produtos físicos.' },
+      { name: 'SEGUROS',           categoria: 'Produto/Serviço', descricao: 'Seguros FLY.' },
+      { name: 'INTERNET',          categoria: 'Produto/Serviço', descricao: 'Conectividade / chips internacionais.' },
+      { name: 'DUBAI SUPERCARS',   categoria: 'Produto/Serviço', descricao: 'Dubai Supercars — frota premium.' },
+      { name: 'DOC NOW!',          categoria: 'Produto/Serviço', descricao: 'Doc Now! — gestão de documentos.' },
+      { name: 'FASTX',             categoria: 'Produto/Serviço', descricao: 'FastX — câmbio mais rápido.' },
+      { name: 'REC',               categoria: 'Produto/Serviço', descricao: 'REC — registro de momentos.' }
+    ];
+
+    /* =====================  ESTRUTURA CORPORATIVA — SEED  ===================== */
+    const ESTRUTURA_CORP_SEED = [
+      {
+        name: 'PRESIDÊNCIA / DIREÇÃO GERAL',
+        descricao: 'Responsável por comandar toda a empresa, definir metas, expansão, investimentos e cultura organizacional.',
+        inclui: [
+          'Estratégia geral da empresa',
+          'Crescimento e expansão de bases',
+          'Aprovação de investimentos',
+          'Supervisão de todos os setores',
+          'Relatórios gerais'
+        ]
+      },
+      {
+        name: 'CONSELHO ADMINISTRATIVO',
+        descricao: 'Grupo estratégico que auxilia nas grandes decisões.',
+        inclui: [
+          'Auditoria interna',
+          'Planejamento financeiro',
+          'Novas unidades',
+          'Riscos operacionais',
+          'Compliance interno'
+        ]
+      },
+      {
+        name: 'OPERAÇÕES GERAIS',
+        descricao: 'Coração da empresa. Responsável pelo funcionamento diário das bases, escalas, turnos, supervisores regionais e controle de performance.',
+        inclui: [
+          'Funcionamento das bases',
+          'Escalas de trabalho',
+          'Turnos',
+          'Supervisores regionais',
+          'Controle diário de performance'
+        ],
+        subitens: [
+          { name: 'Coordenação de Bases', descricao: 'Comando central das bases operacionais.' },
+          { name: 'Supervisores de Turno', descricao: 'Liderança dos turnos do dia.' },
+          { name: 'Logística Operacional', descricao: 'Distribuição e fluxo operacional interno.' },
+          { name: 'Controle de Qualidade', descricao: 'Garantia de padrão de excelência FLY.' }
+        ]
+      },
+      {
+        name: 'RECURSOS HUMANOS (RH)',
+        descricao: 'Responsável por contratação, treinamento, uniformes, cultura, benefícios, fixos e temporários.',
+        inclui: [
+          'Contratação',
+          'Treinamento',
+          'Uniformes / vestuário',
+          'Cultura empresarial',
+          'Benefícios',
+          'Funcionários fixos e temporários'
+        ],
+        subitens: [
+          { name: 'Recrutamento', descricao: 'Atração e seleção de talentos.' },
+          { name: 'Desenvolvimento', descricao: 'Treinamentos e formação contínua.' },
+          { name: 'Gestão de Pessoas', descricao: 'Acompanhamento, clima e cultura.' },
+          { name: 'Departamento Pessoal', descricao: 'Folha, contratos e legislação trabalhista.' }
+        ]
+      },
+      {
+        name: 'FINANCEIRO',
+        descricao: 'Responsável por fluxo de caixa, pagamentos, salários, investimentos e orçamento anual.',
+        inclui: [
+          'Fluxo de caixa',
+          'Pagamentos',
+          'Salários',
+          'Investimentos iniciais',
+          'Custos de base (moradia, restaurante, estrutura)',
+          'Orçamento anual'
+        ],
+        subitens: [
+          { name: 'Contas a Pagar', descricao: 'Gestão de despesas e fornecedores.' },
+          { name: 'Contas a Receber', descricao: 'Cobrança e ingresso de receita.' },
+          { name: 'Planejamento Financeiro', descricao: 'Orçamento, projeções e estratégia financeira.' },
+          { name: 'Controladoria', descricao: 'Auditoria interna, indicadores e relatórios.' }
+        ]
+      },
+      {
+        name: 'COMERCIAL / VENDAS',
+        descricao: 'Responsável por canais de venda, atendimento comercial, parcerias e marketing de vendas.',
+        inclui: [
+          'Canais de venda',
+          'Atendimento comercial',
+          'Parcerias',
+          'Expansão de clientes',
+          'Marketing de vendas'
+        ],
+        subitens: [
+          { name: 'Online', descricao: 'Vendas digitais (site, app, redes).' },
+          { name: 'Presencial', descricao: 'Pontos físicos e bases.' },
+          { name: 'Corporativo', descricao: 'Vendas B2B e contratos empresariais.' },
+          { name: 'Parcerias Estratégicas', descricao: 'Acordos com marcas e plataformas.' }
+        ]
+      },
+      {
+        name: 'ATENDIMENTO AO CLIENTE',
+        descricao: 'Responsável pela jornada do cliente, SAC, resolução de problemas e pós-venda.',
+        inclui: [
+          'Jornada do cliente',
+          'SAC',
+          'Resolução de problemas',
+          'Emergências',
+          'Pós-venda'
+        ],
+        subitens: [
+          { name: 'App', descricao: 'Suporte via aplicativo.' },
+          { name: 'WhatsApp', descricao: 'Atendimento por WhatsApp.' },
+          { name: 'Telefone', descricao: 'Central de voz.' },
+          { name: 'Presencial', descricao: 'Suporte nas bases físicas.' }
+        ]
+      },
+      {
+        name: 'TECNOLOGIA / APP',
+        descricao: 'Responsável pelo aplicativo da empresa, sistemas internos, automação e dashboards.',
+        inclui: [
+          'Aplicativo da empresa',
+          'Sistemas internos',
+          'Auditoria digital',
+          'Automação de processos',
+          'Painéis e dashboards'
+        ],
+        subitens: [
+          { name: 'Desenvolvimento', descricao: 'Engenharia de software (app + sistemas).' },
+          { name: 'Suporte TI', descricao: 'Infraestrutura e helpdesk interno.' },
+          { name: 'Dados e BI', descricao: 'Engenharia de dados, métricas e BI.' },
+          { name: 'Segurança Digital', descricao: 'Cibersegurança e proteção de dados.' }
+        ]
+      },
+      {
+        name: 'LOGÍSTICA',
+        descricao: 'Responsável por kits das bases, distribuição de materiais, estoque e compras operacionais.',
+        inclui: [
+          'Kit das bases',
+          'Distribuição de materiais',
+          'Estoque',
+          'Transporte interno',
+          'Compras operacionais'
+        ]
+      },
+      {
+        name: 'JURÍDICO / COMPLIANCE',
+        descricao: 'Responsável por contratos, regulamentos, normas trabalhistas e defesa da empresa.',
+        inclui: [
+          'Contratos',
+          'Regulamentos',
+          'Normas trabalhistas',
+          'Defesa da empresa',
+          'Auditoria legal'
+        ]
+      },
+      {
+        name: 'ESTRUTURA DAS BASES FLY',
+        descricao: 'Cada base possui Gerente da Base (responsável geral da unidade), Supervisores (controle por turno) e equipes operacionais.',
+        inclui: [
+          'Gerente da Base — Responsável geral da unidade',
+          'Supervisores — Controle operacional por turno'
+        ],
+        subitens: [
+          { name: 'Atendimento', descricao: 'Equipe de relacionamento ao cliente nas bases.' },
+          { name: 'Operação', descricao: 'Equipe operacional do dia a dia.' },
+          { name: 'Limpeza', descricao: 'Higienização e conservação.' },
+          { name: 'Segurança', descricao: 'Controle de acesso e segurança patrimonial.' },
+          { name: 'Suporte Técnico', descricao: 'Manutenção técnica das instalações.' }
+        ]
+      },
+      {
+        name: 'MODELO DE FUNCIONÁRIOS',
+        descricao: 'Estrutura entre fixos e temporários — fixos para liderança/operacional/admin e temporários para alta demanda, eventos, expansões e cobertura.',
+        inclui: [
+          'FIXOS: Liderança',
+          'FIXOS: Operacionais Principais',
+          'FIXOS: Administrativos',
+          'TEMPORÁRIOS: Alta demanda',
+          'TEMPORÁRIOS: Eventos',
+          'TEMPORÁRIOS: Expansões',
+          'TEMPORÁRIOS: Cobertura de férias'
+        ]
+      },
+      {
+        name: 'ESCALA DE TRABALHO',
+        descricao: 'Modelos de turnos e escalas adotados pela operação FLY.',
+        inclui: [
+          'Turno Manhã',
+          'Turno Tarde',
+          'Turno Noite',
+          'Turno Madrugada (se necessário)',
+          'Escala 12x36',
+          'Escala 6x1',
+          'Escala 5x2'
+        ]
+      },
+      {
+        name: 'HIERARQUIA',
+        descricao: 'Cadeia de comando completa da FLY — do Presidente ao Funcionário.',
+        inclui: [
+          '1. Presidente',
+          '2. Diretores',
+          '3. Gerentes Regionais',
+          '4. Gerentes de Base',
+          '5. Supervisores',
+          '6. Líderes de Equipe',
+          '7. Funcionários'
+        ]
+      },
+      {
+        name: 'ESTRUTURA FÍSICA INICIAL',
+        descricao: 'Composição da base padrão da FLY.',
+        inclui: [
+          'Escritório',
+          'Área operacional',
+          'Vestiário',
+          'Refeitório / restaurante',
+          'Estoque',
+          'Dormitório / moradia (se necessário)'
+        ]
+      },
+      {
+        name: 'INDICADORES IMPORTANTES',
+        descricao: 'KPIs que o CEO acompanha continuamente para tomada de decisão.',
+        inclui: [
+          'Lucro por base',
+          'Custo por funcionário',
+          'Satisfação do cliente',
+          'Tempo de atendimento',
+          'Turnover',
+          'Eficiência operacional'
+        ]
+      },
+      {
+        name: 'EXPANSÃO FUTURA',
+        descricao: 'Roadmap de expansão da FLY rumo ao bilhão.',
+        inclui: [
+          'Franquias',
+          'Bases regionais',
+          'Automatização total via app',
+          'Central nacional de controle',
+          'Novas unidades internacionais'
+        ]
+      }
+    ];
+    let data = loadData();
+
+    /* =====================  DOM  ===================== */
+    const gridRow    = document.getElementById('gridRow');
+    const gridView   = document.getElementById('gridView');
+    const detailView = document.getElementById('detailView');
+    const topicView  = document.getElementById('topicView');
+    const itemView   = document.getElementById('itemView');
+    const stage      = document.getElementById('stage');
+    const backBtn    = document.getElementById('backBtn');
+    const adminToggle= document.getElementById('adminToggle');
+    const modalOverlay= document.getElementById('modalOverlay');
+    const modal      = document.getElementById('modal');
+
+    /* navigation state */
+    let currentView = 'grid';
+    let currentYear = null;
+    let currentTopic= null;
+    let currentItemRef= null; // {kind:'pacote'|'item', idx}
+
+    /* =====================  VIEW 1  ===================== */
+    years.forEach((y, i) => {
+      const c = document.createElement('div');
+      c.className = 'grid-circle' + (i === 0 ? ' gold' : '');
+      c.textContent = y.label;
+      c.addEventListener('click', () => showDetail(i));
+      gridRow.appendChild(c);
+    });
+
+    /* =====================  VIEW 2  ===================== */
+    function showDetail(idx) {
+      currentYear = years[idx];
+      currentView = 'detail';
+      const y = currentYear;
+      stage.innerHTML = '';
+
+      const halo = document.createElement('div');
+      halo.className = 'halo';
+      stage.appendChild(halo);
+
+      const ring = document.createElement('div');
+      ring.className = 'ring';
+      stage.appendChild(ring);
+
+      const mark = document.createElement('div');
+      mark.className = 'top-mark';
+      mark.innerHTML = '<span>A FLY</span><span class="gold-text">COMPANY ✈</span>';
+      stage.appendChild(mark);
+
+      const cc = document.createElement('div');
+      cc.className = 'center-circle';
+      cc.innerHTML = '<div class="glyph">' + y.label + '</div>';
+      stage.appendChild(cc);
+
+      const ct = document.createElement('div');
+      ct.className = 'center-text';
+      const anoClass = y.ano.length > 8 ? 'ano long' : 'ano';
+      ct.innerHTML = '<div class="' + anoClass + '">' + y.ano + '</div><div class="period">' + y.period + '</div>';
+      stage.appendChild(ct);
+
+      const ringR  = 35;
+      const labelR = 42;
+
+      topics.forEach(t => {
+        const rad = t.angle * Math.PI / 180;
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        dot.style.left = (50 + ringR * cos) + '%';
+        dot.style.top  = (50 + ringR * sin) + '%';
+        stage.appendChild(dot);
+
+        const lineLen = labelR - ringR;
+        if (lineLen > 0) {
+          const line = document.createElement('div');
+          line.className = 'topic-link';
+          line.style.left = (50 + ringR * cos) + '%';
+          line.style.top  = (50 + ringR * sin) + '%';
+          line.style.width = lineLen + '%';
+          line.style.transform = 'rotate(' + rad + 'rad)';
+          stage.appendChild(line);
+        }
+
+        const lbl = document.createElement('div');
+        lbl.className = 'topic';
+        lbl.innerHTML = t.name;
+        lbl.style.left = (50 + labelR * cos) + '%';
+        lbl.style.top  = (50 + labelR * sin) + '%';
+        lbl.addEventListener('click', () => showTopic(t));
+
+        if (cos > 0.3) {
+          lbl.style.transform = 'translate(0, -50%)';
+          lbl.style.textAlign = 'left';
+          lbl.style.paddingLeft = '10px';
+        } else if (cos < -0.3) {
+          lbl.style.transform = 'translate(-100%, -50%)';
+          lbl.style.textAlign = 'right';
+          lbl.style.paddingRight = '10px';
+        } else {
+          lbl.style.textAlign = 'center';
+          if (sin > 0) lbl.style.transform = 'translate(-50%, 8px)';
+          else         lbl.style.transform = 'translate(-50%, calc(-100% - 8px))';
+        }
+        stage.appendChild(lbl);
+      });
+
+      switchTo('detail');
+    }
+
+    /* =====================  VIEW 3 (TOPIC)  ===================== */
+    function showTopic(topic) {
+      currentTopic = topic;
+      const t = getTopic(currentYear.ano, topic.key);
+      topicView.innerHTML = '';
+
+      /* banner */
+      const banner = document.createElement('div');
+      banner.className = 'topic-banner' + (t.banner.image ? ' has-image' : '');
+      if (t.banner.image) banner.style.setProperty('--banner-image', `url("${t.banner.image}")`);
+
+      const bTitle = document.createElement('h1');
+      bTitle.textContent = t.banner.title || topic.key;
+      banner.appendChild(bTitle);
+
+      const iconWrap = document.createElement('div');
+      iconWrap.className = 'banner-icons';
+      t.banner.icons.forEach(ic => {
+        const el = document.createElement('div');
+        el.className = 'banner-icon';
+        if (ic.image) el.style.backgroundImage = `url("${ic.image}")`;
+        el.innerHTML = `<span>${ic.label || ''}</span>`;
+        iconWrap.appendChild(el);
+      });
+      banner.appendChild(iconWrap);
+
+      const editBanner = document.createElement('button');
+      editBanner.className = 'edit-banner-btn';
+      editBanner.textContent = 'EDITAR BANNER';
+      editBanner.addEventListener('click', () => openBannerEditor(t));
+      banner.appendChild(editBanner);
+
+      topicView.appendChild(banner);
+
+      /* items grid */
+      const grid = document.createElement('div');
+      grid.className = 'items-grid';
+      t.items.forEach((it, i) => {
+        grid.appendChild(buildCard(it, 'item-card', () => showItem(t, 'item', i), () => deleteEntry(t, 'items', i)));
+      });
+      const add = document.createElement('div');
+      add.className = 'add-card';
+      add.textContent = '+';
+      add.addEventListener('click', () => openItemEditor(t, 'item', null));
+      grid.appendChild(add);
+      topicView.appendChild(grid);
+
+      currentView = 'topic';
+      switchTo('topic');
+    }
+
+    function buildCard(entry, cls, onClick, onDelete) {
+      const card = document.createElement('div');
+      card.className = cls;
+      if (entry.image) card.style.setProperty('--card-image', `url("${entry.image}")`);
+      card.innerHTML = `<div class="name">${entry.name || ''}</div>`;
+      card.addEventListener('click', e => {
+        if (e.target.classList.contains('delete-btn')) return;
+        onClick();
+      });
+      const del = document.createElement('button');
+      del.className = 'delete-btn';
+      del.textContent = '×';
+      del.title = 'Remover';
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        if (confirm('Remover "' + (entry.name || 'item') + '"?')) onDelete();
+      });
+      card.appendChild(del);
+      return card;
+    }
+
+    function deleteEntry(topicData, key, idx) {
+      topicData[key].splice(idx, 1);
+      saveData();
+      showTopic(currentTopic);
+    }
+
+    /* =====================  ITEM HELPERS  ===================== */
+    function genId() { return 'i_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+    function defaultItemShape(name = '') {
+      return {
+        id: genId(),
+        name,
+        image: '',
+        categoria: '',
+        descricao: '',
+        inclui: [],
+        publico: '',
+        data: '',
+        periodo: '',
+        responsavel: '',
+        subitens: [],
+        financeiro: { faturamento: 0, custos: 0, ticket_medio: 0, custo_implementacao: '' },
+        performance: { vendas_mes: 0, crescimento: 0, clientes: 0, historico: [] },
+        operacao: { fornecedores: [], estrutura: '', etapas: [], observacoes: '' },
+        marketing: { estrategia: '', canais: [] },
+        midia: { fotos: [], referencias: [], videos: [], video_ia: '' },
+        cronograma: [],
+        documentos: { link_principal: '', links_adicionais: [] }
+      };
+    }
+    function normalizeItem(it) {
+      const base = defaultItemShape();
+      if (!it.descricao && it.description) it.descricao = it.description;
+      it.id = it.id || base.id;
+      it.categoria = it.categoria || '';
+      it.descricao = it.descricao || '';
+      it.inclui = Array.isArray(it.inclui) ? it.inclui : [];
+      it.publico = it.publico || '';
+      it.data = it.data || '';
+      it.periodo = it.periodo || '';
+      it.responsavel = it.responsavel || '';
+      it.subitens = Array.isArray(it.subitens) ? it.subitens.map(s => ({
+        id: s.id || genId(),
+        name: s.name || '',
+        descricao: s.descricao || '',
+        responsavel: s.responsavel || '',
+        responsabilidades: Array.isArray(s.responsabilidades) ? s.responsabilidades : []
+      })) : [];
+      it.financeiro = Object.assign({}, base.financeiro, it.financeiro || {});
+      it.performance = Object.assign({}, base.performance, it.performance || {});
+      it.performance.historico = Array.isArray(it.performance.historico) ? it.performance.historico : [];
+      it.operacao = Object.assign({}, base.operacao, it.operacao || {});
+      it.operacao.fornecedores = Array.isArray(it.operacao.fornecedores) ? it.operacao.fornecedores : [];
+      it.operacao.etapas = Array.isArray(it.operacao.etapas) ? it.operacao.etapas : [];
+      it.marketing = Object.assign({}, base.marketing, it.marketing || {});
+      it.marketing.canais = Array.isArray(it.marketing.canais) ? it.marketing.canais : [];
+      it.midia = Object.assign({}, base.midia, it.midia || {});
+      it.midia.fotos = Array.isArray(it.midia.fotos) ? it.midia.fotos : [];
+      it.midia.referencias = Array.isArray(it.midia.referencias) ? it.midia.referencias : [];
+      it.midia.videos = Array.isArray(it.midia.videos) ? it.midia.videos : [];
+      it.cronograma = Array.isArray(it.cronograma) ? it.cronograma : [];
+      it.documentos = Object.assign({}, base.documentos, it.documentos || {});
+      it.documentos.links_adicionais = Array.isArray(it.documentos.links_adicionais) ? it.documentos.links_adicionais : [];
+      return it;
+    }
+    function fmtDate(s) {
+      if (!s) return '';
+      const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+      return s;
+    }
+    function fmtCurrency(n) {
+      const num = Number(n) || 0;
+      return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 });
+    }
+    function fmtNumber(n) { return (Number(n) || 0).toLocaleString('pt-BR'); }
+    function calcLucro(f) { return (Number(f.faturamento)||0) - (Number(f.custos)||0); }
+    function calcMargem(f) {
+      const fat = Number(f.faturamento) || 0;
+      if (!fat) return 0;
+      return (calcLucro(f) / fat) * 100;
+    }
+
+    function showToast(msg) {
+      let toast = document.querySelector('.save-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.className = 'save-toast';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      requestAnimationFrame(() => toast.classList.add('show'));
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    /* Lightbox */
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    function openLightbox(src) {
+      if (!src) return;
+      lightboxImg.src = src;
+      lightbox.classList.add('active');
+    }
+    lightbox.addEventListener('click', () => lightbox.classList.remove('active'));
+
+    /* =====================  VIEW 4 (ITEM HUB)  ===================== */
+    function showItem(topicData, kind, idx) {
+      currentItemRef = { topicData, kind, idx };
+      const list = topicData.items;
+      const it = normalizeItem(list[idx]);
+      list[idx] = it;
+      itemView.innerHTML = '';
+
+      const hub = document.createElement('div');
+      hub.className = 'hub';
+
+      // Banner
+      const banner = document.createElement('div');
+      banner.className = 'hub-banner';
+      if (it.image) banner.style.setProperty('--hub-image', `url("${it.image}")`);
+      banner.innerHTML = `
+        <div class="meta">
+          <h2>${escapeHtml(it.name || 'SEM NOME')}</h2>
+          ${it.categoria ? `<div class="cat">${escapeHtml(it.categoria)}</div>` : ''}
+        </div>`;
+      hub.appendChild(banner);
+
+      // Edit button (admin mode only)
+      const editBtn = document.createElement('button');
+      editBtn.className = 'hub-edit';
+      editBtn.textContent = '✎ EDITAR ITEM';
+      editBtn.addEventListener('click', () => openItemEditor(topicData, kind, idx));
+      hub.appendChild(editBtn);
+
+      // Tabs
+      const tabsWrap = document.createElement('div');
+      tabsWrap.className = 'hub-tabs';
+      const tabsList = [
+        { key: 'geral', label: 'VISÃO GERAL'  },
+        { key: 'sub',   label: 'SUBSETORES'   },
+        { key: 'fin',   label: 'FINANCEIRO'   },
+        { key: 'perf',  label: 'PERFORMANCE'  },
+        { key: 'op',    label: 'OPERAÇÃO'     },
+        { key: 'mkt',   label: 'MARKETING'    },
+        { key: 'media', label: 'MÍDIA'        },
+        { key: 'cron',  label: 'CRONOGRAMA'   },
+        { key: 'docs',  label: 'DOCUMENTAÇÃO' }
+      ];
+      tabsList.forEach((t, i) => {
+        const b = document.createElement('button');
+        b.className = 'hub-tab' + (i === 0 ? ' active' : '');
+        b.textContent = t.label;
+        b.dataset.tab = t.key;
+        b.addEventListener('click', () => {
+          tabsWrap.querySelectorAll('.hub-tab').forEach(x => x.classList.remove('active'));
+          b.classList.add('active');
+          hub.querySelectorAll('.hub-panel').forEach(p => p.classList.add('hidden'));
+          hub.querySelector('.hub-panel[data-panel="' + t.key + '"]').classList.remove('hidden');
+        });
+        tabsWrap.appendChild(b);
+      });
+      hub.appendChild(tabsWrap);
+
+      // ----- Panel: GERAL -----
+      const pGeral = document.createElement('div');
+      pGeral.className = 'hub-panel';
+      pGeral.dataset.panel = 'geral';
+      pGeral.innerHTML = `
+        <div class="hub-grid">
+          <div class="hub-field">
+            <div class="label">DATA</div>
+            <div class="value ${!it.data ? 'muted' : ''}">${escapeHtml(fmtDate(it.data)) || 'Não definida'}</div>
+          </div>
+          <div class="hub-field">
+            <div class="label">PERÍODO</div>
+            <div class="value ${!it.periodo ? 'muted' : ''}">${escapeHtml(it.periodo) || 'Não definido'}</div>
+          </div>
+          <div class="hub-field">
+            <div class="label">RESPONSÁVEL</div>
+            <div class="value ${!it.responsavel ? 'muted' : ''}">${escapeHtml(it.responsavel) || 'Não definido'}</div>
+          </div>
+          <div class="hub-field">
+            <div class="label">CATEGORIA</div>
+            <div class="value ${!it.categoria ? 'muted' : ''}">${escapeHtml(it.categoria) || 'Não definida'}</div>
+          </div>
+          <div class="hub-field">
+            <div class="label">PÚBLICO-ALVO</div>
+            <div class="value ${!it.publico ? 'muted' : ''}">${escapeHtml(it.publico) || 'Não definido'}</div>
+          </div>
+        </div>
+        <div class="hub-block">
+          <h4>DESCRIÇÃO COMPLETA</h4>
+          ${it.descricao ? `<p>${escapeHtml(it.descricao).replace(/\n/g,'<br>')}</p>` : '<p class="empty">Sem descrição preenchida.</p>'}
+        </div>
+        <div class="hub-block">
+          <h4>O QUE INCLUI</h4>
+          ${it.inclui.length
+            ? `<ul>${it.inclui.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>`
+            : '<p class="empty">Nenhum item adicionado.</p>'}
+        </div>`;
+      hub.appendChild(pGeral);
+
+      // ----- Panel: SUBSETORES -----
+      const pSub = document.createElement('div');
+      pSub.className = 'hub-panel hidden';
+      pSub.dataset.panel = 'sub';
+      const subCardsHtml = it.subitens.length
+        ? `<div class="sub-grid">${it.subitens.map((s, i) => `
+            <div class="sub-card" data-sub-idx="${i}">
+              <button class="delete-btn" data-sub-del="${i}" type="button">×</button>
+              <div class="sub-name">${escapeHtml(s.name || 'Sem nome')}</div>
+              ${s.responsavel ? `<div class="sub-resp">RESP: ${escapeHtml(s.responsavel)}</div>` : ''}
+              ${s.descricao ? `<div class="sub-desc">${escapeHtml(s.descricao)}</div>` : ''}
+            </div>`).join('')}</div>`
+        : '<p class="empty" style="color:rgba(255,255,255,0.35); font-style:italic;">Nenhum subsetor cadastrado.</p>';
+      pSub.innerHTML = `
+        <div class="hub-block">
+          <h4>SUBSETORES / DEPARTAMENTOS</h4>
+          ${subCardsHtml}
+        </div>
+        <div id="sub-detail-host"></div>`;
+      hub.appendChild(pSub);
+
+      const subHost = pSub.querySelector('#sub-detail-host');
+      pSub.querySelectorAll('.sub-card').forEach(card => {
+        card.addEventListener('click', e => {
+          if (e.target.classList.contains('delete-btn')) return;
+          const i = +card.dataset.subIdx;
+          const s = it.subitens[i];
+          subHost.innerHTML = `
+            <div class="sub-detail">
+              <h5>${escapeHtml(s.name || '')}</h5>
+              ${s.responsavel ? `<div class="resp-line">RESPONSÁVEL: ${escapeHtml(s.responsavel)}</div>` : ''}
+              ${s.descricao ? `<p>${escapeHtml(s.descricao).replace(/\n/g,'<br>')}</p>` : '<p class="empty" style="color:rgba(255,255,255,0.35); font-style:italic;">Sem descrição.</p>'}
+              ${s.responsabilidades && s.responsabilidades.length
+                ? `<h4 style="font-size:11px; letter-spacing:3px; color:var(--gold); margin:12px 0 8px;">RESPONSABILIDADES</h4><ul>${s.responsabilidades.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul>`
+                : ''}
+              <button class="close" type="button">FECHAR</button>
+            </div>`;
+          subHost.querySelector('.close').addEventListener('click', () => { subHost.innerHTML = ''; });
+          subHost.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+      });
+      pSub.querySelectorAll('[data-sub-del]').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          const i = +btn.dataset.subDel;
+          if (confirm('Remover subsetor "' + (it.subitens[i].name || '') + '"?')) {
+            it.subitens.splice(i, 1);
+            saveData();
+            showItem(topicData, kind, idx);
+          }
+        });
+      });
+
+      // ----- Panel: FINANCEIRO -----
+      const f = it.financeiro;
+      const lucro = calcLucro(f);
+      const margem = calcMargem(f);
+      const pFin = document.createElement('div');
+      pFin.className = 'hub-panel hidden';
+      pFin.dataset.panel = 'fin';
+      pFin.innerHTML = `
+        <div class="hub-grid">
+          <div class="hub-field kpi">
+            <div class="label">FATURAMENTO TOTAL</div>
+            <div class="value">${fmtCurrency(f.faturamento)}</div>
+          </div>
+          <div class="hub-field kpi">
+            <div class="label">CUSTOS TOTAIS</div>
+            <div class="value">${fmtCurrency(f.custos)}</div>
+          </div>
+          <div class="hub-field kpi ${lucro >= 0 ? 'positive' : 'negative'}">
+            <div class="label">LUCRO</div>
+            <div class="value">${fmtCurrency(lucro)}</div>
+          </div>
+          <div class="hub-field kpi">
+            <div class="label">TICKET MÉDIO</div>
+            <div class="value">${fmtCurrency(f.ticket_medio)}</div>
+          </div>
+          <div class="hub-field kpi ${margem >= 0 ? 'positive' : 'negative'}">
+            <div class="label">MARGEM</div>
+            <div class="value">${margem.toFixed(1)}%</div>
+          </div>
+        </div>
+        <div class="hub-block">
+          <h4>DESCRIÇÃO DE CUSTO PARA IMPLEMENTAR</h4>
+          ${f.custo_implementacao ? `<p>${escapeHtml(f.custo_implementacao).replace(/\n/g,'<br>')}</p>` : '<p class="empty">Não informado.</p>'}
+        </div>
+        <p style="font-size:11px; letter-spacing:2px; color:rgba(255,255,255,0.4);">
+          Lucro = Faturamento − Custos · Margem = (Lucro / Faturamento) × 100
+        </p>`;
+      hub.appendChild(pFin);
+
+      // ----- Panel: PERFORMANCE -----
+      const pf = it.performance;
+      const cresc = Number(pf.crescimento) || 0;
+      const pPerf = document.createElement('div');
+      pPerf.className = 'hub-panel hidden';
+      pPerf.dataset.panel = 'perf';
+      pPerf.innerHTML = `
+        <div class="hub-grid">
+          <div class="hub-field kpi">
+            <div class="label">VENDAS NO MÊS</div>
+            <div class="value">${fmtNumber(pf.vendas_mes)}</div>
+          </div>
+          <div class="hub-field kpi ${cresc >= 0 ? 'positive' : 'negative'}">
+            <div class="label">CRESCIMENTO</div>
+            <div class="value">${cresc >= 0 ? '+' : ''}${cresc.toFixed(1)}%</div>
+          </div>
+          <div class="hub-field kpi">
+            <div class="label">Nº DE CLIENTES</div>
+            <div class="value">${fmtNumber(pf.clientes)}</div>
+          </div>
+        </div>
+        <div class="hub-block">
+          <h4>HISTÓRICO</h4>
+          ${pf.historico.length
+            ? `<ul>${pf.historico.map(h => `<li>${escapeHtml(typeof h === 'string' ? h : (h.periodo + ' — ' + h.valor))}</li>`).join('')}</ul>`
+            : '<p class="empty">Sem histórico registrado.</p>'}
+        </div>`;
+      hub.appendChild(pPerf);
+
+      // ----- Panel: OPERAÇÃO -----
+      const op = it.operacao;
+      const pOp = document.createElement('div');
+      pOp.className = 'hub-panel hidden';
+      pOp.dataset.panel = 'op';
+      pOp.innerHTML = `
+        <div class="hub-block">
+          <h4>FORNECEDORES ENVOLVIDOS</h4>
+          ${op.fornecedores.length
+            ? `<ul>${op.fornecedores.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>`
+            : '<p class="empty">Nenhum fornecedor cadastrado.</p>'}
+        </div>
+        <div class="hub-block">
+          <h4>ESTRUTURA NECESSÁRIA</h4>
+          ${op.estrutura ? `<p>${escapeHtml(op.estrutura).replace(/\n/g,'<br>')}</p>` : '<p class="empty">Não definida.</p>'}
+        </div>
+        <div class="hub-block">
+          <h4>ETAPAS DO SERVIÇO</h4>
+          ${op.etapas.length
+            ? `<ol>${op.etapas.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ol>`
+            : '<p class="empty">Sem etapas cadastradas.</p>'}
+        </div>
+        <div class="hub-block">
+          <h4>OBSERVAÇÕES OPERACIONAIS</h4>
+          ${op.observacoes ? `<p>${escapeHtml(op.observacoes).replace(/\n/g,'<br>')}</p>` : '<p class="empty">Sem observações.</p>'}
+        </div>`;
+      hub.appendChild(pOp);
+
+      // ----- Panel: MARKETING -----
+      const mkt = it.marketing;
+      const pMkt = document.createElement('div');
+      pMkt.className = 'hub-panel hidden';
+      pMkt.dataset.panel = 'mkt';
+      pMkt.innerHTML = `
+        <div class="hub-block">
+          <h4>ESTRATÉGIA DE MARKETING</h4>
+          ${mkt.estrategia ? `<p>${escapeHtml(mkt.estrategia).replace(/\n/g,'<br>')}</p>` : '<p class="empty">Sem estratégia definida.</p>'}
+        </div>
+        <div class="hub-block">
+          <h4>CANAIS / AÇÕES</h4>
+          ${mkt.canais.length
+            ? `<ul>${mkt.canais.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>`
+            : '<p class="empty">Nenhum canal cadastrado.</p>'}
+        </div>`;
+      hub.appendChild(pMkt);
+
+      // ----- Panel: MÍDIA -----
+      const md = it.midia;
+      const pMd = document.createElement('div');
+      pMd.className = 'hub-panel hidden';
+      pMd.dataset.panel = 'media';
+      const fotosHtml = md.fotos.length
+        ? `<div class="media-grid">${md.fotos.map((src, i) => `
+            <div class="media-thumb" data-img="${i}" data-collection="fotos" style="background-image:url('${src}')">
+              <button class="rm" data-rm-photo="${i}" data-coll="fotos">×</button>
+            </div>`).join('')}</div>`
+        : '<p class="empty">Nenhuma foto adicionada.</p>';
+      const refHtml = md.referencias.length
+        ? `<div class="media-grid">${md.referencias.map((src, i) => `
+            <div class="media-thumb" data-img="${i}" data-collection="referencias" style="background-image:url('${src}')">
+              <button class="rm" data-rm-photo="${i}" data-coll="referencias">×</button>
+            </div>`).join('')}</div>`
+        : '<p class="empty">Nenhuma referência adicionada.</p>';
+      const videosHtml = md.videos.length
+        ? md.videos.map((v, i) => {
+            const url = typeof v === 'string' ? v : (v.url || '');
+            const titulo = typeof v === 'string' ? url : (v.titulo || url);
+            return `<div class="video-card" style="border:1px solid var(--gold); border-radius:10px; padding:12px 16px; margin-bottom:8px; background:rgba(0,0,0,0.5); display:flex; justify-content:space-between; gap:10px; align-items:center;">
+              <a href="${escapeHtml(url)}" target="_blank" rel="noopener" style="color:var(--gold); text-decoration:none; font-weight:700;">▶ ${escapeHtml(titulo)}</a>
+            </div>`;
+          }).join('')
+        : '<p class="empty">Nenhum vídeo adicionado.</p>';
+      pMd.innerHTML = `
+        <div class="hub-block">
+          <h4>FOTOS DO PRODUTO</h4>
+          <p style="font-size:12px; color:rgba(255,255,255,0.5); margin-bottom:14px;">Imagens do que tem dentro do produto.</p>
+          ${fotosHtml}
+        </div>
+        <div class="hub-block">
+          <h4>REFERÊNCIAS VISUAIS</h4>
+          ${refHtml}
+        </div>
+        <div class="hub-block">
+          <h4>VÍDEO DE IA</h4>
+          ${md.video_ia ? `<a href="${escapeHtml(md.video_ia)}" target="_blank" rel="noopener" class="hub-link">▶ ABRIR VÍDEO DE IA</a>` : '<p class="empty">Nenhum vídeo de IA cadastrado.</p>'}
+        </div>
+        <div class="hub-block">
+          <h4>CONTEÚDO DO PRODUTO (VÍDEOS)</h4>
+          ${videosHtml}
+        </div>`;
+      hub.appendChild(pMd);
+
+      // bind lightbox + remove handlers for media thumbs
+      pMd.querySelectorAll('.media-thumb').forEach(t => {
+        t.addEventListener('click', e => {
+          if (e.target.classList.contains('rm')) return;
+          const coll = t.dataset.collection;
+          const i = +t.dataset.img;
+          openLightbox(it.midia[coll][i]);
+        });
+      });
+      pMd.querySelectorAll('.rm[data-rm-photo]').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          const coll = btn.dataset.coll;
+          const i = +btn.dataset.rmPhoto;
+          if (confirm('Remover esta imagem?')) {
+            it.midia[coll].splice(i, 1);
+            saveData();
+            showItem(topicData, kind, idx);
+          }
+        });
+      });
+
+      // ----- Panel: CRONOGRAMA -----
+      const pCron = document.createElement('div');
+      pCron.className = 'hub-panel hidden';
+      pCron.dataset.panel = 'cron';
+      pCron.innerHTML = `
+        <div class="hub-block">
+          <h4>LINHA DO TEMPO · EXECUÇÃO DO PRODUTO</h4>
+          ${it.cronograma.length
+            ? `<div class="timeline">${it.cronograma.map(c => `
+                <div class="timeline-item">
+                  ${c.data ? `<div class="timeline-date">${escapeHtml(fmtDate(c.data))}</div>` : ''}
+                  <div class="timeline-title">${escapeHtml(c.titulo || '')}</div>
+                  ${c.descricao ? `<div class="timeline-desc">${escapeHtml(c.descricao).replace(/\n/g,'<br>')}</div>` : ''}
+                </div>`).join('')}</div>`
+            : '<p class="empty">Nenhuma fase cadastrada.</p>'}
+        </div>`;
+      hub.appendChild(pCron);
+
+      // ----- Panel: DOCS -----
+      const dc = it.documentos;
+      const pDocs = document.createElement('div');
+      pDocs.className = 'hub-panel hidden';
+      pDocs.dataset.panel = 'docs';
+      let docsHtml = '<div class="hub-block"><h4>DOCUMENTO PRINCIPAL</h4>';
+      if (dc.link_principal) {
+        docsHtml += `<a href="${escapeHtml(dc.link_principal)}" target="_blank" rel="noopener" class="hub-link">📄 ABRIR DOCUMENTO COMPLETO</a>`;
+      } else {
+        docsHtml += '<p class="empty">Nenhum link cadastrado.</p>';
+      }
+      docsHtml += '</div>';
+      docsHtml += '<div class="hub-block"><h4>LINKS ADICIONAIS</h4>';
+      if (dc.links_adicionais.length) {
+        docsHtml += '<div style="display:flex; flex-wrap:wrap; gap:10px;">';
+        docsHtml += dc.links_adicionais.map(l => {
+          const url = typeof l === 'string' ? l : (l.url || '');
+          const label = typeof l === 'string' ? url : (l.label || url);
+          if (!url) return '';
+          return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="hub-link outline">${escapeHtml(label)}</a>`;
+        }).join('');
+        docsHtml += '</div>';
+      } else {
+        docsHtml += '<p class="empty">Nenhum link adicional.</p>';
+      }
+      docsHtml += '</div>';
+      pDocs.innerHTML = docsHtml;
+      hub.appendChild(pDocs);
+
+      itemView.appendChild(hub);
+
+      currentView = 'item';
+      switchTo('item');
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    /* =====================  NAVIGATION  ===================== */
+    function switchTo(view) {
+      [gridView, detailView, topicView, itemView].forEach(v => v.classList.add('hidden'));
+      document.body.classList.remove('detail-mode', 'topic-mode', 'item-mode');
+      if (view === 'grid')   gridView.classList.remove('hidden');
+      if (view === 'detail') { detailView.classList.remove('hidden'); document.body.classList.add('detail-mode'); }
+      if (view === 'topic')  { topicView.classList.remove('hidden');  document.body.classList.add('topic-mode'); window.scrollTo(0,0); }
+      if (view === 'item')   { itemView.classList.remove('hidden');   document.body.classList.add('item-mode');  window.scrollTo(0,0); }
+      currentView = view;
+    }
+
+    backBtn.addEventListener('click', () => {
+      if (currentView === 'item')   showTopic(currentTopic);
+      else if (currentView === 'topic')  showDetail(years.indexOf(currentYear));
+      else if (currentView === 'detail') switchTo('grid');
+    });
+
+    /* =====================  ADMIN  ===================== */
+    adminToggle.addEventListener('click', () => {
+      document.body.classList.toggle('admin-mode');
+      adminToggle.textContent = document.body.classList.contains('admin-mode') ? 'ADMIN ON' : 'ADMIN';
+      // re-render current view to show/hide admin controls
+      if (currentView === 'topic') showTopic(currentTopic);
+      if (currentView === 'item' && currentItemRef) showItem(currentItemRef.topicData, currentItemRef.kind, currentItemRef.idx);
+    });
+
+    /* =====================  FILE -> DATA URL  ===================== */
+    function fileToDataURL(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) return resolve('');
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    /* compress images so we don't blow localStorage */
+    async function compressImage(file, maxW = 1400, quality = 0.82) {
+      if (!file) return '';
+      const dataUrl = await fileToDataURL(file);
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxW / img.width);
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+
+    /* =====================  MODALS  ===================== */
+    function closeModal() { modalOverlay.classList.remove('active'); }
+    modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+
+    function openItemEditor(topicData, kind, idx) {
+      const list = topicData.items;
+      const editing = idx !== null && idx !== undefined;
+      const it = editing ? normalizeItem(list[idx]) : defaultItemShape();
+      let pendingImage = it.image || '';
+
+      const tabs = [
+        { key: 'geral', label: 'GERAL' },
+        { key: 'sub',   label: 'SUBSETORES' },
+        { key: 'fin',   label: 'FINANCEIRO' },
+        { key: 'perf',  label: 'PERFORMANCE' },
+        { key: 'op',    label: 'OPERAÇÃO' },
+        { key: 'mkt',   label: 'MARKETING' },
+        { key: 'media', label: 'MÍDIA' },
+        { key: 'cron',  label: 'CRONOGRAMA' },
+        { key: 'docs',  label: 'DOCUMENTAÇÃO' }
+      ];
+
+      function renderListEditor(name, items, placeholder) {
+        return `
+          <div class="le-container" id="le_${name}">
+            ${items.map(v => `
+              <div class="list-row">
+                <input type="text" class="le_input" value="${escapeHtml(v)}" placeholder="${placeholder}" />
+                <button class="modal-btn le_del" type="button">×</button>
+              </div>`).join('')}
+          </div>
+          <button class="modal-btn list-add" type="button" data-add="${name}" data-placeholder="${placeholder}">+ ADICIONAR</button>
+        `;
+      }
+      function renderLinksEditor(items) {
+        return `
+          <div id="le_links">
+            ${items.map(v => {
+              const lbl = typeof v === 'string' ? '' : (v.label || '');
+              const url = typeof v === 'string' ? v : (v.url || '');
+              return `
+                <div class="list-row">
+                  <input type="text" class="ll_label" value="${escapeHtml(lbl)}" placeholder="Rótulo" />
+                  <input type="text" class="ll_url"   value="${escapeHtml(url)}" placeholder="https://..." />
+                  <button class="modal-btn ll_del" type="button">×</button>
+                </div>`;
+            }).join('')}
+          </div>
+          <button class="modal-btn list-add" type="button" data-add="links">+ ADICIONAR LINK</button>
+        `;
+      }
+
+      modal.className = 'modal wide';
+      modal.innerHTML = `
+        <h3>${editing ? 'EDITAR' : 'NOVO'} ITEM</h3>
+        <div class="modal-tabs">
+          ${tabs.map((t,i) => `<button type="button" class="modal-tab${i===0?' active':''}" data-mtab="${t.key}">${t.label}</button>`).join('')}
+        </div>
+
+        <div class="modal-panel" data-mpanel="geral">
+          <label>NOME DO PRODUTO</label>
+          <input type="text" id="m_name" value="${escapeHtml(it.name || '')}" />
+          <label>CATEGORIA</label>
+          <input type="text" id="m_cat" value="${escapeHtml(it.categoria || '')}" />
+          <label>BANNER (IMAGEM)</label>
+          <input type="file" id="m_image" accept="image/*" />
+          <div class="preview-img" id="m_preview" style="${it.image ? `background-image:url('${it.image}')` : ''}"></div>
+          <label>DATA</label>
+          <input type="date" id="m_data" value="${escapeHtml(it.data || '')}" />
+          <label>PERÍODO</label>
+          <input type="text" id="m_periodo" value="${escapeHtml(it.periodo || '')}" placeholder="Ex: Jan 2026 - Mar 2026" />
+          <label>RESPONSÁVEL</label>
+          <input type="text" id="m_resp" value="${escapeHtml(it.responsavel || '')}" />
+          <label>DESCRIÇÃO COMPLETA</label>
+          <textarea id="m_desc">${escapeHtml(it.descricao || '')}</textarea>
+          <label>O QUE INCLUI</label>
+          ${renderListEditor('inclui', it.inclui, 'Item incluído')}
+          <label>PÚBLICO-ALVO</label>
+          <input type="text" id="m_publico" value="${escapeHtml(it.publico || '')}" />
+        </div>
+
+        <div class="modal-panel hidden" data-mpanel="sub">
+          <label>SUBSETORES / DEPARTAMENTOS</label>
+          <p style="font-size:11px; color:rgba(255,255,255,0.5); margin-bottom:6px;">Cada subsetor tem nome, responsável, descrição e lista de responsabilidades.</p>
+          <div id="le_sub">
+            ${it.subitens.map(s => `
+              <div class="input-row-vertical">
+                <button class="rm-row" type="button">×</button>
+                <input type="text" class="su_name" value="${escapeHtml(s.name || '')}" placeholder="Nome do subsetor" />
+                <input type="text" class="su_resp" value="${escapeHtml(s.responsavel || '')}" placeholder="Responsável" />
+                <textarea class="su_desc" placeholder="Descrição">${escapeHtml(s.descricao || '')}</textarea>
+                <textarea class="su_resps" placeholder="Responsabilidades (uma por linha)">${escapeHtml((s.responsabilidades||[]).join('\n'))}</textarea>
+              </div>`).join('')}
+          </div>
+          <button class="modal-btn list-add" type="button" data-add="sub">+ ADICIONAR SUBSETOR</button>
+        </div>
+
+        <div class="modal-panel hidden" data-mpanel="fin">
+          <label>FATURAMENTO TOTAL (R$)</label>
+          <input type="number" id="m_fat" step="0.01" value="${it.financeiro.faturamento||0}" />
+          <label>CUSTOS TOTAIS (R$)</label>
+          <input type="number" id="m_cus" step="0.01" value="${it.financeiro.custos||0}" />
+          <label>TICKET MÉDIO (R$)</label>
+          <input type="number" id="m_tic" step="0.01" value="${it.financeiro.ticket_medio||0}" />
+          <label>DESCRIÇÃO DE CUSTO PARA IMPLEMENTAR</label>
+          <textarea id="m_custo_impl" placeholder="Detalhe os custos envolvidos para implementar este produto...">${escapeHtml(it.financeiro.custo_implementacao || '')}</textarea>
+          <p style="margin-top:14px; font-size:11px; color:rgba(255,255,255,0.5); letter-spacing:1px;">
+            Lucro e margem são calculados automaticamente.
+          </p>
+        </div>
+
+        <div class="modal-panel hidden" data-mpanel="perf">
+          <label>VENDAS NO MÊS</label>
+          <input type="number" id="m_vendas" value="${it.performance.vendas_mes||0}" />
+          <label>CRESCIMENTO (%)</label>
+          <input type="number" id="m_cresc" step="0.1" value="${it.performance.crescimento||0}" />
+          <label>Nº DE CLIENTES</label>
+          <input type="number" id="m_cli" value="${it.performance.clientes||0}" />
+          <label>HISTÓRICO (uma entrada por linha)</label>
+          <textarea id="m_hist" placeholder="Ex: Jan/2026 — 50 vendas">${escapeHtml((it.performance.historico||[]).map(h => typeof h === 'string' ? h : (h.periodo + ' — ' + h.valor)).join('\n'))}</textarea>
+        </div>
+
+        <div class="modal-panel hidden" data-mpanel="op">
+          <label>FORNECEDORES ENVOLVIDOS</label>
+          ${renderListEditor('fornecedores', it.operacao.fornecedores, 'Nome do fornecedor')}
+          <label>ESTRUTURA NECESSÁRIA</label>
+          <textarea id="m_estr">${escapeHtml(it.operacao.estrutura || '')}</textarea>
+          <label>ETAPAS DO SERVIÇO</label>
+          ${renderListEditor('etapas', it.operacao.etapas, 'Etapa')}
+          <label>OBSERVAÇÕES OPERACIONAIS</label>
+          <textarea id="m_obs">${escapeHtml(it.operacao.observacoes || '')}</textarea>
+        </div>
+
+        <div class="modal-panel hidden" data-mpanel="mkt">
+          <label>ESTRATÉGIA DE MARKETING</label>
+          <textarea id="m_mkt_estrat" placeholder="Posicionamento, público, abordagem...">${escapeHtml(it.marketing.estrategia || '')}</textarea>
+          <label>CANAIS / AÇÕES</label>
+          ${renderListEditor('canais', it.marketing.canais, 'Ex: Instagram, Email, Influenciadores')}
+        </div>
+
+        <div class="modal-panel hidden" data-mpanel="media">
+          <label>FOTOS DO PRODUTO</label>
+          <p style="font-size:11px; color:rgba(255,255,255,0.5); margin-bottom:6px;">Fotos do que tem dentro do produto.</p>
+          <div class="upload-zone" id="up_fotos">📷 CLIQUE PARA CARREGAR FOTOS (várias permitidas)</div>
+          <input type="file" id="m_fotos_in" accept="image/*" multiple style="display:none;" />
+          <div class="media-grid" id="prev_fotos" style="margin-top:8px;">
+            ${it.midia.fotos.map((src, i) => `
+              <div class="media-thumb" data-rm="fotos" data-rm-i="${i}" style="background-image:url('${src}'); cursor:default;">
+                <button class="rm" data-rm-btn="fotos" data-rm-bi="${i}" type="button">×</button>
+              </div>`).join('')}
+          </div>
+
+          <label style="margin-top:18px;">REFERÊNCIAS VISUAIS</label>
+          <div class="upload-zone" id="up_ref">🎨 CLIQUE PARA CARREGAR REFERÊNCIAS</div>
+          <input type="file" id="m_ref_in" accept="image/*" multiple style="display:none;" />
+          <div class="media-grid" id="prev_ref" style="margin-top:8px;">
+            ${it.midia.referencias.map((src, i) => `
+              <div class="media-thumb" data-rm="referencias" data-rm-i="${i}" style="background-image:url('${src}'); cursor:default;">
+                <button class="rm" data-rm-btn="referencias" data-rm-bi="${i}" type="button">×</button>
+              </div>`).join('')}
+          </div>
+
+          <label style="margin-top:18px;">VÍDEO DE IA (link)</label>
+          <input type="text" id="m_video_ia" value="${escapeHtml(it.midia.video_ia || '')}" placeholder="https://..." />
+
+          <label>CONTEÚDO DO PRODUTO (vídeos)</label>
+          <p style="font-size:11px; color:rgba(255,255,255,0.5); margin-bottom:6px;">Cole links de YouTube, Vimeo, Drive, etc.</p>
+          <div id="le_videos">
+            ${it.midia.videos.map(v => {
+              const titulo = typeof v === 'string' ? '' : (v.titulo || '');
+              const url = typeof v === 'string' ? v : (v.url || '');
+              return `<div class="list-row">
+                <input type="text" class="lv_titulo" value="${escapeHtml(titulo)}" placeholder="Título" />
+                <input type="text" class="lv_url" value="${escapeHtml(url)}" placeholder="https://..." />
+                <button class="modal-btn lv_del" type="button">×</button>
+              </div>`;
+            }).join('')}
+          </div>
+          <button class="modal-btn list-add" type="button" data-add="videos">+ ADICIONAR VÍDEO</button>
+        </div>
+
+        <div class="modal-panel hidden" data-mpanel="cron">
+          <label>LINHA DO TEMPO · EXECUÇÃO</label>
+          <p style="font-size:11px; color:rgba(255,255,255,0.5); margin-bottom:6px;">Cada item é uma fase com data, título e descrição.</p>
+          <div id="le_cron">
+            ${it.cronograma.map(c => `
+              <div class="input-row-vertical">
+                <button class="rm-row" type="button">×</button>
+                <input type="date" class="cr_data" value="${escapeHtml(c.data || '')}" />
+                <input type="text" class="cr_titulo" value="${escapeHtml(c.titulo || '')}" placeholder="Título da fase" />
+                <textarea class="cr_desc" placeholder="Descrição">${escapeHtml(c.descricao || '')}</textarea>
+              </div>`).join('')}
+          </div>
+          <button class="modal-btn list-add" type="button" data-add="cron">+ ADICIONAR FASE</button>
+        </div>
+
+        <div class="modal-panel hidden" data-mpanel="docs">
+          <label>LINK PRINCIPAL (Google Docs ou outro)</label>
+          <input type="text" id="m_doc_main" value="${escapeHtml(it.documentos.link_principal || '')}" placeholder="https://docs.google.com/..." />
+          <label>LINKS ADICIONAIS</label>
+          ${renderLinksEditor(it.documentos.links_adicionais || [])}
+        </div>
+
+        <div class="modal-actions">
+          <button class="modal-btn" id="m_cancel" type="button">CANCELAR</button>
+          <button class="modal-btn primary" id="m_save" type="button">SALVAR</button>
+        </div>
+      `;
+      modalOverlay.classList.add('active');
+
+      // Tab switching
+      modal.querySelectorAll('.modal-tab').forEach(b => {
+        b.addEventListener('click', () => {
+          modal.querySelectorAll('.modal-tab').forEach(x => x.classList.remove('active'));
+          b.classList.add('active');
+          modal.querySelectorAll('.modal-panel').forEach(p => p.classList.add('hidden'));
+          modal.querySelector('.modal-panel[data-mpanel="' + b.dataset.mtab + '"]').classList.remove('hidden');
+        });
+      });
+
+      // Image upload (banner)
+      modal.querySelector('#m_image').addEventListener('change', async (e) => {
+        if (e.target.files[0]) {
+          pendingImage = await compressImage(e.target.files[0]);
+          modal.querySelector('#m_preview').style.backgroundImage = `url('${pendingImage}')`;
+        }
+      });
+
+      // Pending media buffers (so we can save them on submit)
+      const pendingMedia = {
+        fotos: [...it.midia.fotos],
+        referencias: [...it.midia.referencias]
+      };
+
+      function refreshGallery(coll) {
+        const grid = modal.querySelector(coll === 'fotos' ? '#prev_fotos' : '#prev_ref');
+        grid.innerHTML = pendingMedia[coll].map((src, i) => `
+          <div class="media-thumb" style="background-image:url('${src}'); cursor:default;">
+            <button class="rm" data-rm-btn="${coll}" data-rm-bi="${i}" type="button">×</button>
+          </div>`).join('');
+      }
+
+      // Multi-image upload zones
+      function bindUploadZone(zoneId, inputId, coll) {
+        const zone = modal.querySelector(zoneId);
+        const input = modal.querySelector(inputId);
+        zone.addEventListener('click', () => input.click());
+        input.addEventListener('change', async () => {
+          const files = [...(input.files || [])];
+          for (const file of files) {
+            const compressed = await compressImage(file, 900, 0.75);
+            pendingMedia[coll].push(compressed);
+          }
+          input.value = '';
+          refreshGallery(coll);
+        });
+      }
+      bindUploadZone('#up_fotos', '#m_fotos_in', 'fotos');
+      bindUploadZone('#up_ref',   '#m_ref_in',   'referencias');
+
+      // Dynamic list buttons (delegation)
+      modal.addEventListener('click', (e) => {
+        if (e.target.classList.contains('le_del') ||
+            e.target.classList.contains('ll_del') ||
+            e.target.classList.contains('lv_del')) {
+          e.target.closest('.list-row').remove();
+          return;
+        }
+        if (e.target.classList.contains('rm-row')) {
+          e.target.closest('.input-row-vertical').remove();
+          return;
+        }
+        if (e.target.dataset && e.target.dataset.rmBtn) {
+          const coll = e.target.dataset.rmBtn;
+          const i = +e.target.dataset.rmBi;
+          pendingMedia[coll].splice(i, 1);
+          refreshGallery(coll);
+          return;
+        }
+        if (e.target.dataset && e.target.dataset.add) {
+          const which = e.target.dataset.add;
+          if (which === 'links') {
+            const div = document.createElement('div');
+            div.className = 'list-row';
+            div.innerHTML = `<input type="text" class="ll_label" placeholder="Rótulo" /><input type="text" class="ll_url" placeholder="https://..." /><button class="modal-btn ll_del" type="button">×</button>`;
+            modal.querySelector('#le_links').appendChild(div);
+          } else if (which === 'videos') {
+            const div = document.createElement('div');
+            div.className = 'list-row';
+            div.innerHTML = `<input type="text" class="lv_titulo" placeholder="Título" /><input type="text" class="lv_url" placeholder="https://..." /><button class="modal-btn lv_del" type="button">×</button>`;
+            modal.querySelector('#le_videos').appendChild(div);
+          } else if (which === 'cron') {
+            const div = document.createElement('div');
+            div.className = 'input-row-vertical';
+            div.innerHTML = `
+              <button class="rm-row" type="button">×</button>
+              <input type="date" class="cr_data" />
+              <input type="text" class="cr_titulo" placeholder="Título da fase" />
+              <textarea class="cr_desc" placeholder="Descrição"></textarea>`;
+            modal.querySelector('#le_cron').appendChild(div);
+          } else if (which === 'sub') {
+            const div = document.createElement('div');
+            div.className = 'input-row-vertical';
+            div.innerHTML = `
+              <button class="rm-row" type="button">×</button>
+              <input type="text" class="su_name" placeholder="Nome do subsetor" />
+              <input type="text" class="su_resp" placeholder="Responsável" />
+              <textarea class="su_desc" placeholder="Descrição"></textarea>
+              <textarea class="su_resps" placeholder="Responsabilidades (uma por linha)"></textarea>`;
+            modal.querySelector('#le_sub').appendChild(div);
+          } else {
+            const div = document.createElement('div');
+            div.className = 'list-row';
+            const ph = e.target.dataset.placeholder || '';
+            div.innerHTML = `<input type="text" class="le_input" placeholder="${ph}" /><button class="modal-btn le_del" type="button">×</button>`;
+            modal.querySelector('#le_' + which).appendChild(div);
+          }
+        }
+      });
+
+      modal.querySelector('#m_cancel').addEventListener('click', closeModal);
+      modal.querySelector('#m_save').addEventListener('click', () => {
+        function readList(name) {
+          return [...modal.querySelectorAll(`#le_${name} .le_input`)]
+            .map(i => i.value.trim())
+            .filter(Boolean);
+        }
+        function readLinks() {
+          const out = [];
+          modal.querySelectorAll('#le_links .list-row').forEach(r => {
+            const url = r.querySelector('.ll_url').value.trim();
+            if (!url) return;
+            const label = r.querySelector('.ll_label').value.trim();
+            out.push({ label, url });
+          });
+          return out;
+        }
+        const histLines = (modal.querySelector('#m_hist').value || '')
+          .split('\n').map(s => s.trim()).filter(Boolean);
+
+        function readVideos() {
+          const out = [];
+          modal.querySelectorAll('#le_videos .list-row').forEach(r => {
+            const url = r.querySelector('.lv_url').value.trim();
+            if (!url) return;
+            const titulo = r.querySelector('.lv_titulo').value.trim();
+            out.push({ titulo, url });
+          });
+          return out;
+        }
+        function readCronograma() {
+          const out = [];
+          modal.querySelectorAll('#le_cron .input-row-vertical').forEach(r => {
+            const titulo = r.querySelector('.cr_titulo').value.trim();
+            const data = r.querySelector('.cr_data').value;
+            const descricao = r.querySelector('.cr_desc').value;
+            if (!titulo && !data && !descricao) return;
+            out.push({ data, titulo, descricao });
+          });
+          return out;
+        }
+        function readSubitens() {
+          const out = [];
+          modal.querySelectorAll('#le_sub .input-row-vertical').forEach(r => {
+            const name = r.querySelector('.su_name').value.trim();
+            const responsavel = r.querySelector('.su_resp').value.trim();
+            const descricao = r.querySelector('.su_desc').value;
+            const respsTxt = r.querySelector('.su_resps').value || '';
+            const responsabilidades = respsTxt.split('\n').map(s => s.trim()).filter(Boolean);
+            if (!name && !descricao && !responsavel && !responsabilidades.length) return;
+            out.push({ id: genId(), name, responsavel, descricao, responsabilidades });
+          });
+          return out;
+        }
+
+        const updated = {
+          id: it.id,
+          name: modal.querySelector('#m_name').value.trim(),
+          image: pendingImage,
+          categoria: modal.querySelector('#m_cat').value.trim(),
+          descricao: modal.querySelector('#m_desc').value,
+          inclui: readList('inclui'),
+          publico: modal.querySelector('#m_publico').value.trim(),
+          data: modal.querySelector('#m_data').value,
+          periodo: modal.querySelector('#m_periodo').value.trim(),
+          responsavel: modal.querySelector('#m_resp').value.trim(),
+          subitens: readSubitens(),
+          financeiro: {
+            faturamento: Number(modal.querySelector('#m_fat').value) || 0,
+            custos:      Number(modal.querySelector('#m_cus').value) || 0,
+            ticket_medio:Number(modal.querySelector('#m_tic').value) || 0,
+            custo_implementacao: modal.querySelector('#m_custo_impl').value
+          },
+          performance: {
+            vendas_mes:  Number(modal.querySelector('#m_vendas').value) || 0,
+            crescimento: Number(modal.querySelector('#m_cresc').value)  || 0,
+            clientes:    Number(modal.querySelector('#m_cli').value)    || 0,
+            historico:   histLines
+          },
+          operacao: {
+            fornecedores: readList('fornecedores'),
+            estrutura:    modal.querySelector('#m_estr').value,
+            etapas:       readList('etapas'),
+            observacoes:  modal.querySelector('#m_obs').value
+          },
+          marketing: {
+            estrategia: modal.querySelector('#m_mkt_estrat').value,
+            canais:     readList('canais')
+          },
+          midia: {
+            fotos:       pendingMedia.fotos,
+            referencias: pendingMedia.referencias,
+            videos:      readVideos(),
+            video_ia:    modal.querySelector('#m_video_ia').value.trim()
+          },
+          cronograma: readCronograma(),
+          documentos: {
+            link_principal:    modal.querySelector('#m_doc_main').value.trim(),
+            links_adicionais:  readLinks()
+          }
+        };
+        updated.description = updated.descricao; // backwards-compat
+
+        let savedIdx = idx;
+        if (editing) list[idx] = updated;
+        else { list.push(updated); savedIdx = list.length - 1; }
+        saveData();
+        closeModal();
+        modal.className = 'modal'; // reset
+        showToast(editing ? 'ITEM ATUALIZADO' : 'ITEM CRIADO');
+        if (currentView === 'item') showItem(topicData, kind, savedIdx);
+        else showTopic(currentTopic);
+      });
+    }
+
+    function openBannerEditor(topicData) {
+      const b = topicData.banner;
+      const iconsHtml = (b.icons || []).map((ic, i) => `
+        <div style="display:flex; gap:8px; align-items:center; margin-top:8px; padding:8px; border:1px solid rgba(245,184,66,0.25); border-radius:8px;">
+          <div style="width:60px; height:40px; background:#111 ${ic.image ? `url('${ic.image}')` : ''} center/cover; border:1px solid var(--gold); border-radius:6px;"></div>
+          <input type="text" data-icon-idx="${i}" class="ic_label" value="${escapeHtml(ic.label || '')}" placeholder="Rótulo" style="flex:1;" />
+          <input type="file" data-icon-idx="${i}" class="ic_file" accept="image/*" style="max-width:120px;" />
+          <button class="modal-btn" data-icon-remove="${i}">×</button>
+        </div>
+      `).join('');
+      modal.innerHTML = `
+        <h3>EDITAR BANNER</h3>
+        <label>TÍTULO</label>
+        <input type="text" id="b_title" value="${escapeHtml(b.title || '')}" />
+        <label>IMAGEM DE FUNDO</label>
+        <input type="file" id="b_image" accept="image/*" />
+        <div class="preview-img" id="b_preview" style="${b.image ? `background-image:url('${b.image}')` : ''}"></div>
+        <label>ÍCONES (canto superior direito)</label>
+        <div id="b_icons">${iconsHtml}</div>
+        <button class="modal-btn" id="b_addIcon" style="margin-top:10px;">+ ADICIONAR ÍCONE</button>
+        <div class="modal-actions">
+          <button class="modal-btn" id="b_cancel">CANCELAR</button>
+          <button class="modal-btn primary" id="b_save">SALVAR</button>
+        </div>
+      `;
+      modalOverlay.classList.add('active');
+      let pendingBgImage = b.image || '';
+      const iconImageBuffers = (b.icons || []).map(ic => ic.image || '');
+
+      modal.querySelector('#b_image').addEventListener('change', async (e) => {
+        if (e.target.files[0]) {
+          pendingBgImage = await compressImage(e.target.files[0]);
+          modal.querySelector('#b_preview').style.backgroundImage = `url('${pendingBgImage}')`;
+        }
+      });
+
+      modal.querySelectorAll('.ic_file').forEach(inp => {
+        inp.addEventListener('change', async (e) => {
+          const i = +inp.dataset.iconIdx;
+          if (e.target.files[0]) {
+            iconImageBuffers[i] = await compressImage(e.target.files[0], 400, 0.8);
+          }
+        });
+      });
+      modal.querySelectorAll('[data-icon-remove]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = +btn.dataset.iconRemove;
+          b.icons.splice(i, 1);
+          iconImageBuffers.splice(i, 1);
+          openBannerEditor(topicData);
+        });
+      });
+      modal.querySelector('#b_addIcon').addEventListener('click', () => {
+        b.icons = b.icons || [];
+        b.icons.push({ label: '', image: '' });
+        openBannerEditor(topicData);
+      });
+
+      modal.querySelector('#b_cancel').addEventListener('click', closeModal);
+      modal.querySelector('#b_save').addEventListener('click', () => {
+        b.title = modal.querySelector('#b_title').value.trim();
+        b.image = pendingBgImage;
+        b.icons = (b.icons || []).map((ic, i) => ({
+          label: modal.querySelector(`.ic_label[data-icon-idx="${i}"]`).value.trim(),
+          image: iconImageBuffers[i] || ''
+        }));
+        saveData();
+        closeModal();
+        showTopic(currentTopic);
+      });
+    }
+
+    /* =====================  KEYBOARD  ===================== */
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (modalOverlay.classList.contains('active')) closeModal();
+        else backBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>
