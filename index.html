@@ -5724,6 +5724,85 @@
   }
 
   /* ============================================================ */
+  /* FORMAT PICKER · escolha entre Padrão e Pacotes no modal       */
+  /* ============================================================ */
+  .format-picker {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .format-opt {
+    display: block;
+    cursor: pointer;
+    margin: 0 !important;
+  }
+  .format-opt input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .format-card {
+    padding: 14px;
+    border: 1.5px solid rgba(255,255,255,.12);
+    border-radius: 12px;
+    background: rgba(255,255,255,.025);
+    transition: all .18s ease;
+    height: 100%;
+  }
+  .format-opt:hover .format-card {
+    border-color: rgba(245,184,66,.35);
+    background: rgba(245,184,66,.04);
+  }
+  .format-opt.active .format-card,
+  .format-opt input:checked ~ .format-card,
+  .format-opt:has(input:checked) .format-card {
+    border-color: rgba(245,184,66,.7);
+    background: linear-gradient(135deg, rgba(245,184,66,.18), rgba(245,184,66,.04));
+    box-shadow: 0 6px 22px -8px rgba(245,184,66,.4);
+  }
+  .format-ico {
+    font-size: 22px;
+    margin-bottom: 6px;
+  }
+  .format-name {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: #fff;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .format-badge {
+    background: linear-gradient(135deg, #E6C77A, #C6A85A);
+    color: #1a140a;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 8px;
+    letter-spacing: 1px;
+    font-weight: 800;
+  }
+  .format-desc {
+    font-size: 10px;
+    line-height: 1.4;
+    color: rgba(255,255,255,.55);
+    letter-spacing: .3px;
+  }
+  .format-card.premium {
+    background: linear-gradient(135deg, rgba(245,184,66,.06), rgba(255,255,255,.01));
+    border-color: rgba(245,184,66,.22);
+  }
+  @container fly-vp (max-width: 640px) {
+    .format-picker { grid-template-columns: 1fr; gap: 8px; }
+    .format-card { padding: 12px; }
+    .format-name { font-size: 12px; }
+    .format-desc { font-size: 10px; }
+  }
+
+  /* ============================================================ */
   /* ============   📱 IPHONE / MOBILE OPTIMIZATION  ============ */
   /* ============================================================ */
   /* iOS safe-area + tap behavior */
@@ -6184,6 +6263,99 @@
     .dbx-add-card .ico { font-size: 20px; }
     .dbx-add-card .lbl { font-size: 10px; }
     .dbx-add-row { padding: 10px; font-size: 11px; }
+
+    /* DBX list rows (Hotel, Transporte, etc.) – padding extra à direita
+       para que valores não fiquem cobertos pelos botões de ação na tela touch */
+    .dbx-list-row { padding-right: 70px !important; padding-left: 12px !important; flex-wrap: wrap; gap: 4px; font-size: 11px !important; }
+    .dbx-list-row span { font-size: 11px; }
+    .dbx-list-row strong { font-size: 12px; }
+    .dbx-list-row .dbx-card-actions { top: 50% !important; transform: translateY(-50%); right: 6px !important; gap: 3px; }
+    .dbx-list-row .dbx-act-btn { width: 24px !important; height: 24px !important; font-size: 10px; }
+    .dbx-list-total { padding: 12px 14px !important; font-size: 12px; }
+    .dbx-list-total span:last-child, .dbx-list-total strong { font-size: 14px; }
+
+    /* Block headers — botão ADICIONAR vai pra baixo do título no mobile */
+    .dbx-block-head {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 8px !important;
+    }
+    .dbx-block-head h3 { font-size: 13px !important; line-height: 1.3; padding-right: 0 !important; }
+    .dbx-block-head .dbx-block-actions,
+    .dbx-block-head .dbx-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .dbx-block-head .dbx-mini-btn { padding: 6px 10px !important; font-size: 9px !important; }
+    /* Header geral do painel */
+    .dbx-panel-head {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 10px;
+    }
+    .dbx-panel-head h2 { font-size: 14px !important; line-height: 1.3; }
+    .dbx-panel-head .dbx-actions { flex-wrap: wrap; gap: 6px; }
+    .dbx-panel-head .dbx-btn { padding: 7px 12px; font-size: 10px; }
+
+    /* Hero KPIs ainda mais compactos no mobile */
+    .dbx-hero { height: 200px !important; }
+    .dbx-hero-content h1 { font-size: 22px !important; }
+    .dbx-meta { font-size: 10px; gap: 8px; }
+    .dbx-meta .dot { display: inline-block; }
+
+    /* Cards de experiências/passeios/equipe em 2 colunas */
+    .dbx-cards-grid,
+    .dbx-exp-grid,
+    .dbx-team-grid {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 8px !important;
+    }
+    .dbx-card,
+    .dbx-exp-card {
+      padding: 12px 8px !important;
+      text-align: center;
+    }
+    .dbx-exp-card .icon,
+    .dbx-exp-card .ico,
+    .dbx-card .icon,
+    .dbx-card .ico {
+      font-size: 24px !important;
+      margin-bottom: 4px !important;
+    }
+    .dbx-exp-card .nome,
+    .dbx-card h4,
+    .dbx-card .name,
+    .dbx-card .nome { font-size: 11px !important; line-height: 1.2; letter-spacing: .5px; }
+    .dbx-exp-card .desc,
+    .dbx-card .role,
+    .dbx-card .desc,
+    .dbx-card .meta { font-size: 9px !important; line-height: 1.3; }
+
+    /* Inclusos / Itens em row vertical */
+    .dbx-inc-row, .dbx-art-row, .dbx-rot-row, .dbx-origem-row {
+      grid-template-columns: 1fr !important;
+      padding-right: 70px !important;
+      gap: 4px !important;
+    }
+    .dbx-rot-row > *, .dbx-inc-row > *, .dbx-art-row > *, .dbx-origem-row > * {
+      font-size: 11px !important;
+    }
+    .dbx-rot-row > *:first-child,
+    .dbx-inc-row > *:first-child,
+    .dbx-art-row > *:first-child,
+    .dbx-origem-row > *:first-child {
+      font-weight: 600 !important;
+      color: #E6C77A !important;
+    }
+
+    /* Action buttons compactos no DBX */
+    .dbx-act-btn { width: 26px; height: 26px; font-size: 11px; }
+
+    /* Painéis com scroll horizontal pra tabelas grandes */
+    .dbx-panel { overflow-x: hidden; }
+    .dbx-block { overflow: hidden; }
+
+    /* Alertas */
+    .dbx-alert { padding: 12px !important; }
+    .dbx-alert h4 { font-size: 11px !important; }
+    .dbx-alert p { font-size: 11px !important; line-height: 1.4; }
 
     /* DBX modal */
     .dbx-modal {
@@ -9691,6 +9863,7 @@
         image: '',
         categoria: '',
         folder: '',
+        format: 'default', // 'default' | 'pacotes' — formato de painel quando aberto
         descricao: '',
         inclui: [],
         publico: '',
@@ -9713,6 +9886,7 @@
       it.id = it.id || base.id;
       it.categoria = it.categoria || '';
       it.folder = it.folder || '';
+      it.format = (it.format === 'pacotes' || it.format === 'default') ? it.format : 'default';
       it.descricao = it.descricao || '';
       it.inclui = Array.isArray(it.inclui) ? it.inclui : [];
       it.publico = it.publico || '';
@@ -9920,6 +10094,12 @@
     function loadDubaiExplorer(item) {
       if (!item.dubai) {
         item.dubai = JSON.parse(JSON.stringify(DUBAI_EXPLORER_DEFAULTS));
+        // Para itens que NÃO são o "DUBAI EXPLORER" original, usa o nome do item
+        // como nome do produto (ex: BILLIONAIRE, DUBAI GTA, DUBAI IN LOVE, DUBAI FAMILY)
+        const isOriginalDubai = ((item.name || '').toUpperCase() === 'DUBAI EXPLORER');
+        if (!isOriginalDubai && item.name) {
+          item.dubai.produto.nome = item.name;
+        }
         try { saveData(); } catch (e) {}
       }
       // Mescla defaults para campos novos que possam ter aparecido após updates
@@ -10118,7 +10298,8 @@
       itemView.innerHTML = '';
       const back = document.createElement('div');
       back.className = 'hier-back-bar';
-      back.innerHTML = `<button class="apple-btn" id="dbx-back"><span class="apple-icon">←</span><span>Voltar para PRODUTOS</span></button>`;
+      const topicName = (currentTopic && currentTopic.key) ? currentTopic.key : 'PRODUTOS';
+      back.innerHTML = `<button class="apple-btn" id="dbx-back"><span class="apple-icon">←</span><span>Voltar para ${escapeHtml(topicName)}</span></button>`;
       itemView.appendChild(back);
       back.querySelector('#dbx-back').addEventListener('click', () => {
         switchTo('topic');
@@ -11512,10 +11693,14 @@
           return;
         }
       }
-      // Premium item modules — DUBAI EXPLORER inside PRODUTOS
-      if (currentTopic && currentTopic.key === 'PRODUTOS' && kind === 'item') {
+      // Premium item modules — formato PACOTES (Dubai Explorer-style)
+      // Aplica-se a:
+      //   1. Itens com format === 'pacotes' (qualquer tópico)
+      //   2. Item legado "DUBAI EXPLORER" dentro de PRODUTOS (compatibilidade)
+      if (kind === 'item') {
         const upper = (it.name || '').toUpperCase();
-        if (upper === 'DUBAI EXPLORER') {
+        const isLegacyDubai = (currentTopic && currentTopic.key === 'PRODUTOS' && upper === 'DUBAI EXPLORER');
+        if (it.format === 'pacotes' || isLegacyDubai) {
           renderDubaiExplorerItemView(it, topicData, idx);
           switchTo('item');
           return;
@@ -12059,6 +12244,25 @@
         <div class="modal-panel" data-mpanel="geral">
           <label>NOME DO PRODUTO</label>
           <input type="text" id="m_name" value="${escapeHtml(it.name || '')}" />
+          <label>🎨 FORMATO DE PAINEL</label>
+          <div class="format-picker">
+            <label class="format-opt ${(it.format || 'default') === 'default' ? 'active' : ''}">
+              <input type="radio" name="m_format" value="default" ${(it.format || 'default') === 'default' ? 'checked' : ''}>
+              <div class="format-card">
+                <div class="format-ico">📄</div>
+                <div class="format-name">Padrão</div>
+                <div class="format-desc">Hub completo · subsetores · financeiro · operação · mídia · cronograma</div>
+              </div>
+            </label>
+            <label class="format-opt ${it.format === 'pacotes' ? 'active' : ''}">
+              <input type="radio" name="m_format" value="pacotes" ${it.format === 'pacotes' ? 'checked' : ''}>
+              <div class="format-card premium">
+                <div class="format-ico">💎</div>
+                <div class="format-name">Pacotes <span class="format-badge">PREMIUM</span></div>
+                <div class="format-desc">Mesmo painel do Dubai Explorer · 12 abas (Produto · Custos · Operação · Equipe · Clientes · Vendas · Marketing · Análise · Retenção · Upsell · Conteúdo · Alertas)</div>
+              </div>
+            </label>
+          </div>
           <label>CATEGORIA</label>
           <input type="text" id="m_cat" value="${escapeHtml(it.categoria || '')}" />
           <label>📁 PASTA (deixe vazio para nenhuma)</label>
@@ -12227,6 +12431,14 @@
         }
       });
 
+      // Format picker — toggle .active visual state quando muda radio
+      modal.querySelectorAll('input[name="m_format"]').forEach(r => {
+        r.addEventListener('change', () => {
+          modal.querySelectorAll('.format-opt').forEach(o => o.classList.remove('active'));
+          r.closest('.format-opt')?.classList.add('active');
+        });
+      });
+
       // Pending media buffers (so we can save them on submit)
       const pendingMedia = {
         fotos: [...it.midia.fotos],
@@ -12374,12 +12586,17 @@
           return out;
         }
 
+        const formatRadio = modal.querySelector('input[name="m_format"]:checked');
+        const chosenFormat = (formatRadio && formatRadio.value === 'pacotes') ? 'pacotes' : 'default';
         const updated = {
           id: it.id,
           name: modal.querySelector('#m_name').value.trim(),
           image: pendingImage,
           categoria: modal.querySelector('#m_cat').value.trim(),
           folder:    (modal.querySelector('#m_folder')?.value || '').trim(),
+          format:    chosenFormat,
+          // Preservar dubai data quando já existir (mantém edits que o user fez no painel Pacotes)
+          dubai:     it.dubai,
           descricao: modal.querySelector('#m_desc').value,
           inclui: readList('inclui'),
           publico: modal.querySelector('#m_publico').value.trim(),
