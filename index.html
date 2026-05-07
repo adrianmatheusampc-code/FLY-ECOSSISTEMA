@@ -1627,6 +1627,38 @@
     color: #000;
   }
 
+  /* PIN buttons (trocar/bloquear) — só aparecem em ADMIN ON */
+  .pin-change-btn,
+  .pin-lock-btn {
+    position: fixed;
+    top: 24px;
+    z-index: 100;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(245,184,66,0.35);
+    color: var(--gold);
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s;
+  }
+  .pin-change-btn:hover,
+  .pin-lock-btn:hover {
+    background: rgba(245,184,66,0.15);
+    border-color: rgba(245,184,66,0.6);
+    transform: translateY(-1px);
+  }
+  body.admin-mode .pin-change-btn,
+  body.admin-mode .pin-lock-btn { display: inline-flex; }
+  .pin-change-btn { right: 168px; }
+  .pin-lock-btn   { right: 216px; }
+
   /* ================================================ */
   /* VIEW MODE TOGGLE (Desktop / Mobile)              */
   /* ================================================ */
@@ -1754,6 +1786,187 @@
       gap: 6px;
     }
     .sync-status .sync-dot { width: 7px; height: 7px; }
+  }
+
+  /* ================================================ */
+  /* PIN GATE · tela de bloqueio antes do app abrir   */
+  /* ================================================ */
+  body.fly-locked > *:not(.pin-gate-overlay):not(script) {
+    filter: blur(28px) brightness(.4);
+    pointer-events: none !important;
+    user-select: none;
+  }
+  .pin-gate-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(245,184,66,.08), transparent 60%),
+      rgba(0,0,0,.92);
+    backdrop-filter: blur(20px);
+    padding: 24px;
+    animation: pinGateFadeIn .35s ease;
+  }
+  @keyframes pinGateFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .pin-gate-modal {
+    width: 100%;
+    max-width: 380px;
+    padding: 36px 32px 28px;
+    border-radius: 24px;
+    background: linear-gradient(180deg, #1a1612 0%, #0c0a08 100%);
+    border: 1px solid rgba(245,184,66,.28);
+    box-shadow:
+      0 30px 80px -10px rgba(0,0,0,.85),
+      0 0 0 1px rgba(245,184,66,.06) inset,
+      0 0 60px rgba(245,184,66,.08);
+    text-align: center;
+    animation: pinGateUp .45s cubic-bezier(.2,.7,.2,1.1);
+    position: relative;
+    overflow: hidden;
+  }
+  .pin-gate-modal::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(245,184,66,.5), transparent);
+  }
+  @keyframes pinGateUp {
+    from { opacity: 0; transform: translateY(20px) scale(.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .pin-gate-modal.shake {
+    animation: pinShake .4s cubic-bezier(.4,0,.2,1);
+  }
+  @keyframes pinShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+  }
+  .pin-gate-logo {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 35%, #1c1c1c, #060606);
+    border: 1px solid rgba(245,184,66,.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+      0 0 28px rgba(245,184,66,.4),
+      inset 0 0 24px rgba(0,0,0,.8);
+  }
+  .pin-gate-logo img { width: 48px; height: auto; }
+  .pin-gate-modal h2 {
+    margin: 0 0 6px;
+    font-size: 20px;
+    letter-spacing: 4px;
+    color: #fff;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .pin-gate-sub {
+    margin: 0 0 24px;
+    font-size: 11px;
+    line-height: 1.5;
+    letter-spacing: .5px;
+    color: rgba(255,255,255,.55);
+  }
+  .pin-gate-modal label {
+    display: block;
+    text-align: left;
+    margin: 14px 0 6px;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(245,184,66,.7);
+    font-weight: 600;
+  }
+  .pin-gate-input {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(245,184,66,.22);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 16px;
+    font-family: inherit;
+    letter-spacing: 6px;
+    text-align: center;
+    transition: all .15s;
+  }
+  .pin-gate-input:focus {
+    outline: none;
+    border-color: rgba(245,184,66,.6);
+    background: rgba(245,184,66,.05);
+    box-shadow: 0 0 0 3px rgba(245,184,66,.1);
+  }
+  .pin-gate-error {
+    margin-top: 10px;
+    font-size: 11px;
+    color: #ff8a8a;
+    letter-spacing: .5px;
+    min-height: 14px;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .pin-gate-actions {
+    margin-top: 22px;
+  }
+  .pin-gate-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 3px;
+    font-weight: 800;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 0;
+    transition: all .15s;
+  }
+  .pin-gate-btn.primary {
+    background: linear-gradient(180deg, #FFE099 0%, #E6C77A 50%, #C6A85A 100%);
+    color: #1a1000;
+    box-shadow: 0 6px 20px rgba(230,199,122,.4);
+    text-shadow: 0 1px 0 rgba(255,255,255,.18);
+  }
+  .pin-gate-btn.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 28px rgba(230,199,122,.55);
+    filter: brightness(1.08);
+  }
+  .pin-gate-btn.primary:active { transform: translateY(0); filter: brightness(.95); }
+  .pin-gate-link {
+    margin-top: 14px;
+    background: transparent;
+    border: 0;
+    color: rgba(255,255,255,.45);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color .15s;
+  }
+  .pin-gate-link:hover { color: rgba(245,184,66,.8); }
+
+  @container fly-vp (max-width: 640px) {
+    .pin-gate-modal { padding: 28px 22px 22px; max-width: 340px; }
+    .pin-gate-logo { width: 64px; height: 64px; margin-bottom: 14px; }
+    .pin-gate-logo img { width: 38px; }
+    .pin-gate-modal h2 { font-size: 16px; letter-spacing: 3px; }
+    .pin-gate-sub { font-size: 10px; }
   }
 
   .edit-banner-btn {
@@ -6576,6 +6789,8 @@
   <div id="brandLogo"><img src="assets/fly-logo-white.svg" alt="FLY"><span class="eco-label">ECOSSISTEMA FLY</span></div>
   <button class="back-btn" id="backBtn">← VOLTAR</button>
   <button class="admin-toggle" id="adminToggle">ADMIN</button>
+  <button class="pin-change-btn" id="pinChangeBtn" title="Trocar PIN de acesso">🔑</button>
+  <button class="pin-lock-btn" id="pinLockBtn" title="Bloquear agora">🔒</button>
   <button class="view-mode-toggle" id="viewModeToggle" title="Alternar Desktop/Mobile" data-mode="desktop">
     <span class="vm-ico">🖥</span><span class="vm-lbl">DESKTOP</span>
   </button>
@@ -6674,6 +6889,197 @@
     }
 
     function safeJSONParse(s) { try { return JSON.parse(s); } catch (e) { return null; } }
+
+    /* =====================  PIN GATE (LAYER 1)  ===================== */
+    // Bloqueio com PIN antes do app abrir.
+    // - Hash SHA-256 do PIN guardado em Supabase (key='fly_admin_pin_hash')
+    // - Sessão desbloqueada por 4h em sessionStorage
+    // - 5 tentativas erradas → bloqueia 30s
+    const FLY_PIN_KEY = 'fly_admin_pin_hash';
+    const FLY_UNLOCK_KEY = 'fly_unlocked_until'; // sessionStorage timestamp
+    const FLY_FAILS_KEY = 'fly_pin_fails'; // sessionStorage count
+    const FLY_LOCK_KEY  = 'fly_pin_locked_until'; // sessionStorage timestamp
+
+    async function sha256(text) {
+      const buf = new TextEncoder().encode(text);
+      const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+      return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function isUnlockedNow() {
+      const t = parseInt(sessionStorage.getItem(FLY_UNLOCK_KEY) || '0', 10);
+      return t > Date.now();
+    }
+    function markUnlocked() {
+      sessionStorage.setItem(FLY_UNLOCK_KEY, String(Date.now() + 4 * 60 * 60 * 1000)); // 4h
+      sessionStorage.removeItem(FLY_FAILS_KEY);
+      sessionStorage.removeItem(FLY_LOCK_KEY);
+    }
+
+    async function fetchPinHashFromSupabase() {
+      if (!supaClient) return null;
+      try {
+        const { data } = await supaClient.from('fly_kv').select('value').eq('key', FLY_PIN_KEY).maybeSingle();
+        return data?.value?.hash || null;
+      } catch (e) { return null; }
+    }
+    async function savePinHashToSupabase(hash) {
+      if (!supaClient) throw new Error('Supabase offline');
+      const { error } = await supaClient.from('fly_kv').upsert({ key: FLY_PIN_KEY, value: { hash, updatedAt: Date.now() } });
+      if (error) throw error;
+    }
+
+    function buildPinOverlay({ mode, onSubmit, onChangePin }) {
+      // mode: 'enter' | 'create' | 'change'
+      const overlay = document.createElement('div');
+      overlay.className = 'pin-gate-overlay';
+      const titles = {
+        enter:  { title: 'Acesso Restrito', sub: 'Digite o PIN pra acessar o ECOSSISTEMA FLY', btn: 'Desbloquear' },
+        create: { title: 'Configurar PIN',  sub: 'Crie um PIN seguro (4 a 32 caracteres) — você usará pra entrar daqui em diante', btn: 'Criar PIN' },
+        change: { title: 'Trocar PIN',      sub: 'Digite o PIN atual e o novo PIN', btn: 'Salvar' }
+      }[mode];
+      overlay.innerHTML = `
+        <div class="pin-gate-modal">
+          <div class="pin-gate-logo"><img src="assets/fly-logo-white.svg" alt="FLY"></div>
+          <h2>${titles.title}</h2>
+          <p class="pin-gate-sub">${titles.sub}</p>
+          ${mode === 'change' ? `
+            <label>PIN atual</label>
+            <input type="password" class="pin-gate-input" id="pinCurrent" autocomplete="off" maxlength="32">
+          ` : ''}
+          <label>${mode === 'change' ? 'Novo PIN' : 'PIN'}</label>
+          <input type="password" class="pin-gate-input" id="pinInput" autocomplete="off" maxlength="32" autofocus>
+          ${mode !== 'enter' ? `
+            <label>Confirmar PIN</label>
+            <input type="password" class="pin-gate-input" id="pinConfirm" autocomplete="off" maxlength="32">
+          ` : ''}
+          <div class="pin-gate-error" id="pinError"></div>
+          <div class="pin-gate-actions">
+            <button class="pin-gate-btn primary" id="pinSubmit" type="button">${titles.btn}</button>
+          </div>
+          ${mode === 'enter' ? `
+            <button class="pin-gate-link" id="pinForgot" type="button">Esqueci o PIN</button>
+          ` : ''}
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      const inp = overlay.querySelector('#pinInput');
+      setTimeout(() => inp?.focus(), 60);
+      const showErr = (msg) => {
+        const el = overlay.querySelector('#pinError');
+        el.textContent = msg || '';
+        el.style.opacity = msg ? '1' : '0';
+        if (msg) {
+          const modal = overlay.querySelector('.pin-gate-modal');
+          modal.classList.add('shake');
+          setTimeout(() => modal.classList.remove('shake'), 400);
+        }
+      };
+      overlay.querySelector('#pinSubmit').addEventListener('click', async () => {
+        await onSubmit({ overlay, showErr });
+      });
+      [overlay.querySelector('#pinInput'), overlay.querySelector('#pinConfirm'), overlay.querySelector('#pinCurrent')]
+        .filter(Boolean)
+        .forEach(el => el.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter') { ev.preventDefault(); overlay.querySelector('#pinSubmit').click(); }
+        }));
+      const forgot = overlay.querySelector('#pinForgot');
+      if (forgot) forgot.addEventListener('click', () => {
+        if (confirm('Recuperação só pode ser feita resetando o PIN no Supabase (apaga linha fly_admin_pin_hash da tabela fly_kv). Essa operação requer acesso ao Supabase Studio. Quer prosseguir mesmo assim?')) {
+          alert('Vai em https://supabase.com/dashboard → seu projeto → Table Editor → fly_kv → apaga a linha com key="fly_admin_pin_hash" → recarrega aqui.');
+        }
+      });
+      return overlay;
+    }
+
+    async function runPinGate() {
+      // Se já está desbloqueado nesta sessão, libera
+      if (isUnlockedNow()) return true;
+      // Se Supabase não conectou, libera (modo offline = sem PIN)
+      if (!supaClient) return true;
+
+      const storedHash = await fetchPinHashFromSupabase();
+      if (!storedHash) {
+        // Primeira vez — usuário cria PIN
+        return new Promise((resolve) => {
+          const ov = buildPinOverlay({
+            mode: 'create',
+            onSubmit: async ({ overlay, showErr }) => {
+              const pin = overlay.querySelector('#pinInput').value;
+              const conf = overlay.querySelector('#pinConfirm').value;
+              if (pin.length < 4) return showErr('PIN precisa ter pelo menos 4 caracteres');
+              if (pin !== conf) return showErr('PINs não coincidem');
+              try {
+                const h = await sha256(pin);
+                await savePinHashToSupabase(h);
+                markUnlocked();
+                overlay.remove();
+                resolve(true);
+              } catch (e) {
+                showErr('Erro ao salvar — tente novamente');
+              }
+            }
+          });
+        });
+      } else {
+        // Já tem PIN — pede pra entrar
+        return new Promise((resolve) => {
+          const lockUntil = parseInt(sessionStorage.getItem(FLY_LOCK_KEY) || '0', 10);
+          const ov = buildPinOverlay({
+            mode: 'enter',
+            onSubmit: async ({ overlay, showErr }) => {
+              const lockUntilNow = parseInt(sessionStorage.getItem(FLY_LOCK_KEY) || '0', 10);
+              if (lockUntilNow > Date.now()) {
+                const secs = Math.ceil((lockUntilNow - Date.now()) / 1000);
+                return showErr(`Muitas tentativas. Aguarde ${secs}s.`);
+              }
+              const pin = overlay.querySelector('#pinInput').value;
+              const h = await sha256(pin);
+              if (h === storedHash) {
+                markUnlocked();
+                overlay.remove();
+                resolve(true);
+              } else {
+                const fails = (parseInt(sessionStorage.getItem(FLY_FAILS_KEY) || '0', 10) || 0) + 1;
+                sessionStorage.setItem(FLY_FAILS_KEY, String(fails));
+                if (fails >= 5) {
+                  sessionStorage.setItem(FLY_LOCK_KEY, String(Date.now() + 30 * 1000));
+                  showErr('5 tentativas erradas — bloqueado por 30s');
+                } else {
+                  showErr(`PIN incorreto (${fails}/5)`);
+                }
+                overlay.querySelector('#pinInput').value = '';
+              }
+            }
+          });
+        });
+      }
+    }
+
+    async function changePinFlow() {
+      const storedHash = await fetchPinHashFromSupabase();
+      if (!storedHash) { alert('Nenhum PIN configurado ainda.'); return; }
+      return new Promise((resolve) => {
+        buildPinOverlay({
+          mode: 'change',
+          onSubmit: async ({ overlay, showErr }) => {
+            const cur = overlay.querySelector('#pinCurrent').value;
+            const np = overlay.querySelector('#pinInput').value;
+            const conf = overlay.querySelector('#pinConfirm').value;
+            if ((await sha256(cur)) !== storedHash) return showErr('PIN atual incorreto');
+            if (np.length < 4) return showErr('Novo PIN precisa ter pelo menos 4 caracteres');
+            if (np !== conf) return showErr('Novo PIN não coincide');
+            try {
+              await savePinHashToSupabase(await sha256(np));
+              overlay.remove();
+              alert('PIN alterado com sucesso ✓');
+              resolve(true);
+            } catch (e) { showErr('Erro ao salvar — tente novamente'); }
+          }
+        });
+      });
+    }
+    window.changeFlyPin = changePinFlow; // facilita debug e botão
 
     async function initSupabase() {
       if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
@@ -12397,23 +12803,39 @@
       }, 150);
     });
 
-    /* =====================  SUPABASE INIT  ===================== */
-    // Espera o SDK carregar (ele é UMD via <script> antes deste bloco) e
-    // dispara o pull inicial. Se não houver SDK ou rede, app continua local-only.
-    function bootSupabase() {
+    /* =====================  PIN BUTTONS WIRING  ===================== */
+    const pinChangeBtn = document.getElementById('pinChangeBtn');
+    if (pinChangeBtn) pinChangeBtn.addEventListener('click', () => changePinFlow());
+    const pinLockBtn = document.getElementById('pinLockBtn');
+    if (pinLockBtn) pinLockBtn.addEventListener('click', () => {
+      sessionStorage.removeItem('fly_unlocked_until');
+      location.reload();
+    });
+
+    /* =====================  SUPABASE + PIN GATE INIT  ===================== */
+    // Espera o SDK carregar, conecta no Supabase, e roda o gate de PIN antes
+    // de liberar o app. Em caso de offline, libera direto (cache local).
+    async function bootSupabase() {
       // Aguarda SDK estar disponível por até ~3s
       let attempts = 0;
-      const tick = () => {
-        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-          initSupabase();
-          // Botões/toggles que dependem de re-render serão chamados pelo próprio initSupabase
-        } else if (attempts++ < 30) {
-          setTimeout(tick, 100);
-        } else {
-          setSyncStatus('offline', 'Offline · cache');
-        }
-      };
-      tick();
+      await new Promise((resolve) => {
+        const tick = () => {
+          if (typeof window.supabase !== 'undefined' && window.supabase.createClient) resolve(true);
+          else if (attempts++ < 30) setTimeout(tick, 100);
+          else resolve(false);
+        };
+        tick();
+      });
+
+      // Tenta conectar
+      const ok = await initSupabase();
+
+      // Se conectou, roda o gate de PIN
+      if (ok) {
+        document.body.classList.add('fly-locked');
+        const unlocked = await runPinGate();
+        if (unlocked) document.body.classList.remove('fly-locked');
+      }
     }
     bootSupabase();
 
