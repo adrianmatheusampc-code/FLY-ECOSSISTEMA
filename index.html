@@ -1977,6 +1977,15 @@
   /* ================================================ */
   /* FLY DESIGN EDITOR · highlight + popover         */
   /* ================================================ */
+  /* Em ADMIN, libera clique nos elementos que normalmente têm pointer-events: none
+     (logos decorativos do topo, logo do círculo dourado, etc.) */
+  body.admin-mode #brandLogo,
+  body.admin-mode #brandLogo img,
+  body.admin-mode #brandLogo .eco-label,
+  body.admin-mode .grid-circle .grid-fly-logo,
+  body.admin-mode [data-design-id] {
+    pointer-events: auto !important;
+  }
   body.admin-mode [data-design-id].design-editable {
     position: relative;
     cursor: pointer !important;
@@ -7532,13 +7541,13 @@
             b.classList.add('active');
           }));
         } else {
-          // Image upload preview
+          // Image upload preview — usa compressLogo (preserva PNG transparente / SVG vetorial)
           const fileIn = pop.querySelector('.fdp-file');
           const preview = pop.querySelector('#fdpPreview');
           fileIn.addEventListener('change', async () => {
             const f = fileIn.files && fileIn.files[0];
             if (!f) return;
-            const dataUrl = await compressImage(f, 1200, 0.9);
+            const dataUrl = await (typeof compressLogo === 'function' ? compressLogo(f, 1000) : compressImage(f, 1200, 0.9));
             preview.style.backgroundImage = `url('${dataUrl}')`;
             preview.dataset.newImage = dataUrl;
           });
@@ -13369,6 +13378,39 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
           resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+
+    // Versão para LOGOS — preserva PNG transparente e SVG vetorial.
+    // Usada pelo FlyDesign editor (e em qualquer upload de logo do app).
+    async function compressLogo(file, maxW = 800) {
+      if (!file) return '';
+      const name = (file.name || '').toLowerCase();
+      const isSvg = file.type === 'image/svg+xml' || name.endsWith('.svg');
+      // SVG é vetorial — devolve direto sem rasterizar
+      if (isSvg) return await fileToDataURL(file);
+      const isPng = file.type === 'image/png' || name.endsWith('.png');
+      const dataUrl = await fileToDataURL(file);
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxW / img.width);
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, w, h); // garante fundo transparente
+          ctx.drawImage(img, 0, 0, w, h);
+          // PNG preserva alpha; JPEG aplana fundo branco
+          if (isPng) {
+            resolve(canvas.toDataURL('image/png'));
+          } else {
+            resolve(canvas.toDataURL('image/jpeg', 0.92));
+          }
         };
         img.onerror = () => resolve(dataUrl);
         img.src = dataUrl;
