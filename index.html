@@ -1904,6 +1904,11 @@
     text-align: center;
     transition: all .15s;
   }
+  .pin-gate-input.pin-gate-input-text,
+  .pin-gate-input[type="email"] {
+    letter-spacing: normal;
+    text-align: left;
+  }
   .pin-gate-input:focus {
     outline: none;
     border-color: rgba(245,184,66,.6);
@@ -6890,83 +6895,51 @@
 
     function safeJSONParse(s) { try { return JSON.parse(s); } catch (e) { return null; } }
 
-    /* =====================  PIN GATE (LAYER 1)  ===================== */
-    // Bloqueio com PIN antes do app abrir.
-    // - Hash SHA-256 do PIN guardado em Supabase (key='fly_admin_pin_hash')
-    // - Sessão desbloqueada por 4h em sessionStorage
+    /* =====================  AUTH GATE (LAYER 2 · Supabase Auth)  ===================== */
+    // Login via email + senha. Sem signup público — somente o admin cria contas
+    // pelo painel do Supabase. Sessão persiste automaticamente (cookie/localStorage).
     // - 5 tentativas erradas → bloqueia 30s
-    const FLY_PIN_KEY = 'fly_admin_pin_hash';
-    const FLY_UNLOCK_KEY = 'fly_unlocked_until'; // sessionStorage timestamp
-    const FLY_FAILS_KEY = 'fly_pin_fails'; // sessionStorage count
-    const FLY_LOCK_KEY  = 'fly_pin_locked_until'; // sessionStorage timestamp
+    // - Token JWT do Supabase é incluído automaticamente em requests da API
 
-    async function sha256(text) {
-      const buf = new TextEncoder().encode(text);
-      const hashBuf = await crypto.subtle.digest('SHA-256', buf);
-      return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
+    const FLY_AUTH_FAILS_KEY = 'fly_auth_fails';
+    const FLY_AUTH_LOCK_KEY  = 'fly_auth_locked_until';
 
-    function isUnlockedNow() {
-      const t = parseInt(sessionStorage.getItem(FLY_UNLOCK_KEY) || '0', 10);
-      return t > Date.now();
-    }
-    function markUnlocked() {
-      sessionStorage.setItem(FLY_UNLOCK_KEY, String(Date.now() + 4 * 60 * 60 * 1000)); // 4h
-      sessionStorage.removeItem(FLY_FAILS_KEY);
-      sessionStorage.removeItem(FLY_LOCK_KEY);
-    }
+    let __currentSession = null;
 
-    async function fetchPinHashFromSupabase() {
+    async function getCurrentSession() {
       if (!supaClient) return null;
       try {
-        const { data } = await supaClient.from('fly_kv').select('value').eq('key', FLY_PIN_KEY).maybeSingle();
-        return data?.value?.hash || null;
+        const { data } = await supaClient.auth.getSession();
+        return data?.session || null;
       } catch (e) { return null; }
     }
-    async function savePinHashToSupabase(hash) {
-      if (!supaClient) throw new Error('Supabase offline');
-      const { error } = await supaClient.from('fly_kv').upsert({ key: FLY_PIN_KEY, value: { hash, updatedAt: Date.now() } });
-      if (error) throw error;
-    }
 
-    function buildPinOverlay({ mode, onSubmit, onChangePin }) {
-      // mode: 'enter' | 'create' | 'change'
+    function buildAuthOverlay({ onSubmit, onForgot }) {
       const overlay = document.createElement('div');
-      overlay.className = 'pin-gate-overlay';
-      const titles = {
-        enter:  { title: 'Acesso Restrito', sub: 'Digite o PIN pra acessar o ECOSSISTEMA FLY', btn: 'Desbloquear' },
-        create: { title: 'Configurar PIN',  sub: 'Crie um PIN seguro (4 a 32 caracteres) — você usará pra entrar daqui em diante', btn: 'Criar PIN' },
-        change: { title: 'Trocar PIN',      sub: 'Digite o PIN atual e o novo PIN', btn: 'Salvar' }
-      }[mode];
+      overlay.className = 'pin-gate-overlay'; // reaproveita estilos
       overlay.innerHTML = `
         <div class="pin-gate-modal">
           <div class="pin-gate-logo"><img src="assets/fly-logo-white.svg" alt="FLY"></div>
-          <h2>${titles.title}</h2>
-          <p class="pin-gate-sub">${titles.sub}</p>
-          ${mode === 'change' ? `
-            <label>PIN atual</label>
-            <input type="password" class="pin-gate-input" id="pinCurrent" autocomplete="off" maxlength="32">
-          ` : ''}
-          <label>${mode === 'change' ? 'Novo PIN' : 'PIN'}</label>
-          <input type="password" class="pin-gate-input" id="pinInput" autocomplete="off" maxlength="32" autofocus>
-          ${mode !== 'enter' ? `
-            <label>Confirmar PIN</label>
-            <input type="password" class="pin-gate-input" id="pinConfirm" autocomplete="off" maxlength="32">
-          ` : ''}
-          <div class="pin-gate-error" id="pinError"></div>
+          <h2>Acesso Restrito</h2>
+          <p class="pin-gate-sub">Faça login para acessar o ECOSSISTEMA FLY</p>
+          <label>Email</label>
+          <input type="email" class="pin-gate-input pin-gate-input-text" id="authEmail" autocomplete="username" maxlength="120" placeholder="seu@email.com">
+          <label>Senha</label>
+          <input type="password" class="pin-gate-input" id="authPassword" autocomplete="current-password" maxlength="64">
+          <div class="pin-gate-error" id="authError"></div>
           <div class="pin-gate-actions">
-            <button class="pin-gate-btn primary" id="pinSubmit" type="button">${titles.btn}</button>
+            <button class="pin-gate-btn primary" id="authSubmit" type="button">Entrar</button>
           </div>
-          ${mode === 'enter' ? `
-            <button class="pin-gate-link" id="pinForgot" type="button">Esqueci o PIN</button>
-          ` : ''}
+          <button class="pin-gate-link" id="authForgot" type="button">Esqueci a senha</button>
         </div>
       `;
       document.body.appendChild(overlay);
-      const inp = overlay.querySelector('#pinInput');
-      setTimeout(() => inp?.focus(), 60);
+      const emailInp = overlay.querySelector('#authEmail');
+      const passInp  = overlay.querySelector('#authPassword');
+      setTimeout(() => emailInp.focus(), 60);
+
       const showErr = (msg) => {
-        const el = overlay.querySelector('#pinError');
+        const el = overlay.querySelector('#authError');
         el.textContent = msg || '';
         el.style.opacity = msg ? '1' : '0';
         if (msg) {
@@ -6975,111 +6948,102 @@
           setTimeout(() => modal.classList.remove('shake'), 400);
         }
       };
-      overlay.querySelector('#pinSubmit').addEventListener('click', async () => {
-        await onSubmit({ overlay, showErr });
-      });
-      [overlay.querySelector('#pinInput'), overlay.querySelector('#pinConfirm'), overlay.querySelector('#pinCurrent')]
-        .filter(Boolean)
-        .forEach(el => el.addEventListener('keydown', (ev) => {
-          if (ev.key === 'Enter') { ev.preventDefault(); overlay.querySelector('#pinSubmit').click(); }
-        }));
-      const forgot = overlay.querySelector('#pinForgot');
-      if (forgot) forgot.addEventListener('click', () => {
-        if (confirm('Recuperação só pode ser feita resetando o PIN no Supabase (apaga linha fly_admin_pin_hash da tabela fly_kv). Essa operação requer acesso ao Supabase Studio. Quer prosseguir mesmo assim?')) {
-          alert('Vai em https://supabase.com/dashboard → seu projeto → Table Editor → fly_kv → apaga a linha com key="fly_admin_pin_hash" → recarrega aqui.');
+
+      overlay.querySelector('#authSubmit').addEventListener('click', async () => {
+        // Lock por tentativas erradas
+        const lockUntil = parseInt(sessionStorage.getItem(FLY_AUTH_LOCK_KEY) || '0', 10);
+        if (lockUntil > Date.now()) {
+          const secs = Math.ceil((lockUntil - Date.now()) / 1000);
+          return showErr(`Muitas tentativas. Aguarde ${secs}s.`);
         }
+        const email = emailInp.value.trim();
+        const password = passInp.value;
+        if (!email) return showErr('Digite seu email');
+        if (!password) return showErr('Digite a senha');
+        await onSubmit({ overlay, showErr, email, password });
       });
+
+      overlay.querySelector('#authForgot').addEventListener('click', async () => {
+        const email = emailInp.value.trim();
+        if (!email) return showErr('Digite seu email pra receber o link de recuperação');
+        await onForgot({ overlay, showErr, email });
+      });
+
+      [emailInp, passInp].forEach(el => el.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') { ev.preventDefault(); overlay.querySelector('#authSubmit').click(); }
+      }));
       return overlay;
     }
 
-    async function runPinGate() {
-      // Se já está desbloqueado nesta sessão, libera
-      if (isUnlockedNow()) return true;
-      // Se Supabase não conectou, libera (modo offline = sem PIN)
+    async function runAuthGate() {
+      // Se Supabase não conectou, libera (modo offline = sem auth)
       if (!supaClient) return true;
 
-      const storedHash = await fetchPinHashFromSupabase();
-      if (!storedHash) {
-        // Primeira vez — usuário cria PIN
-        return new Promise((resolve) => {
-          const ov = buildPinOverlay({
-            mode: 'create',
-            onSubmit: async ({ overlay, showErr }) => {
-              const pin = overlay.querySelector('#pinInput').value;
-              const conf = overlay.querySelector('#pinConfirm').value;
-              if (pin.length < 4) return showErr('PIN precisa ter pelo menos 4 caracteres');
-              if (pin !== conf) return showErr('PINs não coincidem');
-              try {
-                const h = await sha256(pin);
-                await savePinHashToSupabase(h);
-                markUnlocked();
-                overlay.remove();
-                resolve(true);
-              } catch (e) {
-                showErr('Erro ao salvar — tente novamente');
-              }
-            }
-          });
-        });
-      } else {
-        // Já tem PIN — pede pra entrar
-        return new Promise((resolve) => {
-          const lockUntil = parseInt(sessionStorage.getItem(FLY_LOCK_KEY) || '0', 10);
-          const ov = buildPinOverlay({
-            mode: 'enter',
-            onSubmit: async ({ overlay, showErr }) => {
-              const lockUntilNow = parseInt(sessionStorage.getItem(FLY_LOCK_KEY) || '0', 10);
-              if (lockUntilNow > Date.now()) {
-                const secs = Math.ceil((lockUntilNow - Date.now()) / 1000);
-                return showErr(`Muitas tentativas. Aguarde ${secs}s.`);
-              }
-              const pin = overlay.querySelector('#pinInput').value;
-              const h = await sha256(pin);
-              if (h === storedHash) {
-                markUnlocked();
-                overlay.remove();
-                resolve(true);
-              } else {
-                const fails = (parseInt(sessionStorage.getItem(FLY_FAILS_KEY) || '0', 10) || 0) + 1;
-                sessionStorage.setItem(FLY_FAILS_KEY, String(fails));
-                if (fails >= 5) {
-                  sessionStorage.setItem(FLY_LOCK_KEY, String(Date.now() + 30 * 1000));
-                  showErr('5 tentativas erradas — bloqueado por 30s');
-                } else {
-                  showErr(`PIN incorreto (${fails}/5)`);
-                }
-                overlay.querySelector('#pinInput').value = '';
-              }
-            }
-          });
-        });
+      // Se já tem sessão ativa, libera
+      const existingSession = await getCurrentSession();
+      if (existingSession) {
+        __currentSession = existingSession;
+        setSyncStatus('online', existingSession.user.email);
+        return true;
       }
-    }
 
-    async function changePinFlow() {
-      const storedHash = await fetchPinHashFromSupabase();
-      if (!storedHash) { alert('Nenhum PIN configurado ainda.'); return; }
+      // Mostra modal de login
       return new Promise((resolve) => {
-        buildPinOverlay({
-          mode: 'change',
-          onSubmit: async ({ overlay, showErr }) => {
-            const cur = overlay.querySelector('#pinCurrent').value;
-            const np = overlay.querySelector('#pinInput').value;
-            const conf = overlay.querySelector('#pinConfirm').value;
-            if ((await sha256(cur)) !== storedHash) return showErr('PIN atual incorreto');
-            if (np.length < 4) return showErr('Novo PIN precisa ter pelo menos 4 caracteres');
-            if (np !== conf) return showErr('Novo PIN não coincide');
+        const ov = buildAuthOverlay({
+          onSubmit: async ({ overlay, showErr, email, password }) => {
             try {
-              await savePinHashToSupabase(await sha256(np));
+              setSyncStatus('syncing', 'Entrando…');
+              const { data, error } = await supaClient.auth.signInWithPassword({ email, password });
+              if (error) throw error;
+              if (!data?.session) throw new Error('Sessão não criada');
+              __currentSession = data.session;
+              sessionStorage.removeItem(FLY_AUTH_FAILS_KEY);
+              sessionStorage.removeItem(FLY_AUTH_LOCK_KEY);
+              setSyncStatus('online', data.user.email);
               overlay.remove();
-              alert('PIN alterado com sucesso ✓');
               resolve(true);
-            } catch (e) { showErr('Erro ao salvar — tente novamente'); }
+            } catch (e) {
+              const fails = (parseInt(sessionStorage.getItem(FLY_AUTH_FAILS_KEY) || '0', 10) || 0) + 1;
+              sessionStorage.setItem(FLY_AUTH_FAILS_KEY, String(fails));
+              if (fails >= 5) {
+                sessionStorage.setItem(FLY_AUTH_LOCK_KEY, String(Date.now() + 30 * 1000));
+                showErr('5 tentativas erradas — bloqueado por 30s');
+              } else {
+                const msg = (e?.message || '').toLowerCase();
+                if (msg.includes('invalid') || msg.includes('credentials')) {
+                  showErr(`Email ou senha incorretos (${fails}/5)`);
+                } else {
+                  showErr(e?.message || 'Erro ao entrar — tente novamente');
+                }
+              }
+              overlay.querySelector('#authPassword').value = '';
+            }
+          },
+          onForgot: async ({ overlay, showErr, email }) => {
+            try {
+              const { error } = await supaClient.auth.resetPasswordForEmail(email, {
+                redirectTo: location.origin + location.pathname
+              });
+              if (error) throw error;
+              showErr('');
+              alert(`Link de recuperação enviado para ${email}. Confira sua caixa de entrada.`);
+            } catch (e) {
+              showErr(e?.message || 'Erro ao enviar email de recuperação');
+            }
           }
         });
       });
     }
-    window.changeFlyPin = changePinFlow; // facilita debug e botão
+
+    async function logoutFlow() {
+      if (!supaClient) { location.reload(); return; }
+      try {
+        await supaClient.auth.signOut();
+      } catch (e) { console.warn('Logout falhou:', e); }
+      __currentSession = null;
+      location.reload();
+    }
+    window.flyLogout = logoutFlow;
 
     async function initSupabase() {
       if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
@@ -7089,7 +7053,13 @@
       }
       try {
         supaClient = window.supabase.createClient(FLY_SUPA_URL, FLY_SUPA_KEY, {
-          auth: { persistSession: false, autoRefreshToken: false }
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+            storage: window.localStorage,
+            storageKey: 'fly-supa-auth'
+          }
         });
       } catch (e) {
         console.warn('[FLY] Falha ao criar client Supabase:', e);
@@ -12803,20 +12773,34 @@
       }, 150);
     });
 
-    /* =====================  PIN BUTTONS WIRING  ===================== */
+    /* =====================  AUTH BUTTONS WIRING  ===================== */
     const pinChangeBtn = document.getElementById('pinChangeBtn');
-    if (pinChangeBtn) pinChangeBtn.addEventListener('click', () => changePinFlow());
-    const pinLockBtn = document.getElementById('pinLockBtn');
-    if (pinLockBtn) pinLockBtn.addEventListener('click', () => {
-      sessionStorage.removeItem('fly_unlocked_until');
-      location.reload();
+    if (pinChangeBtn) pinChangeBtn.addEventListener('click', () => {
+      // Auth: trocar senha = abre fluxo de "Esqueci a senha" usando email da sessão
+      if (!__currentSession) { alert('Sessão não disponível.'); return; }
+      const email = __currentSession.user.email;
+      if (!confirm(`Enviar link de redefinição de senha para ${email}?`)) return;
+      supaClient.auth.resetPasswordForEmail(email, {
+        redirectTo: location.origin + location.pathname
+      }).then(({ error }) => {
+        if (error) alert('Erro: ' + error.message);
+        else alert(`Link enviado para ${email}. Abra o email e siga as instruções.`);
+      });
     });
+    const pinLockBtn = document.getElementById('pinLockBtn');
+    if (pinLockBtn) {
+      pinLockBtn.title = 'Sair (logout)';
+      pinLockBtn.textContent = '⏻';
+      pinLockBtn.addEventListener('click', () => {
+        if (!confirm('Tem certeza que quer sair? Você precisará fazer login novamente.')) return;
+        logoutFlow();
+      });
+    }
 
-    /* =====================  SUPABASE + PIN GATE INIT  ===================== */
-    // Espera o SDK carregar, conecta no Supabase, e roda o gate de PIN antes
-    // de liberar o app. Em caso de offline, libera direto (cache local).
+    /* =====================  SUPABASE + AUTH INIT  ===================== */
+    // Espera SDK carregar, conecta no Supabase, roda gate de Auth (login).
+    // Se offline, libera direto (cache local).
     async function bootSupabase() {
-      // Aguarda SDK estar disponível por até ~3s
       let attempts = 0;
       await new Promise((resolve) => {
         const tick = () => {
@@ -12827,14 +12811,29 @@
         tick();
       });
 
-      // Tenta conectar
       const ok = await initSupabase();
 
-      // Se conectou, roda o gate de PIN
       if (ok) {
         document.body.classList.add('fly-locked');
-        const unlocked = await runPinGate();
+        const unlocked = await runAuthGate();
         if (unlocked) document.body.classList.remove('fly-locked');
+      }
+
+      // Auto-logout se token expirar / sessão for revogada
+      if (supaClient) {
+        supaClient.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
+            __currentSession = null;
+            document.body.classList.add('fly-locked');
+            // Re-mostra gate
+            if (!document.querySelector('.pin-gate-overlay')) {
+              runAuthGate().then(ok => { if (ok) document.body.classList.remove('fly-locked'); });
+            }
+          } else if (event === 'SIGNED_IN' && session) {
+            __currentSession = session;
+            setSyncStatus('online', session.user.email);
+          }
+        });
       }
     }
     bootSupabase();
