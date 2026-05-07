@@ -1016,11 +1016,18 @@
   }
   .topic-toolbar button:hover { background: rgba(245,184,66,0.15); color: var(--gold-bright); }
   .topic-toolbar button.primary {
-    background: var(--gold);
-    color: #1a1000;
-    border-color: var(--gold-bright);
+    background: linear-gradient(180deg, #FFE099 0%, #E6C77A 50%, #C6A85A 100%) !important;
+    color: #1a1000 !important;
+    border: 1px solid #E6C77A !important;
+    font-weight: 800;
+    box-shadow: 0 4px 14px rgba(230,199,122,.35);
+    text-shadow: 0 1px 0 rgba(255,255,255,.18);
   }
-  .topic-toolbar button.primary:hover { background: var(--gold-bright); }
+  .topic-toolbar button.primary:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 8px 22px rgba(230,199,122,.5);
+    transform: translateY(-1px);
+  }
   .topic-toolbar .info {
     color: rgba(255,255,255,0.7);
     font-size: 11px;
@@ -1759,12 +1766,20 @@
     transition: all 0.2s;
   }
   .modal-btn.primary {
-    background: var(--gold);
-    color: #000;
-    border-color: var(--gold);
+    background: linear-gradient(180deg, #FFE099 0%, #E6C77A 50%, #C6A85A 100%) !important;
+    color: #1a1000 !important;
+    border: 1px solid #E6C77A !important;
+    font-weight: 800;
+    box-shadow: 0 4px 14px rgba(230,199,122,.35), 0 0 0 1px rgba(255,224,140,.18) inset;
+    text-shadow: 0 1px 0 rgba(255,255,255,.18);
   }
   .modal-btn:hover { background: rgba(245,184,66,0.15); }
-  .modal-btn.primary:hover { background: var(--gold-bright); }
+  .modal-btn.primary:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 8px 22px rgba(230,199,122,.5), 0 0 0 1px rgba(255,224,140,.3) inset;
+    transform: translateY(-1px);
+  }
+  .modal-btn.primary:active { transform: translateY(0); filter: brightness(.95); }
 
   .preview-img {
     width: 100%;
@@ -3550,14 +3565,19 @@
     border-color: rgba(255,255,255,.35);
   }
   .pin-btn.primary {
-    background: linear-gradient(180deg, #E6C77A, #C6A85A);
-    color: #1a140a;
-    box-shadow: 0 4px 16px rgba(198,168,90,.4);
+    background: linear-gradient(180deg, #FFE099 0%, #E6C77A 50%, #C6A85A 100%) !important;
+    color: #1a140a !important;
+    border: 1px solid #E6C77A !important;
+    font-weight: 800;
+    box-shadow: 0 4px 16px rgba(230,199,122,.45), 0 0 0 1px rgba(255,224,140,.2) inset;
+    text-shadow: 0 1px 0 rgba(255,255,255,.18);
   }
   .pin-btn.primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(198,168,90,.55);
+    box-shadow: 0 6px 20px rgba(230,199,122,.6), 0 0 0 1px rgba(255,224,140,.35) inset;
+    filter: brightness(1.06);
   }
+  .pin-btn.primary:active { transform: translateY(0); filter: brightness(.95); }
   .pin-btn.danger {
     background: rgba(255,90,90,.08);
     color: #ff8e8e;
@@ -5321,20 +5341,27 @@
     border-top: 1px solid rgba(198,168,90,.15);
   }
   .dbx-btn-primary {
-    background: linear-gradient(180deg, var(--dbx-gold-bright), var(--dbx-gold));
-    border: 0;
-    color: #1a1000;
-    padding: 11px 20px;
+    background: linear-gradient(180deg, #FFE099 0%, #E6C77A 50%, #C6A85A 100%) !important;
+    border: 1px solid #E6C77A !important;
+    color: #1a1000 !important;
+    padding: 11px 22px;
     border-radius: 10px;
     font-size: 11px; letter-spacing: 2px; font-weight: 800;
     text-transform: uppercase;
     cursor: pointer;
     font-family: inherit;
     transition: all .15s;
+    box-shadow: 0 4px 14px rgba(230,199,122,.35), 0 0 0 1px rgba(255,224,140,.18) inset;
+    text-shadow: 0 1px 0 rgba(255,255,255,.18);
   }
   .dbx-btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 8px 22px rgba(198,168,90,.35);
+    box-shadow: 0 8px 22px rgba(230,199,122,.5), 0 0 0 1px rgba(255,224,140,.3) inset;
+    filter: brightness(1.06);
+  }
+  .dbx-btn-primary:active {
+    transform: translateY(0);
+    filter: brightness(.95);
   }
   .dbx-btn-cancel {
     background: transparent;
