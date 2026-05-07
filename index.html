@@ -6497,6 +6497,310 @@
   }
 
   /* ============================================================ */
+  /* FORECAST · pipeline + gráfico + cenários + premissas         */
+  /* ============================================================ */
+  .fc-pipeline-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 14px 0 24px;
+  }
+  .fc-pipe-card {
+    padding: 16px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+    border: 1px solid rgba(255,255,255,.08);
+    text-align: center;
+    transition: all .2s;
+  }
+  .fc-pipe-card:hover { transform: translateY(-2px); border-color: rgba(245,184,66,.3); }
+  .fc-pipe-card .fc-pipe-ico { font-size: 22px; margin-bottom: 6px; opacity: .85; }
+  .fc-pipe-card .fc-pipe-num {
+    font-size: 28px;
+    font-weight: 800;
+    color: #fff;
+    font-feature-settings: 'tnum';
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .fc-pipe-card .fc-pipe-lbl {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.55);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .fc-pipe-card .fc-pipe-sub {
+    font-size: 10px;
+    color: rgba(255,255,255,.5);
+    line-height: 1.4;
+  }
+  .fc-pipe-card.cold { border-color: rgba(112,165,255,.25); }
+  .fc-pipe-card.cold .fc-pipe-num { color: #93B6FF; }
+  .fc-pipe-card.warm { border-color: rgba(255,170,76,.3); }
+  .fc-pipe-card.warm .fc-pipe-num { color: #FFAA4C; }
+  .fc-pipe-card.neg { border-color: rgba(245,184,66,.4); background: linear-gradient(180deg, rgba(245,184,66,.05), transparent); }
+  .fc-pipe-card.neg .fc-pipe-num { color: #E6C77A; }
+  .fc-pipe-card.win {
+    border-color: rgba(111,227,168,.45);
+    background: linear-gradient(180deg, rgba(111,227,168,.08), transparent);
+    box-shadow: 0 0 24px rgba(111,227,168,.08);
+  }
+  .fc-pipe-card.win .fc-pipe-num { color: #6FE3A8; text-shadow: 0 0 16px rgba(111,227,168,.3); }
+
+  .fc-chart-wrap {
+    margin-bottom: 24px;
+    padding: 18px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+    border: 1px solid rgba(255,255,255,.06);
+  }
+  .fc-chart-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .fc-chart-head h3 {
+    margin: 0;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgba(245,184,66,.85);
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .fc-chart-legend {
+    display: flex; gap: 14px; flex-wrap: wrap;
+    font-size: 10px;
+    color: rgba(255,255,255,.6);
+    letter-spacing: .3px;
+  }
+  .fc-chart-legend .lg-real { color: #6FE3A8; }
+  .fc-chart-legend .lg-proj { color: #E6C77A; }
+  .fc-chart-legend .lg-band { color: rgba(245,184,66,.5); }
+  .fc-chart-legend .lg-meta { color: rgba(111,227,168,.6); }
+  .fc-chart {
+    width: 100%;
+    height: 220px;
+    overflow: visible;
+  }
+  .fc-chart-axis {
+    display: flex;
+    margin-top: 6px;
+    justify-content: space-between;
+    font-size: 9px;
+    color: rgba(255,255,255,.4);
+    letter-spacing: .5px;
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .fc-chart-axis .sep { color: rgba(245,184,66,.5); }
+  .fc-chart-axis .proj { color: rgba(245,184,66,.7); font-style: italic; }
+
+  .fc-scenarios {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .fc-scen {
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+    transition: all .2s;
+  }
+  .fc-scen-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: rgba(255,255,255,.7);
+  }
+  .fc-scen-head .prob {
+    background: rgba(255,255,255,.06);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 8px;
+    color: rgba(255,255,255,.6);
+  }
+  .fc-scen-premissa {
+    font-size: 10px;
+    color: rgba(255,255,255,.5);
+    margin-bottom: 12px;
+    line-height: 1.4;
+    min-height: 28px;
+  }
+  .fc-scen-receita {
+    font-size: 22px;
+    font-weight: 800;
+    font-feature-settings: 'tnum';
+    margin-bottom: 4px;
+  }
+  .fc-scen-clientes {
+    font-size: 10px;
+    color: rgba(255,255,255,.55);
+    letter-spacing: .5px;
+  }
+  .fc-scen.pessimista {
+    border-color: rgba(255,107,107,.3);
+    background: linear-gradient(180deg, rgba(255,107,107,.06), rgba(255,107,107,.01));
+  }
+  .fc-scen.pessimista .fc-scen-receita { color: #ff8a8a; }
+  .fc-scen.pessimista .fc-scen-head { color: #ff8a8a; }
+  .fc-scen.realista.hero {
+    border: 1.5px solid rgba(245,184,66,.6);
+    background: linear-gradient(180deg, rgba(245,184,66,.18), rgba(245,184,66,.04));
+    box-shadow: 0 0 32px rgba(245,184,66,.18);
+    transform: scale(1.02);
+  }
+  .fc-scen.realista .fc-scen-receita { color: #FFE099; text-shadow: 0 0 16px rgba(245,184,66,.4); }
+  .fc-scen.realista .fc-scen-head { color: #FFE099; }
+  .fc-scen.otimista {
+    border-color: rgba(111,227,168,.3);
+    background: linear-gradient(180deg, rgba(111,227,168,.06), rgba(111,227,168,.01));
+  }
+  .fc-scen.otimista .fc-scen-receita { color: #8AE9B6; }
+  .fc-scen.otimista .fc-scen-head { color: #8AE9B6; }
+
+  .fc-premissas {
+    padding: 18px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(112,165,255,.04), rgba(112,165,255,.01));
+    border: 1px solid rgba(112,165,255,.18);
+    margin-bottom: 24px;
+  }
+  .fc-prem-head {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 11px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #93B6FF;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  .fc-prem-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 10px 0;
+    border-top: 1px solid rgba(255,255,255,.04);
+  }
+  .fc-prem-row:first-of-type { border-top: 0; }
+  .fc-prem-row label {
+    font-size: 11px;
+    color: rgba(255,255,255,.75);
+    letter-spacing: .3px;
+  }
+  .fc-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(245,184,66,.5), rgba(245,184,66,.15));
+    outline: none;
+    cursor: pointer;
+  }
+  .fc-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFE099, #C6A85A);
+    border: 2px solid #1a1612;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(245,184,66,.5);
+  }
+  .fc-slider::-moz-range-thumb {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFE099, #C6A85A);
+    border: 2px solid #1a1612;
+    cursor: pointer;
+  }
+  .fc-input {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(245,184,66,.2);
+    border-radius: 8px;
+    color: #fff;
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 12px;
+    width: 100%;
+  }
+  .fc-input:focus {
+    outline: none;
+    border-color: rgba(245,184,66,.5);
+    background: rgba(245,184,66,.04);
+  }
+  .fc-prem-val {
+    color: #E6C77A;
+    font-weight: 700;
+    font-size: 13px;
+    min-width: 60px;
+    text-align: right;
+    font-feature-settings: 'tnum';
+  }
+  .fc-prem-num { font-size: 14px; }
+
+  .fc-alerts {
+    margin-bottom: 18px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .fc-alert {
+    padding: 12px 16px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.03);
+    border-left: 3px solid rgba(245,184,66,.5);
+    font-size: 12px;
+    color: rgba(255,255,255,.85);
+    line-height: 1.5;
+  }
+
+  .fc-summary {
+    padding: 18px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(245,184,66,.05), rgba(245,184,66,.01));
+    border: 1px solid rgba(245,184,66,.22);
+  }
+  .fc-sum-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0;
+    border-top: 1px solid rgba(255,255,255,.04);
+  }
+  .fc-sum-row:first-of-type { border-top: 0; }
+  .fc-sum-row .lbl { font-size: 12px; color: rgba(255,255,255,.7); }
+  .fc-sum-row .val { font-size: 16px; color: #fff; font-weight: 700; font-feature-settings: 'tnum'; }
+  .fc-sum-row .val.pos { color: #6FE3A8; }
+  .fc-sum-row .val.neg { color: #ff8a8a; }
+  .fc-sum-row.gap {
+    margin-top: 6px;
+    padding-top: 14px;
+    border-top: 1.5px solid rgba(245,184,66,.3);
+  }
+  .fc-sum-row.gap .lbl { color: #FFE099; font-weight: 600; }
+  .fc-sum-row.gap .val { font-size: 20px; }
+
+  /* Mobile Forecast */
+  @container fly-vp (max-width: 640px) {
+    .fc-pipeline-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .fc-pipe-card { padding: 12px; }
+    .fc-pipe-card .fc-pipe-num { font-size: 22px; }
+    .fc-scenarios { grid-template-columns: 1fr; }
+    .fc-scen.realista.hero { transform: none; }
+    .fc-prem-row { grid-template-columns: 1fr; gap: 6px; }
+    .fc-prem-val { text-align: left; }
+    .fc-chart { height: 180px; }
+    .fc-chart-axis { font-size: 7px; }
+  }
+
+  /* ============================================================ */
   /* EXPERIÊNCIA VISUAL · upload de foto/vídeo por card           */
   /* ============================================================ */
   .bases-visual-card .img.is-photo,
@@ -11907,6 +12211,46 @@
         melhorConteudo: 'Reels Burj Khalifa por @joaoinf — atribuídas 9 vendas (R$ 346k)'
       },
       // ============================================================
+      // FORECAST · projeção de receita/clientes futuros
+      // ============================================================
+      forecast: {
+        // Pipeline atual (em quantidade de leads)
+        pipeline: {
+          frios:   { qtd: 24, origem: { 'Tráfego Pago': 12, 'Influenciador': 6, 'Orgânico': 4, 'Indicação': 2 } },
+          quentes: { qtd: 8,  tempoMedioDias: 12, status: 'saudavel' }, // saudavel | demorado
+          negociacao: { qtd: 5, valorPotencial: 192500, probabilidade: 60 }, // %
+          fecharaoMes: { qtd: 3, receitaProjetada: 115500, confianca: 75 }
+        },
+        // Histórico mensal real (últimos 6 meses) e meta
+        historico: [
+          { mes: '2025-12', clientes: 6, receita: 231000 },
+          { mes: '2026-01', clientes: 8, receita: 308000 },
+          { mes: '2026-02', clientes: 7, receita: 269500 },
+          { mes: '2026-03', clientes: 9, receita: 346500 },
+          { mes: '2026-04', clientes: 11, receita: 423500 },
+          { mes: '2026-05', clientes: 10, receita: 473400 }
+        ],
+        // Meta mensal padrão
+        metaMensal: { clientes: 12, receita: 462000 },
+        // Premissas editáveis
+        premissas: {
+          taxaConversao: 18,    // % lead → cliente
+          leadsMes: 60,          // novos leads/mês
+          aumentoPreco: 0,       // % a aplicar (ex: +5%)
+          taxaChurn: 25,         // % de não-recompra (inversa da retenção)
+          // Sazonalidade: multiplicador por mês (1.0 = neutro, 1.3 = +30%, 0.8 = -20%)
+          sazonalidade: { jan: 1.1, fev: 1.0, mar: 1.0, abr: 1.05, mai: 1.0, jun: 0.85,
+                          jul: 0.85, ago: 0.95, set: 1.0, out: 1.0, nov: 1.15, dez: 1.3 }
+        },
+        // Multiplicadores de cenário
+        cenarios: {
+          otimistaMult: 1.15,
+          pessimistaMult: 0.80
+        },
+        // Período padrão pra projeção
+        horizonteMeses: 7 // até dez/2026 a partir de mai/2026
+      },
+      // ============================================================
       // DRE · Demonstração de Resultados em formato cascata
       // ============================================================
       dre: {
@@ -12515,6 +12859,7 @@
           <button class="dbx-tab" data-tab="marketing">📣 Marketing</button>
           <button class="dbx-tab" data-tab="analise">🧠 Análise</button>
           <button class="dbx-tab" data-tab="dre">📈 DRE</button>
+          <button class="dbx-tab" data-tab="forecast">🔮 Forecast</button>
           <button class="dbx-tab" data-tab="retencao">🔁 Retenção</button>
           <button class="dbx-tab" data-tab="upsell">💎 Upsell</button>
           <button class="dbx-tab" data-tab="conteudo">📸 Conteúdo</button>
@@ -12546,6 +12891,7 @@
       else if (key === 'marketing') panelEl.innerHTML = dbxRenderMarketing(D);
       else if (key === 'analise')   panelEl.innerHTML = dbxRenderAnalise(D, fin);
       else if (key === 'dre')       panelEl.innerHTML = dbxRenderDRE(D, fin);
+      else if (key === 'forecast')  panelEl.innerHTML = dbxRenderForecast(D, fin);
       else if (key === 'retencao')  panelEl.innerHTML = dbxRenderRetencao(D, fin);
       else if (key === 'upsell')    panelEl.innerHTML = dbxRenderUpsell(D);
       else if (key === 'conteudo')  panelEl.innerHTML = dbxRenderConteudo(D);
@@ -12560,6 +12906,7 @@
       else if (key === 'vendas')    dbxBindVendas(panelEl, D, item);
       else if (key === 'marketing') dbxBindMarketing(panelEl, D, item);
       else if (key === 'dre')       dbxBindDRE(panelEl, D, item);
+      else if (key === 'forecast')  dbxBindForecast(panelEl, D, item);
       else if (key === 'retencao')  dbxBindRetencao(panelEl, D, item);
       else if (key === 'upsell')    dbxBindUpsell(panelEl, D, item);
       else if (key === 'conteudo')  dbxBindConteudo(panelEl, D, item);
@@ -14034,6 +14381,352 @@
         a.href = URL.createObjectURL(blob);
         a.download = `DRE_${(item.name || 'pacote').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.csv`;
         document.body.appendChild(a); a.click(); a.remove();
+      });
+    }
+
+    /* ===== PAINEL: FORECAST · projeção de receita futura ===== */
+    function dbxComputeForecast(D, fin) {
+      const fc = D.forecast || {};
+      const pip = fc.pipeline || {};
+      const prem = fc.premissas || {};
+      const sazao = prem.sazonalidade || {};
+      const horizonte = Number(fc.horizonteMeses || 7);
+      const ticket = D.vendas?.ticketMedio || 38500;
+      const taxa = Number(prem.taxaConversao || 18) / 100;
+      const leadsMes = Number(prem.leadsMes || 60);
+      const aumentoPreco = Number(prem.aumentoPreco || 0) / 100;
+
+      // Comprometido = vendas em negociação avançada + fecharão este mês
+      const comprometido =
+        (Number(pip.fecharaoMes?.receitaProjetada) || 0) +
+        (Number(pip.negociacao?.valorPotencial) || 0) * (Number(pip.negociacao?.probabilidade || 60) / 100);
+
+      // Próximas 7 chaves de mês (de hoje pra frente — JS atual)
+      const monthKeys = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+      const now = new Date();
+      const projecoesMensais = [];
+      for (let i = 0; i < horizonte; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() + i + 1, 1);
+        const sazKey = monthKeys[d.getMonth()];
+        const mult = Number(sazao[sazKey] || 1);
+        const ticketAjustado = ticket * (1 + aumentoPreco);
+        const novosClientes = leadsMes * taxa * mult;
+        const receita = novosClientes * ticketAjustado;
+        projecoesMensais.push({
+          ano: d.getFullYear(),
+          mes: d.getMonth() + 1,
+          mesLabel: monthKeys[d.getMonth()] + '/' + String(d.getFullYear()).slice(-2),
+          clientes: novosClientes,
+          receita: receita,
+          mult
+        });
+      }
+
+      const totalRealistaClientes = projecoesMensais.reduce((s, p) => s + p.clientes, 0);
+      const totalRealistaReceita = projecoesMensais.reduce((s, p) => s + p.receita, 0);
+      const otimistaMult = Number(fc.cenarios?.otimistaMult || 1.15);
+      const pessimistaMult = Number(fc.cenarios?.pessimistaMult || 0.80);
+
+      // Acumulado histórico
+      const histAcum = (fc.historico || []).reduce((a, h) => ({
+        clientes: a.clientes + Number(h.clientes || 0),
+        receita: a.receita + Number(h.receita || 0)
+      }), { clientes: 0, receita: 0 });
+
+      const meta = fc.metaMensal || {};
+
+      return {
+        comprometido,
+        projetado: totalRealistaReceita,
+        projetadoClientes: totalRealistaClientes,
+        otimista: totalRealistaReceita * otimistaMult,
+        otimistaClientes: totalRealistaClientes * otimistaMult,
+        pessimista: totalRealistaReceita * pessimistaMult,
+        pessimistaClientes: totalRealistaClientes * pessimistaMult,
+        projecoesMensais,
+        comprometidoNoMes: pip.fecharaoMes?.receitaProjetada || 0,
+        meta,
+        histAcum
+      };
+    }
+
+    function dbxRenderForecast(D, fin) {
+      const fc = D.forecast || {};
+      const pip = fc.pipeline || {};
+      const prem = fc.premissas || {};
+      const r = dbxComputeForecast(D, fin);
+      const hist = fc.historico || [];
+
+      // Calcula altura do gráfico baseado em receita máxima
+      const allValues = [...hist.map(h => h.receita || 0), ...r.projecoesMensais.map(p => p.receita)];
+      const maxVal = Math.max(...allValues, 1);
+      const histPoints = hist.map((h, i) => {
+        const x = (i / (hist.length - 1)) * 45 + 2;
+        const y = 95 - ((h.receita || 0) / maxVal) * 85;
+        return { x, y, label: h.mes, val: h.receita };
+      });
+      const projPoints = r.projecoesMensais.map((p, i) => {
+        const x = 47 + (i / (r.projecoesMensais.length - 1 || 1)) * 51;
+        const y = 95 - (p.receita / maxVal) * 85;
+        return { x, y, label: p.mesLabel, val: p.receita };
+      });
+      const otimPoints = r.projecoesMensais.map((p, i) => {
+        const x = 47 + (i / (r.projecoesMensais.length - 1 || 1)) * 51;
+        const y = 95 - (p.receita * (fc.cenarios?.otimistaMult || 1.15) / maxVal) * 85;
+        return { x, y };
+      });
+      const pessPoints = r.projecoesMensais.map((p, i) => {
+        const x = 47 + (i / (r.projecoesMensais.length - 1 || 1)) * 51;
+        const y = 95 - (p.receita * (fc.cenarios?.pessimistaMult || 0.80) / maxVal) * 85;
+        return { x, y };
+      });
+
+      const histPath = histPoints.map((p, i) => (i === 0 ? 'M' : 'L') + p.x + ' ' + p.y).join(' ');
+      const projPath = (histPoints.length > 0 ? 'M' + histPoints[histPoints.length - 1].x + ' ' + histPoints[histPoints.length - 1].y + ' L' : 'M') +
+        projPoints.map(p => p.x + ' ' + p.y).join(' L');
+      // Faixa de incerteza (otimista até pessimista)
+      const incertPath = 'M' +
+        otimPoints.map(p => p.x + ' ' + p.y).join(' L') +
+        ' L' + pessPoints.slice().reverse().map(p => p.x + ' ' + p.y).join(' L') + ' Z';
+
+      // Meta linha
+      const metaY = 95 - ((r.meta.receita || 0) / maxVal) * 85;
+
+      // Insights
+      const ritmoNecessario = r.meta.clientes > 0 ? ((r.meta.clientes * 12 - r.histAcum.clientes) / 12) : 0;
+      const insightAlerta = r.comprometido < r.meta.receita * 0.4
+        ? `🔴 Pipeline atual (${pip.quentes?.qtd || 0} quentes) está abaixo da média histórica — pode atrasar`
+        : `🟢 Pipeline saudável (${pip.quentes?.qtd || 0} quentes em negociação)`;
+      const insightProjecao = r.projetado >= r.meta.receita * 12 * 0.9
+        ? `✅ Cenário realista projeta ${dbxFmtMoney(r.projetado)} — alinhado com meta`
+        : `⚠️ Cenário realista projeta ${dbxFmtMoney(r.projetado)} — abaixo da meta anual`;
+
+      return `
+        <div class="dbx-panel-head">
+          <h2><span class="ico">🔮</span>Forecast · Projeção de Receita</h2>
+          <div class="dbx-actions">
+            <button class="dbx-btn ghost" data-act="fc-edit-pipeline">✎ Editar Pipeline</button>
+            <button class="dbx-btn ghost" data-act="fc-edit-meta">🎯 Meta Mensal</button>
+          </div>
+        </div>
+
+        <!-- BLOCO 1: PIPELINE ATUAL -->
+        <div class="fc-pipeline-grid">
+          <div class="fc-pipe-card cold">
+            <div class="fc-pipe-ico">❄️</div>
+            <div class="fc-pipe-num">${pip.frios?.qtd || 0}</div>
+            <div class="fc-pipe-lbl">Leads frios</div>
+            <div class="fc-pipe-sub">${Object.entries(pip.frios?.origem || {}).map(([k,v]) => `${k}: ${v}`).join(' · ') || 'sem origem'}</div>
+          </div>
+          <div class="fc-pipe-card warm">
+            <div class="fc-pipe-ico">🔥</div>
+            <div class="fc-pipe-num">${pip.quentes?.qtd || 0}</div>
+            <div class="fc-pipe-lbl">Leads quentes</div>
+            <div class="fc-pipe-sub">⏱ ${pip.quentes?.tempoMedioDias || 0} dias em média · ${pip.quentes?.status === 'saudavel' ? '🟢 saudável' : '🟡 demorado'}</div>
+          </div>
+          <div class="fc-pipe-card neg">
+            <div class="fc-pipe-ico">🤝</div>
+            <div class="fc-pipe-num">${pip.negociacao?.qtd || 0}</div>
+            <div class="fc-pipe-lbl">Em negociação</div>
+            <div class="fc-pipe-sub">${dbxFmtMoney(pip.negociacao?.valorPotencial || 0)} · ${pip.negociacao?.probabilidade || 0}% prob.</div>
+          </div>
+          <div class="fc-pipe-card win">
+            <div class="fc-pipe-ico">⭐</div>
+            <div class="fc-pipe-num">${pip.fecharaoMes?.qtd || 0}</div>
+            <div class="fc-pipe-lbl">Fecharão este mês</div>
+            <div class="fc-pipe-sub">${dbxFmtMoney(pip.fecharaoMes?.receitaProjetada || 0)} · ${pip.fecharaoMes?.confianca || 0}% confiança</div>
+          </div>
+        </div>
+
+        <!-- BLOCO 2: GRÁFICO -->
+        <div class="fc-chart-wrap">
+          <div class="fc-chart-head">
+            <h3>📈 Evolução · Histórico real + projeção</h3>
+            <div class="fc-chart-legend">
+              <span class="lg lg-real">━ Real (6 meses)</span>
+              <span class="lg lg-proj">┄ Projeção (${r.projecoesMensais.length} meses)</span>
+              <span class="lg lg-band">▓ Faixa de incerteza</span>
+              <span class="lg lg-meta">┄ Meta mensal</span>
+            </div>
+          </div>
+          <svg class="fc-chart" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <!-- Grade -->
+            ${[20, 40, 60, 80].map(y => `<line x1="0" y1="${y}" x2="100" y2="${y}" stroke="rgba(255,255,255,0.05)" stroke-width="0.2"/>`).join('')}
+            <!-- Linha vertical separando histórico de projeção -->
+            <line x1="46" y1="2" x2="46" y2="95" stroke="rgba(245,184,66,0.3)" stroke-dasharray="1 1" stroke-width="0.3"/>
+            <!-- Faixa de incerteza -->
+            <path d="${incertPath}" fill="rgba(245,184,66,0.08)" stroke="none"/>
+            <!-- Linha meta -->
+            <line x1="0" y1="${metaY}" x2="100" y2="${metaY}" stroke="rgba(111,227,168,0.4)" stroke-dasharray="0.8 0.8" stroke-width="0.3"/>
+            <!-- Histórico real (verde) -->
+            <path d="${histPath}" fill="none" stroke="#6FE3A8" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" filter="drop-shadow(0 0 2px rgba(111,227,168,0.5))"/>
+            ${histPoints.map(p => `<circle cx="${p.x}" cy="${p.y}" r="0.8" fill="#6FE3A8" filter="drop-shadow(0 0 2px rgba(111,227,168,0.6))"/>`).join('')}
+            <!-- Projeção realista (dourada pontilhada) -->
+            <path d="${projPath}" fill="none" stroke="#E6C77A" stroke-width="0.6" stroke-dasharray="1.2 1.2" stroke-linecap="round" filter="drop-shadow(0 0 2px rgba(245,184,66,0.5))"/>
+            ${projPoints.map(p => `<circle cx="${p.x}" cy="${p.y}" r="0.7" fill="#E6C77A"/>`).join('')}
+          </svg>
+          <div class="fc-chart-axis">
+            ${hist.map(h => `<span>${(h.mes || '').slice(5)}</span>`).join('')}
+            <span class="sep">|</span>
+            ${r.projecoesMensais.map(p => `<span class="proj">${p.mesLabel}</span>`).join('')}
+          </div>
+        </div>
+
+        <!-- BLOCO 3: 3 CENÁRIOS -->
+        <div class="fc-scenarios">
+          <div class="fc-scen pessimista">
+            <div class="fc-scen-head">📉 PESSIMISTA <span class="prob">20% prob</span></div>
+            <div class="fc-scen-premissa">Conversão cai 20% e leads diminuem</div>
+            <div class="fc-scen-receita">${dbxFmtMoney(r.pessimista)}</div>
+            <div class="fc-scen-clientes">${Math.round(r.pessimistaClientes)} clientes em ${r.projecoesMensais.length}m</div>
+          </div>
+          <div class="fc-scen realista hero">
+            <div class="fc-scen-head">🎯 REALISTA <span class="prob">60% prob</span></div>
+            <div class="fc-scen-premissa">Mantém ritmo atual</div>
+            <div class="fc-scen-receita">${dbxFmtMoney(r.projetado)}</div>
+            <div class="fc-scen-clientes">${Math.round(r.projetadoClientes)} clientes em ${r.projecoesMensais.length}m</div>
+          </div>
+          <div class="fc-scen otimista">
+            <div class="fc-scen-head">📈 OTIMISTA <span class="prob">20% prob</span></div>
+            <div class="fc-scen-premissa">Conversão +15% e influencers +30% leads</div>
+            <div class="fc-scen-receita">${dbxFmtMoney(r.otimista)}</div>
+            <div class="fc-scen-clientes">${Math.round(r.otimistaClientes)} clientes em ${r.projecoesMensais.length}m</div>
+          </div>
+        </div>
+
+        <!-- BLOCO 4: PREMISSAS EDITÁVEIS -->
+        <div class="fc-premissas">
+          <div class="fc-prem-head"><span>⚙️</span>PREMISSAS DA PROJEÇÃO</div>
+          <div class="fc-prem-row">
+            <label>Taxa de conversão (lead → cliente)</label>
+            <input type="range" min="0" max="100" step="1" class="fc-slider" data-prem="taxaConversao" value="${prem.taxaConversao || 18}">
+            <span class="fc-prem-val"><span class="fc-prem-num">${prem.taxaConversao || 18}</span>%</span>
+          </div>
+          <div class="fc-prem-row">
+            <label>Volume mensal de novos leads</label>
+            <input type="number" class="fc-input" data-prem="leadsMes" value="${prem.leadsMes || 60}" min="0" step="1">
+            <span class="fc-prem-val">leads/mês</span>
+          </div>
+          <div class="fc-prem-row">
+            <label>Aumento de preço</label>
+            <input type="range" min="-20" max="50" step="1" class="fc-slider" data-prem="aumentoPreco" value="${prem.aumentoPreco || 0}">
+            <span class="fc-prem-val"><span class="fc-prem-num">${prem.aumentoPreco || 0}</span>%</span>
+          </div>
+          <div class="fc-prem-row">
+            <label>Taxa de churn</label>
+            <input type="range" min="0" max="100" step="1" class="fc-slider" data-prem="taxaChurn" value="${prem.taxaChurn || 25}">
+            <span class="fc-prem-val"><span class="fc-prem-num">${prem.taxaChurn || 25}</span>%</span>
+          </div>
+        </div>
+
+        <!-- BLOCO 5: ALERTAS -->
+        <div class="fc-alerts">
+          <div class="fc-alert">🎯 Pra bater meta de ${r.meta.clientes || 12} clientes/mês, precisa de ${ritmoNecessario.toFixed(1)} novas vendas/mês a partir de hoje</div>
+          <div class="fc-alert">${insightAlerta}</div>
+          <div class="fc-alert">${insightProjecao}</div>
+        </div>
+
+        <!-- BLOCO 6: COMPROMETIDO vs PROJETADO vs META -->
+        <div class="fc-summary">
+          <div class="fc-sum-row"><span class="lbl">Comprometido (já em negociação)</span><span class="val">${dbxFmtMoney(r.comprometido)}</span></div>
+          <div class="fc-sum-row"><span class="lbl">Projetado realista</span><span class="val pos">${dbxFmtMoney(r.projetado)}</span></div>
+          <div class="fc-sum-row"><span class="lbl">Meta total (${r.projecoesMensais.length}m)</span><span class="val">${dbxFmtMoney((r.meta.receita || 0) * r.projecoesMensais.length)}</span></div>
+          <div class="fc-sum-row gap"><span class="lbl">GAP até meta</span><span class="val ${(r.projetado - (r.meta.receita || 0) * r.projecoesMensais.length) >= 0 ? 'pos' : 'neg'}">${dbxFmtMoney(r.projetado - (r.meta.receita || 0) * r.projecoesMensais.length)}</span></div>
+        </div>
+      `;
+    }
+
+    function dbxBindForecast(panelEl, D, item) {
+      const refresh = () => {
+        const fin = dbxComputeFinance(D);
+        panelEl.innerHTML = dbxRenderForecast(D, fin);
+        dbxBindForecast(panelEl, D, item);
+      };
+
+      // Sliders + inputs de premissas — recalcula em tempo real
+      panelEl.querySelectorAll('.fc-slider, .fc-input').forEach(el => {
+        const onChange = () => {
+          const k = el.dataset.prem;
+          if (!D.forecast.premissas) D.forecast.premissas = {};
+          D.forecast.premissas[k] = Number(el.value);
+          // Atualiza display do slider
+          if (el.classList.contains('fc-slider')) {
+            const numEl = el.parentElement.querySelector('.fc-prem-num');
+            if (numEl) numEl.textContent = el.value;
+          }
+        };
+        const onCommit = () => {
+          saveDubaiExplorer();
+          refresh();
+        };
+        el.addEventListener('input', onChange);
+        el.addEventListener('change', onCommit);
+        el.addEventListener('blur', onCommit);
+      });
+
+      // Editar pipeline
+      const editPipe = panelEl.querySelector('[data-act="fc-edit-pipeline"]');
+      if (editPipe) editPipe.addEventListener('click', () => {
+        const pip = D.forecast.pipeline || {};
+        dbxOpenModal({
+          title: 'Editar Pipeline Atual',
+          fields: [
+            { key: 'frios', label: 'Leads frios (qtd)', type: 'number', step: '1' },
+            { key: 'quentes', label: 'Leads quentes (qtd)', type: 'number', step: '1' },
+            { key: 'quentesDias', label: 'Tempo médio em quentes (dias)', type: 'number', step: '1' },
+            { key: 'negQtd', label: 'Em negociação (qtd)', type: 'number', step: '1' },
+            { key: 'negValor', label: 'Valor potencial em negociação (R$)', type: 'number', step: '0.01' },
+            { key: 'negProb', label: 'Probabilidade de fechar (%)', type: 'number', step: '1' },
+            { key: 'fechaQtd', label: 'Fecharão este mês (qtd)', type: 'number', step: '1' },
+            { key: 'fechaReceita', label: 'Receita projetada do mês (R$)', type: 'number', step: '0.01' },
+            { key: 'fechaConfianca', label: 'Confiança da previsão (%)', type: 'number', step: '1' }
+          ],
+          values: {
+            frios: pip.frios?.qtd || 0,
+            quentes: pip.quentes?.qtd || 0,
+            quentesDias: pip.quentes?.tempoMedioDias || 0,
+            negQtd: pip.negociacao?.qtd || 0,
+            negValor: pip.negociacao?.valorPotencial || 0,
+            negProb: pip.negociacao?.probabilidade || 0,
+            fechaQtd: pip.fecharaoMes?.qtd || 0,
+            fechaReceita: pip.fecharaoMes?.receitaProjetada || 0,
+            fechaConfianca: pip.fecharaoMes?.confianca || 0
+          },
+          onSave: (vals) => {
+            D.forecast.pipeline = {
+              frios: { qtd: Number(vals.frios) || 0, origem: pip.frios?.origem || {} },
+              quentes: { qtd: Number(vals.quentes) || 0, tempoMedioDias: Number(vals.quentesDias) || 0, status: 'saudavel' },
+              negociacao: { qtd: Number(vals.negQtd) || 0, valorPotencial: Number(vals.negValor) || 0, probabilidade: Number(vals.negProb) || 0 },
+              fecharaoMes: { qtd: Number(vals.fechaQtd) || 0, receitaProjetada: Number(vals.fechaReceita) || 0, confianca: Number(vals.fechaConfianca) || 0 }
+            };
+            saveDubaiExplorer();
+            refresh();
+          }
+        });
+      });
+
+      // Editar meta
+      const editMeta = panelEl.querySelector('[data-act="fc-edit-meta"]');
+      if (editMeta) editMeta.addEventListener('click', () => {
+        dbxOpenModal({
+          title: 'Editar Meta Mensal',
+          fields: [
+            { key: 'clientes', label: 'Meta de clientes/mês', type: 'number', step: '1' },
+            { key: 'receita', label: 'Meta de receita/mês (R$)', type: 'number', step: '0.01' }
+          ],
+          values: {
+            clientes: D.forecast.metaMensal?.clientes || 12,
+            receita: D.forecast.metaMensal?.receita || 462000
+          },
+          onSave: (vals) => {
+            D.forecast.metaMensal = {
+              clientes: Number(vals.clientes) || 0,
+              receita: Number(vals.receita) || 0
+            };
+            saveDubaiExplorer();
+            refresh();
+          }
+        });
       });
     }
 
