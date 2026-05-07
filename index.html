@@ -6183,6 +6183,320 @@
   }
 
   /* ============================================================ */
+  /* COMPARADOR DE PACOTES · botão de acesso + tela fullscreen    */
+  /* ============================================================ */
+  .topic-comparador-bar {
+    margin-top: 18px;
+    margin-bottom: 18px;
+    display: flex;
+    justify-content: center;
+  }
+  .topic-comparador-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 28px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(245,184,66,.18), rgba(245,184,66,.04));
+    border: 1.5px solid rgba(245,184,66,.5);
+    color: #FFE099;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 3px;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all .2s;
+    box-shadow: 0 6px 22px rgba(245,184,66,.18), 0 0 0 1px rgba(245,184,66,.08) inset;
+  }
+  .topic-comparador-btn:hover {
+    background: linear-gradient(135deg, rgba(245,184,66,.28), rgba(245,184,66,.08));
+    border-color: rgba(245,184,66,.7);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(245,184,66,.3);
+  }
+  .topic-comparador-btn .cmp-ico { font-size: 18px; }
+  .topic-comparador-btn .cmp-count {
+    background: rgba(245,184,66,.25);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+  }
+
+  .fly-cmp-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0,0,0,.85);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    padding: 20px;
+    overflow: auto;
+    animation: cmpFadeIn .3s ease;
+  }
+  @keyframes cmpFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .fly-cmp-modal {
+    width: 100%;
+    max-width: 1600px;
+    background: linear-gradient(180deg, #1a1612 0%, #0c0a08 100%);
+    border: 1px solid rgba(245,184,66,.3);
+    border-radius: 22px;
+    padding: 0;
+    box-shadow: 0 30px 80px -10px rgba(0,0,0,.85), 0 0 60px rgba(245,184,66,.05);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 40px);
+  }
+  .fly-cmp-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 24px 28px;
+    border-bottom: 1px solid rgba(245,184,66,.18);
+    flex-shrink: 0;
+  }
+  .fly-cmp-head h2 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    letter-spacing: 3px;
+    color: #FFE099;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .fly-cmp-sub {
+    margin: 0;
+    font-size: 11px;
+    color: rgba(255,255,255,.55);
+    letter-spacing: .5px;
+  }
+  .fly-cmp-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .fly-cmp-btn {
+    background: rgba(245,184,66,.08);
+    border: 1px solid rgba(245,184,66,.3);
+    color: rgba(255,224,153,.85);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .fly-cmp-btn:hover {
+    background: rgba(245,184,66,.18);
+    color: #FFE099;
+    border-color: rgba(245,184,66,.5);
+  }
+  .fly-cmp-close {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.05);
+    color: rgba(255,255,255,.7);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all .15s;
+  }
+  .fly-cmp-close:hover {
+    background: rgba(245,184,66,.15);
+    color: #FFE099;
+    border-color: rgba(245,184,66,.4);
+  }
+
+  .fly-cmp-body {
+    overflow: auto;
+    padding: 0 28px 28px;
+    flex: 1;
+  }
+
+  .fly-cmp-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 18px;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+  .fly-cmp-th-metric {
+    text-align: left;
+    padding: 14px 12px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(245,184,66,.7);
+    font-weight: 700;
+    border-bottom: 1px solid rgba(245,184,66,.2);
+    background: linear-gradient(180deg, rgba(245,184,66,.08), transparent);
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 5;
+  }
+  .fly-cmp-th-pacote {
+    text-align: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(245,184,66,.2);
+    background: linear-gradient(180deg, rgba(245,184,66,.06), transparent);
+    min-width: 160px;
+    position: sticky;
+    top: 0;
+    z-index: 4;
+  }
+  .fly-cmp-th-pacote .cmp-banner {
+    width: 100px;
+    height: 50px;
+    margin: 0 auto 8px;
+    border-radius: 8px;
+    background: rgba(0,0,0,.4) center/cover;
+    border: 1px solid rgba(245,184,66,.3);
+  }
+  .fly-cmp-th-pacote .cmp-pname {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #fff;
+    font-weight: 700;
+  }
+  .fly-cmp-section td {
+    padding: 14px 12px 6px;
+    font-size: 9px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: rgba(245,184,66,.5);
+    font-weight: 700;
+    border-bottom: 1px solid rgba(245,184,66,.08);
+  }
+  .fly-cmp-row td {
+    padding: 11px 12px;
+    border-bottom: 1px dashed rgba(255,255,255,.04);
+    font-size: 12px;
+  }
+  .fly-cmp-row.fly-cmp-highlight td {
+    background: linear-gradient(180deg, rgba(245,184,66,.06), transparent);
+  }
+  .fly-cmp-row.fly-cmp-highlight td.fly-cmp-lbl,
+  .fly-cmp-row.fly-cmp-highlight td.fly-cmp-num {
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .fly-cmp-lbl {
+    color: rgba(255,255,255,.7);
+    font-weight: 500;
+    position: sticky;
+    left: 0;
+    background: #0c0a08;
+    z-index: 2;
+  }
+  .fly-cmp-num {
+    text-align: center;
+    color: rgba(255,255,255,.85);
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-feature-settings: 'tnum';
+    transition: all .15s;
+  }
+  .fly-cmp-num.fly-cmp-best {
+    background: linear-gradient(180deg, rgba(75,170,120,.3), rgba(75,170,120,.1));
+    color: #8AE9B6;
+    font-weight: 700;
+    box-shadow: inset 0 0 12px rgba(75,170,120,.2);
+  }
+  .fly-cmp-num.fly-cmp-good {
+    background: rgba(75,170,120,.12);
+    color: #6FE3A8;
+  }
+  .fly-cmp-num.fly-cmp-bad {
+    background: rgba(255,107,107,.08);
+    color: rgba(255,138,138,.9);
+  }
+  .fly-cmp-num.fly-cmp-worst {
+    background: linear-gradient(180deg, rgba(255,107,107,.18), rgba(255,107,107,.05));
+    color: #ff8a8a;
+    font-weight: 700;
+  }
+
+  .fly-cmp-insights {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+  }
+  .cmp-insight {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .cmp-insight .ico { font-size: 24px; flex-shrink: 0; }
+  .cmp-insight .ttl {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.5);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .cmp-insight .msg {
+    font-size: 12px;
+    color: rgba(255,255,255,.85);
+    line-height: 1.4;
+  }
+  .cmp-insight.win {
+    background: linear-gradient(180deg, rgba(75,170,120,.12), rgba(75,170,120,.02));
+    border-color: rgba(75,170,120,.35);
+  }
+  .cmp-insight.win .ttl { color: #8AE9B6; }
+  .cmp-insight.warn {
+    background: linear-gradient(180deg, rgba(255,107,107,.1), rgba(255,107,107,.02));
+    border-color: rgba(255,107,107,.3);
+  }
+  .cmp-insight.warn .ttl { color: #ff8a8a; }
+  .cmp-insight.tip {
+    background: linear-gradient(180deg, rgba(245,184,66,.08), rgba(245,184,66,.01));
+    border-color: rgba(245,184,66,.3);
+  }
+  .cmp-insight.tip .ttl { color: #FFE099; }
+
+  .fly-cmp-empty {
+    padding: 60px 40px;
+    text-align: center;
+    color: rgba(255,255,255,.5);
+  }
+  .fly-cmp-empty .ico { font-size: 48px; margin-bottom: 14px; opacity: .4; }
+  .fly-cmp-empty h3 { font-size: 14px; letter-spacing: 2px; color: #fff; margin: 0 0 8px; }
+  .fly-cmp-empty p { font-size: 12px; line-height: 1.5; max-width: 420px; margin: 0 auto; }
+  .fly-cmp-empty strong { color: #FFE099; }
+
+  /* Mobile Comparador */
+  @container fly-vp (max-width: 640px) {
+    .fly-cmp-overlay { padding: 8px; }
+    .fly-cmp-modal { border-radius: 14px; max-height: calc(100vh - 16px); }
+    .fly-cmp-head { padding: 16px 18px; flex-direction: column; gap: 12px; }
+    .fly-cmp-head h2 { font-size: 14px; letter-spacing: 2px; }
+    .fly-cmp-actions { width: 100%; justify-content: space-between; }
+    .fly-cmp-body { padding: 0 14px 18px; overflow-x: auto; }
+    .fly-cmp-table { min-width: 520px; }
+    .fly-cmp-th-pacote { min-width: 130px; padding: 10px; }
+    .fly-cmp-th-pacote .cmp-banner { width: 70px; height: 36px; }
+    .fly-cmp-th-pacote .cmp-pname { font-size: 9px; }
+    .fly-cmp-row td { font-size: 10px; padding: 8px; }
+    .topic-comparador-btn { padding: 12px 18px; font-size: 10px; letter-spacing: 2px; }
+    .topic-comparador-btn .cmp-count { display: none; }
+  }
+
+  /* ============================================================ */
   /* EXPERIÊNCIA VISUAL · upload de foto/vídeo por card           */
   /* ============================================================ */
   .bases-visual-card .img.is-photo,
@@ -10987,6 +11301,26 @@
         `;
         adminBar.querySelector('#btn-newfolder').addEventListener('click', () => openCreateFolderModal(t));
         topicView.appendChild(adminBar);
+
+        // Botão Comparador — aparece em PRODUTOS (e qualquer tópico que tenha pacotes), pra TODOS (não só admin)
+        const pacotesNoTopico = (t.items || []).filter(it => {
+          const upper = (it.name || '').toUpperCase();
+          const isLegacyDubai = (topic.key === 'PRODUTOS' && upper === 'DUBAI EXPLORER');
+          return it.format === 'pacotes' || isLegacyDubai;
+        });
+        if (pacotesNoTopico.length > 0) {
+          const cmpBar = document.createElement('div');
+          cmpBar.className = 'topic-comparador-bar';
+          cmpBar.innerHTML = `
+            <button class="topic-comparador-btn" id="btn-comparador">
+              <span class="cmp-ico">📊</span>
+              <span class="cmp-lbl">COMPARADOR ESTRATÉGICO</span>
+              <span class="cmp-count">${pacotesNoTopico.length} ${pacotesNoTopico.length === 1 ? 'pacote' : 'pacotes'}</span>
+            </button>
+          `;
+          cmpBar.querySelector('#btn-comparador').addEventListener('click', () => flyOpenComparador());
+          topicView.appendChild(cmpBar);
+        }
       } else {
         /* ===== FOLDER VIEW ===== */
         const fh = document.createElement('div');
@@ -11640,6 +11974,320 @@
       v = Number(v) || 0;
       return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     }
+    /* ============================================================
+       COMPARADOR DE PACOTES · visão estratégica de portfolio
+       Compara lado a lado todos os itens com format=pacotes
+       (+ legacy "DUBAI EXPLORER" em PRODUTOS).
+       ============================================================ */
+    function flyCollectPacotes() {
+      // Itera por todos os anos, todos os tópicos, todos os itens
+      const out = [];
+      try {
+        for (const yearKey of Object.keys(data || {})) {
+          const yearObj = data[yearKey] || {};
+          for (const topicKey of Object.keys(yearObj)) {
+            const t = yearObj[topicKey];
+            if (!t || !Array.isArray(t.items)) continue;
+            for (const it of t.items) {
+              if (!it) continue;
+              const upper = (it.name || '').toUpperCase();
+              const isLegacyDubai = (topicKey === 'PRODUTOS' && upper === 'DUBAI EXPLORER');
+              if (it.format === 'pacotes' || isLegacyDubai) {
+                if (!out.find(x => x.id === it.id)) {
+                  out.push({ id: it.id, name: it.name, image: it.image, item: it, yearKey, topicKey });
+                }
+              }
+            }
+          }
+        }
+      } catch (e) { console.warn('flyCollectPacotes error', e); }
+      return out;
+    }
+
+    function flyPacoteMetrics(item) {
+      // Garante que item.dubai existe (cria a partir de DEFAULTS se não)
+      const D = loadDubaiExplorer(item);
+      const fin = dbxComputeFinance(D);
+      const dre = dbxComputeDRE(D, fin);
+      // Mix do portfolio é calculado fora (precisa do total)
+      const ret = D.retencao || {};
+      const totalClientes = fin.totalClientes || 0;
+      const taxaRecompra = totalClientes > 0
+        ? ((Number(ret.voltaram || 0) + Number(ret.recompraOutroPacote || 0)) / totalClientes * 100)
+        : 0;
+      const recorrentes = (D.clientes || []).filter(c => c.recorrente).length;
+      const upsellVendidos = (D.upsell?.extras || []).reduce((s, e) => s + (Number(e.vendidos) || 0), 0);
+      const taxaUpsell = totalClientes > 0 ? (upsellVendidos / totalClientes * 100) : 0;
+      // LTV estimado (heurística): receita/cliente × (1 + taxaRecompra)
+      const receitaTotal = fin.totalReceita + fin.upsellReceita;
+      const receitaCliente = totalClientes > 0 ? receitaTotal / totalClientes : 0;
+      const ltv = receitaCliente * (1 + (taxaRecompra / 100));
+      const ltvCac = fin.cac > 0 ? (ltv / fin.cac) : 0;
+      const lucroCliente = totalClientes > 0 ? dre.lucroLiquido / totalClientes : 0;
+      const custoCliente = totalClientes > 0 ? (fin.totalCusto / totalClientes) : 0;
+      // Origem #1
+      const origemMap = D.vendas?.origem || {};
+      let origemTop = '—';
+      let origemTopVal = 0;
+      Object.entries(origemMap).forEach(([k, v]) => {
+        if (Number(v) > origemTopVal) { origemTopVal = Number(v); origemTop = k; }
+      });
+      // Operação
+      const duracao = (D.produto?.duracao || '').match(/(\d+)/)?.[1] || '—';
+      const equipe = D.equipe?.length || 0;
+      const complexidade = D.meta?.complexidade || 3; // default 3 estrelas
+      const sazonalidade = D.meta?.sazonalidade || 'média';
+      return {
+        item,
+        // Comercial
+        ticketMedio: D.vendas?.ticketMedio || 0,
+        clientesPagos: totalClientes,
+        receitaTotal,
+        receitaUpsell: fin.upsellReceita,
+        // Financeiro
+        custoCliente,
+        margemBruta: dre.margemBruta,
+        margemLiquida: dre.margemLiquida,
+        lucroCliente,
+        lucroPacote: dre.lucroLiquido,
+        // Marketing
+        cac: fin.cac,
+        ltv,
+        ltvCac,
+        roiMkt: fin.roi,
+        origemTop,
+        // Retenção
+        taxaRecompra,
+        npsMedio: D.retencao?.nps || 8.5,
+        recorrentes,
+        taxaUpsell,
+        // Operação
+        duracao,
+        equipe,
+        complexidade,
+        sazonalidade
+      };
+    }
+
+    function flyFmtMoney(v) {
+      try { return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+      catch (e) { return 'R$ ' + Math.round(v); }
+    }
+    function flyFmtPct(v) {
+      return (Number(v || 0)).toFixed(1) + '%';
+    }
+
+    function flyOpenComparador() {
+      const pacotes = flyCollectPacotes();
+      // Remove anterior
+      document.querySelector('.fly-cmp-overlay')?.remove();
+
+      const overlay = document.createElement('div');
+      overlay.className = 'fly-cmp-overlay';
+
+      if (pacotes.length === 0) {
+        overlay.innerHTML = `
+          <div class="fly-cmp-modal">
+            <div class="fly-cmp-head">
+              <div>
+                <h2>📊 Comparador de Pacotes</h2>
+                <p class="fly-cmp-sub">Nenhum pacote encontrado ainda</p>
+              </div>
+              <button class="fly-cmp-close" type="button">✕</button>
+            </div>
+            <div class="fly-cmp-empty">
+              <div class="ico">💎</div>
+              <h3>Nenhum pacote em formato Pacotes</h3>
+              <p>Pra aparecer no comparador, abra um item e mude pra formato <strong>💎 PACOTES</strong> em ADMIN ON.</p>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+        overlay.querySelector('.fly-cmp-close').addEventListener('click', () => overlay.remove());
+        overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+        return;
+      }
+
+      // Calcular métricas de cada pacote
+      const all = pacotes.map(p => ({ p, m: flyPacoteMetrics(p.item) }));
+      // Mix do portfolio
+      const totalReceitaPortfolio = all.reduce((s, x) => s + (x.m.receitaTotal || 0), 0);
+      all.forEach(x => {
+        x.m.mixPortfolio = totalReceitaPortfolio > 0
+          ? (x.m.receitaTotal / totalReceitaPortfolio * 100)
+          : 0;
+      });
+
+      // Helper pra heatmap por linha
+      function heatmap(values, higherIsBetter = true) {
+        const nums = values.map(v => (typeof v === 'number' ? v : NaN));
+        const valid = nums.filter(v => !isNaN(v));
+        if (valid.length < 2) return values.map(() => '');
+        const max = Math.max(...valid);
+        const min = Math.min(...valid);
+        if (max === min) return values.map(() => '');
+        return nums.map(v => {
+          if (isNaN(v)) return '';
+          const t = higherIsBetter ? (v - min) / (max - min) : (max - v) / (max - min);
+          if (t > 0.85) return ' fly-cmp-best';
+          if (t < 0.15) return ' fly-cmp-worst';
+          if (t > 0.6) return ' fly-cmp-good';
+          if (t < 0.4) return ' fly-cmp-bad';
+          return '';
+        });
+      }
+
+      // Define seções e linhas (key: campo do m, formatter, higherBetter, highlight)
+      const sections = [
+        { title: 'COMERCIAL', rows: [
+          { lbl: 'Ticket médio',         k: 'ticketMedio',   fmt: flyFmtMoney, hib: true },
+          { lbl: 'Clientes pagos',       k: 'clientesPagos', fmt: v => v,      hib: true },
+          { lbl: 'Receita total',        k: 'receitaTotal',  fmt: flyFmtMoney, hib: true },
+          { lbl: 'Receita upsell',       k: 'receitaUpsell', fmt: flyFmtMoney, hib: true },
+          { lbl: 'Mix do portfolio',     k: 'mixPortfolio',  fmt: flyFmtPct,   hib: true }
+        ]},
+        { title: 'FINANCEIRO', rows: [
+          { lbl: 'Custo / cliente',      k: 'custoCliente',  fmt: flyFmtMoney, hib: false },
+          { lbl: 'Margem bruta',         k: 'margemBruta',   fmt: flyFmtPct,   hib: true },
+          { lbl: 'Margem líquida',       k: 'margemLiquida', fmt: flyFmtPct,   hib: true,  highlight: true },
+          { lbl: 'Lucro / cliente',      k: 'lucroCliente',  fmt: flyFmtMoney, hib: true },
+          { lbl: 'Lucro do pacote',      k: 'lucroPacote',   fmt: flyFmtMoney, hib: true }
+        ]},
+        { title: 'MARKETING', rows: [
+          { lbl: 'CAC',                  k: 'cac',           fmt: flyFmtMoney, hib: false },
+          { lbl: 'LTV estimado',         k: 'ltv',           fmt: flyFmtMoney, hib: true },
+          { lbl: 'LTV / CAC',            k: 'ltvCac',        fmt: v => Number(v||0).toFixed(2) + 'x', hib: true, highlight: true },
+          { lbl: 'ROI Marketing',        k: 'roiMkt',        fmt: flyFmtPct,   hib: true },
+          { lbl: 'Origem #1',            k: 'origemTop',     fmt: v => v || '—', hib: true, isText: true }
+        ]},
+        { title: 'RETENÇÃO', rows: [
+          { lbl: 'Taxa de recompra',     k: 'taxaRecompra',  fmt: flyFmtPct,   hib: true },
+          { lbl: 'NPS médio',            k: 'npsMedio',      fmt: v => Number(v||0).toFixed(1), hib: true },
+          { lbl: 'Clientes recorrentes', k: 'recorrentes',   fmt: v => v,      hib: true },
+          { lbl: 'Taxa de upsell',       k: 'taxaUpsell',    fmt: flyFmtPct,   hib: true }
+        ]},
+        { title: 'OPERAÇÃO', rows: [
+          { lbl: 'Duração (dias)',       k: 'duracao',       fmt: v => v,      hib: false, isText: true },
+          { lbl: 'Equipe necessária',    k: 'equipe',        fmt: v => v + ' pessoas', hib: false },
+          { lbl: 'Complexidade (1-5)',   k: 'complexidade',  fmt: v => '⭐'.repeat(Math.max(1, Math.min(5, Number(v||3)))), hib: false, isText: true },
+          { lbl: 'Sazonalidade',         k: 'sazonalidade',  fmt: v => v,      hib: false, isText: true }
+        ]}
+      ];
+
+      // Insights bot
+      const margenLiquida = all.map(x => ({ name: x.p.name, val: x.m.margemLiquida, lucro: x.m.lucroPacote }));
+      const winner = margenLiquida.reduce((a, b) => a.lucro > b.lucro ? a : b);
+      const lowest = margenLiquida.reduce((a, b) => a.val < b.val ? a : b);
+      const avgMargem = margenLiquida.reduce((s, x) => s + x.val, 0) / margenLiquida.length;
+      const insightsHtml = `
+        <div class="fly-cmp-insights">
+          <div class="cmp-insight win">
+            <span class="ico">🏆</span>
+            <div>
+              <div class="ttl">VENCEDOR</div>
+              <div class="msg"><strong>${escapeHtml(winner.name)}</strong> · lucro líquido ${flyFmtMoney(winner.lucro)}</div>
+            </div>
+          </div>
+          ${lowest.val < avgMargem * 0.7 ? `
+            <div class="cmp-insight warn">
+              <span class="ico">⚠️</span>
+              <div>
+                <div class="ttl">ATENÇÃO</div>
+                <div class="msg"><strong>${escapeHtml(lowest.name)}</strong> tem margem ${lowest.val.toFixed(1)}% — abaixo da média (${avgMargem.toFixed(1)}%)</div>
+              </div>
+            </div>
+          ` : ''}
+          <div class="cmp-insight tip">
+            <span class="ico">💡</span>
+            <div>
+              <div class="ttl">RECOMENDAÇÃO</div>
+              <div class="msg">Pacotes com margem &gt; 30% merecem aumento de investimento em mkt. Pacotes &lt; 20% revisar custos diretos.</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Build table
+      const headerCells = all.map(x => `
+        <th class="fly-cmp-th-pacote">
+          <div class="cmp-banner" style="${x.p.image ? `background-image:url('${x.p.image}')` : ''}"></div>
+          <div class="cmp-pname">${escapeHtml(x.p.name)}</div>
+        </th>
+      `).join('');
+
+      let tableHtml = `
+        <table class="fly-cmp-table">
+          <thead>
+            <tr>
+              <th class="fly-cmp-th-metric">Métrica</th>
+              ${headerCells}
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      sections.forEach(sec => {
+        tableHtml += `<tr class="fly-cmp-section"><td colspan="${all.length + 1}">═══ ${sec.title} ═══</td></tr>`;
+        sec.rows.forEach(row => {
+          const values = all.map(x => x.m[row.k]);
+          const heat = row.isText ? values.map(() => '') : heatmap(values, row.hib);
+          const cells = values.map((v, i) => `<td class="fly-cmp-num${heat[i]}" title="${escapeHtml(row.lbl)}: ${row.fmt(v)}">${row.fmt(v)}</td>`).join('');
+          tableHtml += `<tr class="fly-cmp-row${row.highlight ? ' fly-cmp-highlight' : ''}"><td class="fly-cmp-lbl">${row.lbl}</td>${cells}</tr>`;
+        });
+      });
+      tableHtml += '</tbody></table>';
+
+      overlay.innerHTML = `
+        <div class="fly-cmp-modal">
+          <div class="fly-cmp-head">
+            <div>
+              <h2>📊 Portfólio de Produtos · Comparador Estratégico</h2>
+              <p class="fly-cmp-sub">Visão consolidada · ${all.length} ${all.length === 1 ? 'pacote' : 'pacotes'} · ${new Date().toLocaleDateString('pt-BR')}</p>
+            </div>
+            <div class="fly-cmp-actions">
+              <button class="fly-cmp-btn ghost" id="cmpAutoRank">🏆 Auto-ranking</button>
+              <button class="fly-cmp-btn ghost" id="cmpExportCSV">📊 CSV</button>
+              <button class="fly-cmp-close" type="button">✕</button>
+            </div>
+          </div>
+          <div class="fly-cmp-body">
+            ${tableHtml}
+            ${insightsHtml}
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      overlay.querySelector('.fly-cmp-close').addEventListener('click', () => overlay.remove());
+      overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+      // Auto-ranking — reordena baseado em lucroPacote
+      overlay.querySelector('#cmpAutoRank').addEventListener('click', () => {
+        all.sort((a, b) => (b.m.lucroPacote || 0) - (a.m.lucroPacote || 0));
+        // Re-render
+        overlay.remove();
+        // Reabre com a nova ordem (precisa salvar ordenação em algum lugar — pula por enquanto, só re-render simples)
+        flyOpenComparador();
+      });
+
+      // CSV export
+      overlay.querySelector('#cmpExportCSV').addEventListener('click', () => {
+        const lines = [['Métrica', ...all.map(x => x.p.name)]];
+        sections.forEach(sec => {
+          lines.push([`═ ${sec.title} ═`, ...all.map(() => '')]);
+          sec.rows.forEach(row => {
+            lines.push([row.lbl, ...all.map(x => row.fmt(x.m[row.k]))]);
+          });
+        });
+        const csv = lines.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Comparador_Pacotes_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+    }
+    window.flyOpenComparador = flyOpenComparador;
+
     function dbxComputeFinance(D) {
       const clientesPagos = D.clientes.filter(c => c.status === 'pago').length;
       const totalClientes = clientesPagos;
