@@ -2114,6 +2114,13 @@
     background: #0a0a0a center/contain no-repeat;
     border: 1px dashed rgba(245,184,66,.25);
   }
+  .fdp-hint {
+    font-size: 9px;
+    color: rgba(255,255,255,.4);
+    letter-spacing: .5px;
+    margin: 4px 0 0;
+    line-height: 1.4;
+  }
   .fdp-align { display: flex; gap: 4px; }
   .fdp-align-btn {
     flex: 1;
@@ -7415,8 +7422,23 @@
           }
         } else if (type === 'image') {
           if (o.image) el.src = o.image;
+          if (o.width)  el.style.width  = o.width + 'px';
+          if (o.height) el.style.height = o.height + 'px';
+          else if (o.width) el.style.height = 'auto';
+          if (o.x || o.y) {
+            const existing = el.style.transform || '';
+            const cleaned = existing.replace(/translate\([^)]*\)/g, '').trim();
+            el.style.transform = `translate(${o.x||0}px, ${o.y||0}px) ${cleaned}`.trim();
+          }
         } else if (type === 'background') {
           if (o.image) el.style.backgroundImage = `url('${o.image}')`;
+          if (o.width)  el.style.width  = o.width + 'px';
+          if (o.height) el.style.height = o.height + 'px';
+          if (o.x || o.y) {
+            const existing = el.style.transform || '';
+            const cleaned = existing.replace(/translate\([^)]*\)/g, '').trim();
+            el.style.transform = `translate(${o.x||0}px, ${o.y||0}px) ${cleaned}`.trim();
+          }
         }
       }
 
@@ -7465,9 +7487,29 @@
             <button class="fdp-close" type="button" title="Fechar">✕</button>
           </div>
           ${isImage ? `
-            <label class="fdp-label">IMAGEM (PNG/JPG)</label>
+            <label class="fdp-label">IMAGEM (PNG/JPG/SVG)</label>
             <input type="file" accept="image/png,image/jpeg,image/svg+xml" class="fdp-file">
             <div class="fdp-preview" id="fdpPreview" style="${o.image ? `background-image:url('${o.image}')` : ''}"></div>
+            <div class="fdp-row">
+              <div class="fdp-col">
+                <label class="fdp-label">LARGURA (PX)</label>
+                <input type="number" class="fdp-w" min="8" max="2000" step="1" placeholder="auto" value="${o.width || ''}">
+              </div>
+              <div class="fdp-col">
+                <label class="fdp-label">ALTURA (PX)</label>
+                <input type="number" class="fdp-h" min="8" max="2000" step="1" placeholder="auto" value="${o.height || ''}">
+              </div>
+            </div>
+            <p class="fdp-hint">Deixe altura em branco para escala proporcional</p>
+            <label class="fdp-label">POSIÇÃO (X / Y)</label>
+            <div class="fdp-row">
+              <div class="fdp-col">
+                <input type="number" class="fdp-x" step="1" placeholder="X" value="${o.x || 0}">
+              </div>
+              <div class="fdp-col">
+                <input type="number" class="fdp-y" step="1" placeholder="Y" value="${o.y || 0}">
+              </div>
+            </div>
           ` : `
             <label class="fdp-label">TEXTO</label>
             <textarea class="fdp-text" rows="2">${escapeHtml(currentText)}</textarea>
@@ -7557,7 +7599,21 @@
         pop.querySelector('[data-act="save"]').addEventListener('click', () => {
           if (isImage) {
             const newImg = pop.querySelector('#fdpPreview').dataset.newImage;
-            if (newImg) set(id, { image: newImg });
+            const w = pop.querySelector('.fdp-w')?.value;
+            const h = pop.querySelector('.fdp-h')?.value;
+            const x = pop.querySelector('.fdp-x')?.value;
+            const y = pop.querySelector('.fdp-y')?.value;
+            const props = {};
+            if (newImg) props.image = newImg;
+            if (w !== '' && w !== undefined) props.width = parseInt(w, 10) || null;
+            else props.width = null;
+            if (h !== '' && h !== undefined) props.height = parseInt(h, 10) || null;
+            else props.height = null;
+            if (x !== '' && x !== undefined) props.x = parseInt(x, 10);
+            if (y !== '' && y !== undefined) props.y = parseInt(y, 10);
+            // Limpa props nulos pra não poluir storage
+            Object.keys(props).forEach(k => { if (props[k] === null) delete props[k]; });
+            if (Object.keys(props).length > 0) set(id, props);
           } else {
             const text = pop.querySelector('.fdp-text').value;
             const fs = pop.querySelector('.fdp-fs').value;
