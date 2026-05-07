@@ -2,7 +2,13 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="FLY" />
+<meta name="theme-color" content="#0c0a08" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="mobile-web-app-capable" content="yes" />
 <title>FLY — 7 ANOS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1612,6 +1618,47 @@
   body.admin-mode .admin-toggle {
     background: var(--gold);
     color: #000;
+  }
+
+  /* ================================================ */
+  /* VIEW MODE TOGGLE (Desktop / Mobile)              */
+  /* ================================================ */
+  .view-mode-toggle {
+    position: fixed;
+    bottom: max(env(safe-area-inset-bottom), 16px);
+    right: 16px;
+    z-index: 100;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(245,184,66,0.4);
+    color: rgba(255,255,255,.85);
+    padding: 9px 14px;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    border-radius: 30px;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 6px 22px rgba(0,0,0,.5), 0 0 0 1px rgba(245,184,66,.08) inset;
+  }
+  .view-mode-toggle .vm-ico {
+    font-size: 14px;
+    line-height: 1;
+  }
+  .view-mode-toggle:hover {
+    background: rgba(245,184,66,0.18);
+    color: var(--gold-bright);
+    border-color: rgba(245,184,66,0.65);
+    transform: translateY(-1px);
+  }
+  .view-mode-toggle[data-mode="mobile"] {
+    background: rgba(245,184,66,0.18);
+    color: var(--gold-bright);
+    border-color: rgba(245,184,66,0.6);
   }
 
   .edit-banner-btn {
@@ -5675,12 +5722,576 @@
     font-size: 12px;
     color: rgba(255,255,255,.45);
   }
+
+  /* ============================================================ */
+  /* ============   📱 IPHONE / MOBILE OPTIMIZATION  ============ */
+  /* ============================================================ */
+  /* iOS safe-area + tap behavior */
+  html, body {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overscroll-behavior-y: contain;
+  }
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    container-type: inline-size;
+    container-name: fly-vp;
+    transition: max-width .25s ease;
+  }
+  /* User toggled "Mobile" — força layout iPhone num desktop também */
+  body.force-mobile {
+    max-width: 414px;
+    margin: 0 auto;
+    box-shadow: 0 0 80px rgba(0,0,0,.4);
+    border-left: 1px solid rgba(245,184,66,.08);
+    border-right: 1px solid rgba(245,184,66,.08);
+  }
+  /* User toggled "Desktop" mesmo no celular — permite scroll horizontal */
+  body.force-desktop {
+    min-width: 1280px;
+  }
+  /* Esconder o botão de toggle quando NÃO houver escolha manual e estivermos no auto-fit */
+  /* (mantemos sempre visível para fácil acesso) */
+
+  /* ============================================================ */
+  /* TABLET (≤ 880px)                                             */
+  /* ============================================================ */
+  @media (max-width: 880px) {
+    .modal { max-width: 92vw; }
+    .modal.wide { max-width: 92vw; }
+  }
+
+  /* ============================================================ */
+  /* MOBILE (≤ 640px) — iPhone Pro / Plus / Max                  */
+  /* Usa @container para responder ao body (que pode ser limitado */
+  /* a 414px quando user clicar no toggle "Mobile" no desktop)    */
+  /* ============================================================ */
+  @container fly-vp (max-width: 640px) {
+    /* Top fixed UI */
+    #brandLogo {
+      top: max(env(safe-area-inset-top), 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      gap: 6px;
+      padding: 4px 10px;
+    }
+    #brandLogo img { height: 22px; width: auto; }
+    #brandLogo .eco-label { font-size: 8px; letter-spacing: 1.8px; }
+
+    .back-btn {
+      top: max(env(safe-area-inset-top), 12px);
+      left: 12px;
+      padding: 7px 12px;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+    }
+    .admin-toggle {
+      top: max(env(safe-area-inset-top), 12px);
+      right: 12px;
+      padding: 7px 12px;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+    }
+
+    /* Home / universe stage */
+    .universe-stage { padding: 80px 8px 40px; }
+    .grid-row { gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .grid-circle {
+      width: 58px; height: 58px;
+      font-size: 11px; letter-spacing: 1px;
+    }
+    .grid-circle.gold { width: 70px; height: 70px; }
+    .grid-circle .grid-fly-logo { width: 30px; height: 30px; }
+
+    /* Detail (mobile usa o MESMO wheel, mas labels distanciados via JS) */
+    #detailView { padding: 80px 12px 40px; }
+    /* Stage encolhe um pouco pra dar espaço aos labels distanciados */
+    .stage { width: min(50vmin, 200px) !important; margin: 0 auto; }
+    /* Topics no mobile: tipografia compacta, quebra natural por palavra */
+    .topic {
+      font-size: 9px !important;
+      letter-spacing: .5px !important;
+      white-space: normal !important;
+      max-width: 84px;
+      text-align: center;
+      line-height: 1.15;
+      font-weight: 700;
+      padding: 3px;
+      overflow-wrap: break-word;
+      hyphens: auto;
+    }
+    /* Texto central encolhido para combinar com stage menor */
+    .center-text { top: 14% !important; }
+    .center-text .ano { font-size: 22px !important; letter-spacing: 3px; }
+    .center-text .ano.long { font-size: 13px !important; letter-spacing: 1.5px; }
+    .center-text .period { font-size: 9px !important; letter-spacing: 1.5px; margin-top: 4px; }
+    .top-mark { font-size: 8px !important; letter-spacing: 1.5px; gap: 4px; top: 5% !important; }
+    .center-circle .glyph { font-size: 10px !important; letter-spacing: 2.5px; }
+    .center-circle .glyph .center-fly-logo { width: 50px !important; height: auto; }
+    /* Topic banner (when used) */
+    .topic-banner { padding: 18px 14px; border-radius: 18px; }
+    .topic-banner h1 { font-size: 22px; letter-spacing: 2.5px; }
+    .topic-banner .banner-icons { gap: 8px; margin-top: 12px; }
+    .banner-icon { width: 50px; height: 36px; font-size: 12px; }
+
+    /* Topic view (items) */
+    #topicView { padding: 80px 14px 40px; }
+    .items-grid { grid-template-columns: 1fr 1fr !important; gap: 10px; }
+    .item-card { padding: 14px 12px; min-height: 80px; }
+    .item-card h3, .item-card .item-name { font-size: 11px !important; letter-spacing: 1px; }
+
+    /* Item view */
+    #itemView { padding: 70px 0 60px; }
+
+    /* Modal genérico */
+    .modal {
+      max-width: 94vw;
+      max-height: 88vh;
+      padding: 22px 18px;
+      border-radius: 16px;
+      overflow-y: auto;
+    }
+    .modal.wide { max-width: 94vw; }
+    .modal h2 { font-size: 16px !important; letter-spacing: 2px; }
+    .modal p, .modal label { font-size: 12px; }
+
+    /* ---------- BASES FLY ---------- */
+    .bases-module { padding: 0 12px 40px; }
+    .bases-hero { padding: 22px 18px; border-radius: 18px; margin: 18px 0 18px; }
+    .bases-hero h1 { font-size: 24px; letter-spacing: 3px; }
+    .bases-hero .sub { font-size: 10px; letter-spacing: 1.5px; }
+    .bases-hero-kpis {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .bases-kpi { padding: 10px 12px; }
+    .bases-kpi .lbl { font-size: 9px; letter-spacing: 1.3px; }
+    .bases-kpi .val { font-size: 20px; }
+
+    /* Bases map section: stack sidebar above map */
+    .bases-map-section {
+      grid-template-columns: 1fr !important;
+      gap: 12px;
+    }
+    .bases-sidebar {
+      max-height: 280px;
+      order: 2;
+      border-radius: 16px;
+    }
+    .bases-map-stack { order: 1; }
+    .dubai-map { min-height: 360px; aspect-ratio: 1/1; }
+    .dubai-map-title {
+      padding: 8px 12px;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+    }
+    .dubai-map-title strong { font-size: 11px; letter-spacing: 2px; display: block; }
+    .map-toolbar { top: 60px; left: 8px; right: 8px; gap: 6px; }
+    .map-tool-btn {
+      padding: 6px 10px;
+      font-size: 9px;
+      letter-spacing: 1px;
+    }
+    .map-tool-btn .lbl { display: none; }
+    .map-zoom-controls {
+      right: 10px;
+      bottom: 60px;
+      gap: 4px;
+    }
+    .zoom-btn { width: 36px; height: 36px; font-size: 16px; }
+    .zoom-level { font-size: 9px; padding: 3px 6px; }
+    .map-hint { font-size: 8px; padding: 5px 8px; letter-spacing: 1.2px; }
+
+    /* Sidebar */
+    .sidebar-head { padding: 12px; }
+    .sidebar-title { font-size: 11px; letter-spacing: 1.5px; }
+    .sidebar-sub { font-size: 9px; letter-spacing: 1px; }
+    .sidebar-add-btn { width: 32px; height: 32px; font-size: 16px; }
+    .sidebar-pin-row { padding: 8px; gap: 8px; }
+    .sidebar-pin-thumb { width: 32px; height: 32px; }
+    .sidebar-pin-name { font-size: 11px; }
+    .sidebar-pin-city { font-size: 9px; }
+
+    /* Pin modal */
+    .pin-modal {
+      max-width: 94vw;
+      width: 94vw;
+      padding: 22px 18px;
+      max-height: 90vh;
+      overflow-y: auto;
+      border-radius: 18px;
+    }
+    .pin-modal-title { font-size: 18px; letter-spacing: 2px; }
+    .pin-modal-sub { font-size: 10px; letter-spacing: 1.2px; }
+    .pin-step-label { font-size: 11px; letter-spacing: 1.5px; }
+    .pin-input, .pin-select {
+      font-size: 14px !important;
+      padding: 11px 12px !important;
+    }
+    .pin-location-grid { grid-template-columns: 1fr; gap: 10px; }
+    .pin-photo-zone { min-height: 110px; }
+    .pin-photo-icon { font-size: 32px; }
+    .pin-photo-text { font-size: 11px; letter-spacing: 1.5px; }
+    .pin-photo-hint { font-size: 9px; }
+    .pin-modal-actions { gap: 8px; flex-direction: column; }
+    .pin-modal-actions .pin-btn { width: 100%; padding: 12px; font-size: 11px; }
+
+    /* Pin card overlay */
+    .pin-card { max-width: 94vw; }
+    .pin-card-photo { height: 200px; }
+    .pin-card-name { font-size: 18px; letter-spacing: 1.5px; }
+    .pin-card-loc { font-size: 11px; }
+    .pin-card-coords { font-size: 10px; }
+    .pin-card-opening { flex-wrap: wrap; gap: 6px; }
+    .pin-card-actions { flex-direction: column; gap: 8px; }
+    .pin-card-actions .pin-btn { width: 100%; }
+
+    /* Visual grid */
+    .bases-visual-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .bases-visual-card { aspect-ratio: 4/3; border-radius: 14px; }
+    .bases-visual-card .img { font-size: 36px; }
+    .bases-visual-card .overlay { padding: 12px; }
+    .bases-visual-card .overlay .lbl { font-size: 9px; letter-spacing: 1.5px; margin-bottom: 2px; }
+    .bases-visual-card .overlay .name { font-size: 12px; }
+    .bases-visual-card .visual-edit-btns { opacity: 1; top: 6px; right: 6px; gap: 4px; }
+    .bases-visual-card .visual-edit-btn { width: 26px; height: 26px; font-size: 11px; }
+    .bases-visual-card .visual-empty-hint { display: none; }
+    .bases-video-card {
+      grid-column: span 2;
+      aspect-ratio: 16/9;
+      border-radius: 14px;
+    }
+    .bases-video-card .play { width: 50px; height: 50px; font-size: 18px; }
+    .bases-video-card .lbl { font-size: 9px; letter-spacing: 1.5px; padding: 0 12px; text-align: center; }
+    .bases-video-card .visual-edit-btns { opacity: 1; top: 8px; right: 8px; }
+    .bases-video-card .visual-edit-btn { width: 32px; height: 32px; }
+
+    /* Section title */
+    .bases-section { margin-top: 26px; }
+    .bases-section-title { gap: 10px; margin-bottom: 14px; }
+    .bases-section-title .ico { width: 30px; height: 30px; font-size: 13px; }
+    .bases-section-title h2 { font-size: 14px; letter-spacing: 2.5px; }
+    .bases-section-title small { font-size: 9px; letter-spacing: 1.3px; }
+
+    /* Costs */
+    .bases-costs { grid-template-columns: 1fr !important; gap: 14px; }
+    .cost-card { padding: 18px; border-radius: 18px; }
+    .cost-card h3 { font-size: 13px; letter-spacing: 2px; }
+    .cost-card h3 small { font-size: 9px; letter-spacing: 1.2px; }
+    .cost-card .cost-icon { width: 36px; height: 36px; font-size: 16px; }
+    .cost-row { padding: 10px 0; }
+    .cost-row .lbl { font-size: 11px; }
+    .cost-row .val { font-size: 13px; }
+    .cost-staff { padding: 10px 12px; }
+    .cost-staff .head { font-size: 9px; letter-spacing: 1.3px; }
+    .cost-staff .level .num { font-size: 22px; }
+    .cost-staff .level .lbl { font-size: 9px; }
+
+    /* Team */
+    .bases-team-row { grid-template-columns: 1fr !important; gap: 14px; }
+    .team-total .num { font-size: 52px; }
+    .team-total .lbl { font-size: 10px; letter-spacing: 1.5px; }
+    .team-row { padding: 10px 12px; gap: 10px; }
+    .team-row .badge { width: 32px; height: 32px; font-size: 14px; }
+    .team-row .info .name { font-size: 12px; }
+    .team-row .info .desc { font-size: 10px; }
+
+    /* Ops */
+    .bases-ops { grid-template-columns: 1fr !important; gap: 14px; }
+    .ops-card { padding: 18px; }
+    .ops-card h3 { font-size: 13px; letter-spacing: 2px; }
+    .ops-card .ops-icon { width: 36px; height: 36px; font-size: 16px; }
+    .ops-list li { font-size: 11px; padding: 8px 0; }
+
+    /* Scale */
+    .scale-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .scale-item { padding: 14px 10px; }
+    .scale-item .ico { font-size: 22px; }
+    .scale-item .name { font-size: 11px; letter-spacing: 1.2px; }
+    .scale-item .desc { font-size: 9px; }
+
+    /* Timeline */
+    .bases-timeline-wrap { padding: 18px 12px 14px; border-radius: 18px; }
+    .timeline-summary {
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 12px;
+    }
+    .timeline-summary .stat { flex: 1; min-width: 80px; }
+    .timeline-summary .stat .num { font-size: 14px; }
+    .timeline-summary .stat .lbl { font-size: 8px; letter-spacing: 1.1px; }
+    .timeline-summary .stat-divider { display: none; }
+    .timeline-year-btn { padding: 6px 12px; font-size: 10px; letter-spacing: 1.5px; }
+    .timeline-year-btn .y-count { font-size: 8px; }
+    .timeline-track::before { left: 10px; }
+    .timeline-month {
+      padding: 8px 0 8px 32px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .timeline-month .dot { left: 6px; top: 12px; width: 10px; height: 10px; }
+    .timeline-month .month-lbl {
+      font-size: 9px;
+      letter-spacing: 1.3px;
+      min-width: 48px;
+    }
+    .timeline-base-chip {
+      font-size: 10px;
+      padding: 4px 10px 4px 4px;
+      gap: 6px;
+    }
+    .timeline-base-chip .chip-photo { width: 18px; height: 18px; font-size: 8px; }
+    .timeline-base-chip .chip-flag { font-size: 11px; }
+    .timeline-month .empty-hint { font-size: 9px; }
+
+    /* ---------- HIERARQUIA ---------- */
+    .hier-module { padding: 0 12px 40px; }
+    .hier-hero { padding: 22px 16px; border-radius: 18px; margin: 18px 0 18px; }
+    .hier-hero h1 { font-size: 26px; letter-spacing: 3px; }
+    .hier-hero .hier-sub { font-size: 10px; letter-spacing: 1.5px; }
+    .hier-hero-kpis { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 14px; }
+    .hier-hero-kpi { padding: 10px 12px; }
+    .hier-hero-kpi .lbl { font-size: 9px; letter-spacing: 1.3px; }
+    .hier-hero-kpi .val { font-size: 18px; }
+    .hier-tabs {
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 6px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .hier-tabs::-webkit-scrollbar { display: none; }
+    .hier-tab {
+      padding: 8px 12px;
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      white-space: nowrap;
+    }
+    .year-row {
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+    }
+    .year-switcher { justify-content: center; }
+    .year-btn { padding: 8px 14px; font-size: 11px; }
+    .year-meta { font-size: 10px; text-align: center; }
+
+    /* Organograma — make horizontally scrollable */
+    .org-chart-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 12px;
+    }
+    .org-canvas {
+      min-width: max-content;
+      padding: 16px;
+    }
+    .org-card { padding: 10px; min-width: 140px; }
+    .org-card .name { font-size: 11px; }
+    .org-card .role { font-size: 9px; }
+    .org-tool-btn { padding: 6px 10px; font-size: 9px; }
+
+    /* Funcionários table → cards */
+    .funcionarios-grid { grid-template-columns: 1fr; }
+    .funcionario-card { padding: 12px; }
+    .funcionario-card .name { font-size: 12px; }
+    .funcionario-card .meta { font-size: 10px; }
+
+    /* Financeiro */
+    .fin-grid, .fin-row { grid-template-columns: 1fr !important; gap: 10px; }
+    .fin-card { padding: 14px; }
+    .fin-card .num { font-size: 22px; }
+    .fin-card .lbl { font-size: 10px; }
+
+    /* Crescimento / Performance / Contratações */
+    .grow-grid, .perf-grid, .hire-grid { grid-template-columns: 1fr !important; gap: 10px; }
+    .grow-card, .perf-card, .hire-card { padding: 14px; }
+
+    /* AI Panel */
+    .ai-panel { padding: 16px; border-radius: 14px; }
+    .ai-panel h3 { font-size: 12px; letter-spacing: 1.5px; }
+    .ai-panel p { font-size: 11px; }
+    .ai-panel .ai-icon { width: 32px; height: 32px; font-size: 14px; }
+
+    /* ---------- DUBAI EXPLORER ---------- */
+    .dbx-module { padding: 12px 12px 60px; }
+    .dbx-hero { height: 220px; border-radius: 18px; margin-bottom: 18px; }
+    .dbx-hero-content { left: 16px; right: 16px; bottom: 18px; }
+    .dbx-hero-content h1 { font-size: 24px; letter-spacing: 3px; }
+    .dbx-eyebrow { font-size: 9px; letter-spacing: 2px; }
+    .dbx-hero-kpis {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .dbx-kpi { padding: 8px 10px; }
+    .dbx-kpi .lbl { font-size: 8px; letter-spacing: 1.2px; }
+    .dbx-kpi .val { font-size: 16px; }
+
+    /* DBX tabs - horizontal scroll */
+    .dbx-tabs {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 6px;
+      gap: 4px;
+    }
+    .dbx-tabs::-webkit-scrollbar { display: none; }
+    .dbx-tab {
+      padding: 8px 12px;
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* DBX panel grids */
+    .dbx-2col, .dbx-finance-grid, .dbx-cards-grid {
+      grid-template-columns: 1fr !important;
+      gap: 10px;
+    }
+    .dbx-block { padding: 14px; border-radius: 14px; }
+    .dbx-block h3 { font-size: 12px; letter-spacing: 1.5px; }
+    .dbx-card { padding: 12px; border-radius: 12px; }
+    .dbx-card h4, .dbx-card .name { font-size: 12px; }
+    .dbx-card .role, .dbx-card .desc, .dbx-card .meta { font-size: 10px; }
+    .dbx-card .photo { width: 56px; height: 56px; }
+    .dbx-card-actions { opacity: 1; gap: 4px; }
+    .dbx-act-btn { width: 28px; height: 28px; font-size: 11px; }
+
+    /* DBX tables → cards */
+    .dbx-tr, .dbx-block .dbx-table .dbx-tr {
+      grid-template-columns: 1fr !important;
+      gap: 4px;
+      padding: 10px;
+    }
+    .dbx-tr.head { display: none; }
+    .dbx-tr > * { font-size: 11px; }
+    .dbx-tr > *:first-child { font-weight: 600; color: #E6C77A; font-size: 12px; }
+
+    .dbx-rot-row, .dbx-inc-row, .dbx-art-row, .dbx-origem-row {
+      grid-template-columns: 1fr !important;
+      gap: 6px;
+      padding: 10px;
+    }
+
+    /* DBX add buttons + add cards */
+    .dbx-mini-btn { padding: 6px 10px; font-size: 10px; }
+    .dbx-add-card { padding: 14px; min-height: 100px; }
+    .dbx-add-card .ico { font-size: 20px; }
+    .dbx-add-card .lbl { font-size: 10px; }
+    .dbx-add-row { padding: 10px; font-size: 11px; }
+
+    /* DBX modal */
+    .dbx-modal {
+      max-width: 94vw;
+      width: 94vw;
+      padding: 20px 16px;
+      max-height: 90vh;
+      overflow-y: auto;
+      border-radius: 16px;
+    }
+    .dbx-modal h3 { font-size: 14px; letter-spacing: 1.5px; }
+    .dbx-form-field label { font-size: 10px; letter-spacing: 1.2px; }
+    .dbx-form-field input,
+    .dbx-form-field textarea,
+    .dbx-form-field select {
+      font-size: 14px !important;
+      padding: 10px 12px;
+    }
+    .dbx-modal-actions { flex-direction: column; gap: 8px; }
+    .dbx-modal-actions button { width: 100%; padding: 12px; font-size: 11px; }
+
+    /* Alert blocks */
+    .dbx-alert { padding: 14px; border-radius: 14px; }
+    .dbx-alert h4 { font-size: 12px; }
+    .dbx-alert p { font-size: 11px; }
+
+    /* Inline editing affordance — touch-friendly */
+    .bases-inline-editable, .hier-inline-editable {
+      min-height: 22px;
+    }
+  }
+
+  /* ============================================================ */
+  /* SMALL PHONE (≤ 380px) — iPhone SE / mini                    */
+  /* ============================================================ */
+  @container fly-vp (max-width: 380px) {
+    .grid-circle { width: 50px; height: 50px; font-size: 9px; }
+    .grid-circle.gold { width: 60px; height: 60px; }
+    .items-grid { grid-template-columns: 1fr !important; }
+    .stage { width: min(58vmin, 200px) !important; }
+    .topic { font-size: 8px !important; max-width: 60px; letter-spacing: .7px !important; }
+    .bases-hero h1 { font-size: 20px; letter-spacing: 2px; }
+    .bases-hero-kpis,
+    .hier-hero-kpis,
+    .dbx-hero-kpis { grid-template-columns: repeat(2, 1fr); }
+    .scale-grid, .bases-visual-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .bases-video-card { grid-column: span 1; }
+    .dbx-hero-content h1 { font-size: 20px; letter-spacing: 2px; }
+    .dubai-map { min-height: 320px; }
+    .timeline-summary .stat { min-width: 70px; }
+    .timeline-summary .stat .num { font-size: 13px; }
+    .pin-modal-title { font-size: 16px; letter-spacing: 1.5px; }
+    .modal h2 { font-size: 14px !important; }
+  }
+
+  /* ============================================================ */
+  /* TOUCH DEVICES — always show edit buttons                    */
+  /* ============================================================ */
+  @media (hover: none) and (pointer: coarse) {
+    .dbx-card-actions,
+    .bases-visual-card .visual-edit-btns,
+    .bases-video-card .visual-edit-btns,
+    .visual-empty-hint {
+      opacity: 1 !important;
+    }
+    .bases-inline-editable:hover,
+    .hier-inline-editable:hover {
+      background: rgba(198,168,90,.05);
+    }
+  }
+
+  /* iOS: prevent input zoom on focus (font-size ≥16 fix) */
+  @container fly-vp (max-width: 640px) {
+    input[type="text"],
+    input[type="month"],
+    input[type="date"],
+    input[type="number"],
+    input[type="email"],
+    input[type="tel"],
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
+  /* Note: media query (real viewport) ainda usado pra inputs em phones reais */
+  @media (max-width: 640px) {
+    input[type="text"],
+    input[type="month"],
+    input[type="date"],
+    input[type="number"],
+    input[type="email"],
+    input[type="tel"],
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
 </style>
 </head>
 <body>
   <div id="brandLogo"><img src="assets/fly-logo-white.svg" alt="FLY"><span class="eco-label">ECOSSISTEMA FLY</span></div>
   <button class="back-btn" id="backBtn">← VOLTAR</button>
   <button class="admin-toggle" id="adminToggle">ADMIN</button>
+  <button class="view-mode-toggle" id="viewModeToggle" title="Alternar Desktop/Mobile" data-mode="desktop">
+    <span class="vm-ico">🖥</span><span class="vm-lbl">DESKTOP</span>
+  </button>
 
   <!-- VIEW 1: linear circles -->
   <div class="view grid-view" id="gridView">
@@ -6202,6 +6813,42 @@
     });
 
     /* =====================  VIEW 2  ===================== */
+    // ============================================================
+    // VIEW MODE (Desktop/Mobile manual toggle + auto-detect)
+    // ============================================================
+    function getViewMode() {
+      const saved = localStorage.getItem('fly_view_mode');
+      if (saved === 'desktop' || saved === 'mobile') return saved;
+      return window.matchMedia('(max-width: 640px)').matches ? 'mobile' : 'desktop';
+    }
+    function setViewMode(mode) {
+      if (mode !== 'desktop' && mode !== 'mobile') return;
+      localStorage.setItem('fly_view_mode', mode);
+      applyViewMode();
+      // Re-render current view to apply layout changes
+      if (currentView === 'detail' && currentYear) {
+        const idx = years.indexOf(currentYear);
+        if (idx >= 0) showDetail(idx);
+      }
+    }
+    function applyViewMode() {
+      const saved = localStorage.getItem('fly_view_mode');
+      const mode = getViewMode();
+      // SÓ força body class se usuário escolheu manualmente
+      // (caso contrário deixa o auto-detect via @container responder ao viewport real)
+      document.body.classList.toggle('force-mobile', saved === 'mobile');
+      document.body.classList.toggle('force-desktop', saved === 'desktop');
+      // Atualizar botão visual
+      const btn = document.getElementById('viewModeToggle');
+      if (btn) {
+        btn.dataset.mode = mode;
+        btn.title = (mode === 'mobile') ? 'Mudar para Desktop' : 'Mudar para Mobile';
+        btn.querySelector('.vm-ico').textContent = (mode === 'mobile') ? '📱' : '🖥';
+        btn.querySelector('.vm-lbl').textContent = (mode === 'mobile') ? 'MOBILE' : 'DESKTOP';
+      }
+    }
+    function isMobileView() { return getViewMode() === 'mobile'; }
+
     function showDetail(idx) {
       currentYear = years[idx];
       currentView = 'detail';
@@ -6236,8 +6883,9 @@
       ct.innerHTML = '<div class="' + anoClass + '">' + y.ano + '</div><div class="period">' + y.period + '</div>';
       stage.appendChild(ct);
 
+      // Em mobile, distanciamos os labels (labelR maior) para caberem
       const ringR  = 35;
-      const labelR = 42;
+      const labelR = isMobileView() ? 62 : 42;
 
       topics.forEach(t => {
         const rad = t.angle * Math.PI / 180;
@@ -11278,6 +11926,26 @@
         }
       }
       else if (currentView === 'detail') switchTo('grid');
+    });
+
+    /* =====================  VIEW MODE TOGGLE  ===================== */
+    const viewModeToggle = document.getElementById('viewModeToggle');
+    if (viewModeToggle) {
+      viewModeToggle.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const cur = getViewMode();
+        setViewMode(cur === 'mobile' ? 'desktop' : 'mobile');
+      });
+    }
+    // Aplicar estado inicial
+    applyViewMode();
+    // Re-aplicar em resize (auto-detect só funciona quando não há escolha manual)
+    let __vmResizeT;
+    window.addEventListener('resize', () => {
+      clearTimeout(__vmResizeT);
+      __vmResizeT = setTimeout(() => {
+        if (!localStorage.getItem('fly_view_mode')) applyViewMode();
+      }, 150);
     });
 
     /* =====================  ADMIN  ===================== */
