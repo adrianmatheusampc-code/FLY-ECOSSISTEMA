@@ -1668,6 +1668,94 @@
     border-color: rgba(245,184,66,0.6);
   }
 
+  /* ================================================ */
+  /* SYNC STATUS · indicador de banco de dados        */
+  /* ================================================ */
+  .sync-status {
+    position: fixed;
+    bottom: max(env(safe-area-inset-bottom), 16px);
+    left: 16px;
+    z-index: 100;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 30px;
+    padding: 7px 12px 7px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    color: rgba(255,255,255,.7);
+    transition: all .2s;
+    cursor: default;
+    box-shadow: 0 4px 14px rgba(0,0,0,.4);
+  }
+  .sync-status:hover {
+    background: rgba(0,0,0,.85);
+  }
+  .sync-status .sync-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.3);
+    flex-shrink: 0;
+    transition: all .2s;
+  }
+  .sync-status[data-status="online"] {
+    border-color: rgba(111,227,168,.4);
+    color: #6FE3A8;
+  }
+  .sync-status[data-status="online"] .sync-dot {
+    background: #6FE3A8;
+    box-shadow: 0 0 10px rgba(111,227,168,.7);
+  }
+  .sync-status[data-status="syncing"] {
+    border-color: rgba(245,184,66,.4);
+    color: var(--gold-bright);
+  }
+  .sync-status[data-status="syncing"] .sync-dot {
+    background: var(--gold-bright);
+    box-shadow: 0 0 10px rgba(245,184,66,.6);
+    animation: syncPulse 1s infinite;
+  }
+  .sync-status[data-status="offline"] {
+    border-color: rgba(255,107,107,.3);
+    color: #ff8a8a;
+  }
+  .sync-status[data-status="offline"] .sync-dot {
+    background: #ff6b6b;
+    box-shadow: 0 0 8px rgba(255,107,107,.5);
+  }
+  .sync-status[data-status="error"] {
+    border-color: rgba(255,107,107,.5);
+    color: #ff8a8a;
+  }
+  .sync-status[data-status="error"] .sync-dot {
+    background: #ff6b6b;
+    animation: syncBlink 0.6s infinite;
+  }
+  @keyframes syncPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: .65; }
+  }
+  @keyframes syncBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .3; }
+  }
+  /* Mobile: fica acima do botão Desktop/Mobile, mais compacto */
+  @container fly-vp (max-width: 640px) {
+    .sync-status {
+      left: 12px;
+      bottom: max(env(safe-area-inset-bottom), 14px);
+      font-size: 9px;
+      padding: 6px 10px 6px 9px;
+      gap: 6px;
+    }
+    .sync-status .sync-dot { width: 7px; height: 7px; }
+  }
+
   .edit-banner-btn {
     position: absolute;
     top: 12px; right: 12px;
@@ -6491,6 +6579,13 @@
   <button class="view-mode-toggle" id="viewModeToggle" title="Alternar Desktop/Mobile" data-mode="desktop">
     <span class="vm-ico">🖥</span><span class="vm-lbl">DESKTOP</span>
   </button>
+  <div class="sync-status" id="syncStatus" data-status="idle" title="Status de sincronização com banco de dados">
+    <span class="sync-dot"></span>
+    <span class="sync-msg">Conectando…</span>
+  </div>
+
+  <!-- Supabase JS SDK (UMD via CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
   <!-- VIEW 1: linear circles -->
   <div class="view grid-view" id="gridView">
@@ -6542,6 +6637,148 @@
       { name: 'SUSTENTABILIDADE',         key: 'SUSTENTABILIDADE',        angle:    0 },
       { name: 'PRODUTOS',                 key: 'PRODUTOS',                angle:  -45 }
     ];
+
+    /* =====================  SUPABASE SYNC  ===================== */
+    // Conecta com Supabase e mantém localStorage espelhado em tempo real.
+    // Estratégia: localStorage = cache rápido. Supabase = fonte da verdade.
+    // - Em qualquer setItem(), enfileiramos um upsert (debounced 700ms)
+    // - No load inicial, puxamos do Supabase e sobrescrevemos cache local
+    // - Se offline ou erro, app continua funcionando 100% via localStorage
+
+    const FLY_SUPA_URL = 'https://ezfmvblirhmootdvqmsr.supabase.co';
+    const FLY_SUPA_KEY = 'sb_publishable_5vVImnH7PBHM0E5jDP1bAA_CiHZz6jt';
+    const SYNCED_KEYS = [
+      'fly_7anos_data_v1',
+      'fly_basesfly_pins_v2',
+      'fly_basesfly_visual_v1',
+      'fly_basesfly_inline_v1',
+      'fly_hierarquia_inline_v1',
+      'fly_customcities_v1'
+    ];
+    let supaClient = null;
+    const __supaPending = new Map(); // key -> timeout id
+    let __supaInitialPullDone = false;
+
+    function setSyncStatus(status, msg) {
+      const el = document.getElementById('syncStatus');
+      if (!el) return;
+      el.dataset.status = status;
+      const m = el.querySelector('.sync-msg');
+      if (m) m.textContent = msg || ({
+        idle: 'Local',
+        syncing: 'Sincronizando…',
+        online: 'Sincronizado',
+        offline: 'Offline · cache',
+        error: 'Erro · cache local'
+      })[status] || status;
+    }
+
+    function safeJSONParse(s) { try { return JSON.parse(s); } catch (e) { return null; } }
+
+    async function initSupabase() {
+      if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+        console.warn('[FLY] Supabase SDK não carregada (offline)');
+        setSyncStatus('offline', 'Offline · cache');
+        return false;
+      }
+      try {
+        supaClient = window.supabase.createClient(FLY_SUPA_URL, FLY_SUPA_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false }
+        });
+      } catch (e) {
+        console.warn('[FLY] Falha ao criar client Supabase:', e);
+        setSyncStatus('error', 'Erro de conexão');
+        return false;
+      }
+      // Pull inicial — tenta puxar todos os SYNCED_KEYS do banco
+      setSyncStatus('syncing', 'Buscando dados…');
+      try {
+        const { data: rows, error } = await supaClient
+          .from('fly_kv').select('key, value, updated_at').in('key', SYNCED_KEYS);
+        if (error) throw error;
+        let pulled = 0;
+        for (const row of (rows || [])) {
+          const remoteJSON = JSON.stringify(row.value);
+          const localJSON = localStorage.getItem(row.key);
+          if (remoteJSON !== localJSON) {
+            // Salva sem disparar upsert de volta (flag silent)
+            __supaSilent = true;
+            localStorage.setItem(row.key, remoteJSON);
+            __supaSilent = false;
+            pulled++;
+          }
+        }
+        // Push de keys locais que ainda não estão no banco (primeira sincronização)
+        const remoteKeys = new Set((rows || []).map(r => r.key));
+        for (const k of SYNCED_KEYS) {
+          const local = localStorage.getItem(k);
+          if (local && !remoteKeys.has(k)) {
+            const v = safeJSONParse(local);
+            if (v !== null) await supaClient.from('fly_kv').upsert({ key: k, value: v });
+          }
+        }
+        __supaInitialPullDone = true;
+        setSyncStatus('online', 'Sincronizado');
+        // Se algo foi puxado e a app já estava renderizada, recarrega
+        if (pulled > 0 && typeof showHome === 'function') {
+          // Re-popular memória global a partir do localStorage atualizado
+          if (typeof loadData === 'function' && typeof data !== 'undefined') {
+            try { Object.assign(data, loadData()); } catch (e) {}
+          }
+          // Re-render se estiver na tela inicial ou em painéis dependentes
+          if (typeof currentView !== 'undefined' && currentView === 'grid') {
+            // nada a fazer — home é estática
+          }
+        }
+        return true;
+      } catch (e) {
+        console.warn('[FLY] Pull do Supabase falhou:', e?.message || e);
+        setSyncStatus('offline', 'Offline · cache');
+        return false;
+      }
+    }
+
+    let __supaSilent = false;
+    function queueSupabaseSync(key) {
+      if (!supaClient || !__supaInitialPullDone) return;
+      if (__supaSilent) return;
+      if (!SYNCED_KEYS.includes(key)) return;
+      if (__supaPending.has(key)) clearTimeout(__supaPending.get(key));
+      setSyncStatus('syncing');
+      __supaPending.set(key, setTimeout(async () => {
+        __supaPending.delete(key);
+        try {
+          const raw = localStorage.getItem(key);
+          if (raw === null) {
+            // Foi removido do cache — apaga do banco também
+            await supaClient.from('fly_kv').delete().eq('key', key);
+          } else {
+            const value = safeJSONParse(raw);
+            if (value === null) return;
+            const { error } = await supaClient.from('fly_kv').upsert({ key, value });
+            if (error) throw error;
+          }
+          if (__supaPending.size === 0) setSyncStatus('online', 'Sincronizado');
+        } catch (e) {
+          console.warn('[FLY] Sync falhou pra', key, ':', e?.message || e);
+          setSyncStatus('error', 'Erro · cache local');
+        }
+      }, 700));
+    }
+
+    // Patcha localStorage.setItem/removeItem pra disparar sync automático
+    (function patchLocalStorage() {
+      const _set = Storage.prototype.setItem;
+      const _del = Storage.prototype.removeItem;
+      Storage.prototype.setItem = function(k, v) {
+        _set.call(this, k, v);
+        if (this === localStorage) queueSupabaseSync(k);
+      };
+      Storage.prototype.removeItem = function(k) {
+        _del.call(this, k);
+        if (this === localStorage) queueSupabaseSync(k);
+      };
+    })();
 
     /* =====================  STORAGE  ===================== */
     const STORAGE_KEY = 'fly_7anos_data_v1';
@@ -12159,6 +12396,26 @@
         if (!localStorage.getItem('fly_view_mode')) applyViewMode();
       }, 150);
     });
+
+    /* =====================  SUPABASE INIT  ===================== */
+    // Espera o SDK carregar (ele é UMD via <script> antes deste bloco) e
+    // dispara o pull inicial. Se não houver SDK ou rede, app continua local-only.
+    function bootSupabase() {
+      // Aguarda SDK estar disponível por até ~3s
+      let attempts = 0;
+      const tick = () => {
+        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+          initSupabase();
+          // Botões/toggles que dependem de re-render serão chamados pelo próprio initSupabase
+        } else if (attempts++ < 30) {
+          setTimeout(tick, 100);
+        } else {
+          setSyncStatus('offline', 'Offline · cache');
+        }
+      };
+      tick();
+    }
+    bootSupabase();
 
     /* =====================  ADMIN  ===================== */
     adminToggle.addEventListener('click', () => {
