@@ -1627,6 +1627,113 @@
     color: #000;
   }
 
+  /* Botão Modo Apresentação */
+  .present-toggle {
+    position: fixed;
+    top: 24px;
+    right: 270px;
+    z-index: 100;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(245,184,66,0.35);
+    color: rgba(255,255,255,.85);
+    padding: 8px 14px;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    border-radius: 30px;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .present-toggle:hover {
+    background: rgba(245,184,66,0.18);
+    color: var(--gold-bright);
+    border-color: rgba(245,184,66,0.6);
+    transform: translateY(-1px);
+  }
+  body.present-mode .present-toggle {
+    background: rgba(245,184,66,0.25);
+    color: #FFE099;
+    border-color: rgba(245,184,66,0.7);
+  }
+
+  /* MODO APRESENTAÇÃO · esconde nav, aumenta tipografia, fundo puro */
+  body.present-mode #brandLogo,
+  body.present-mode .back-btn,
+  body.present-mode .admin-toggle,
+  body.present-mode .pin-change-btn,
+  body.present-mode .pin-lock-btn,
+  body.present-mode .view-mode-toggle,
+  body.present-mode .sync-status,
+  body.present-mode .delete-btn,
+  body.present-mode .hub-edit,
+  body.present-mode .edit-banner-btn,
+  body.present-mode .topic-admin-bar,
+  body.present-mode .dbx-card-actions,
+  body.present-mode .dbx-add-card,
+  body.present-mode .dbx-add-row,
+  body.present-mode .dbx-mini-btn,
+  body.present-mode .dbx-actions,
+  body.present-mode .mr-edit-btn,
+  body.present-mode .dre-add-btn,
+  body.present-mode .dre-edit-btn,
+  body.present-mode .dre-del-btn,
+  body.present-mode .dre-toggle,
+  body.present-mode .dre-mini-action {
+    display: none !important;
+  }
+  body.present-mode .present-toggle { opacity: .25; }
+  body.present-mode .present-toggle:hover { opacity: 1; }
+  body.present-mode .stage,
+  body.present-mode #gridView,
+  body.present-mode #detailView,
+  body.present-mode #topicView,
+  body.present-mode #itemView {
+    padding-top: 30px !important;
+    padding-bottom: 30px !important;
+  }
+  body.present-mode .grid-title .title { font-size: 100px !important; letter-spacing: 18px !important; }
+  body.present-mode .grid-title .sub { font-size: 22px !important; letter-spacing: 8px !important; }
+  body.present-mode .grid-circle { width: 110px; height: 110px; font-size: 18px; }
+  body.present-mode .grid-circle.gold { width: 140px; height: 140px; }
+  body.present-mode .grid-hint { font-size: 16px !important; letter-spacing: 6px !important; }
+  body.present-mode .center-text .ano { font-size: 88px !important; letter-spacing: 14px !important; }
+  body.present-mode .center-text .period { font-size: 22px !important; letter-spacing: 8px !important; }
+  body.present-mode .center-circle { transform: scale(1.4); }
+  body.present-mode .center-circle .glyph .center-fly-logo { width: 220px !important; }
+  body.present-mode .topic { font-size: 22px !important; letter-spacing: 6px !important; font-weight: 700; }
+  body.present-mode .topic-banner h1 { font-size: 80px !important; letter-spacing: 14px !important; }
+  body.present-mode .item-card .name { font-size: 24px !important; letter-spacing: 4px !important; }
+  body.present-mode .item-card { min-height: 200px !important; padding: 32px !important; }
+  body.present-mode .dbx-hero { height: 360px !important; }
+  body.present-mode .dbx-hero-content h1 { font-size: 64px !important; letter-spacing: 12px !important; }
+  body.present-mode .dbx-hero-kpis .dbx-kpi .val { font-size: 42px !important; }
+  body.present-mode .dbx-hero-kpis .dbx-kpi .lbl { font-size: 13px !important; }
+  body.present-mode .dbx-tab { font-size: 14px !important; padding: 12px 20px !important; }
+  body.present-mode .dre-line.dre-net.dre-hero .dre-value { font-size: 56px !important; }
+  body.present-mode .mr-c-vals strong { font-size: 32px !important; }
+  /* Indicador discreto de slide atual no modo apresentação */
+  body.present-mode::after {
+    content: '🎬 MODO APRESENTAÇÃO · ESC pra sair';
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,.7);
+    color: rgba(245,184,66,.9);
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(245,184,66,.3);
+    z-index: 99;
+    pointer-events: none;
+  }
+
   /* PIN buttons (trocar/bloquear) — só aparecem em ADMIN ON */
   .pin-change-btn,
   .pin-lock-btn {
@@ -8134,6 +8241,9 @@
   <button class="pin-lock-btn" id="pinLockBtn" title="Bloquear agora">🔒</button>
   <button class="view-mode-toggle" id="viewModeToggle" title="Alternar Desktop/Mobile" data-mode="desktop">
     <span class="vm-ico">🖥</span><span class="vm-lbl">DESKTOP</span>
+  </button>
+  <button class="present-toggle" id="presentToggle" title="Modo Apresentação (Cmd/Ctrl+P)">
+    <span>🎬</span><span class="pt-lbl">APRESENTAÇÃO</span>
   </button>
   <div class="sync-status" id="syncStatus" data-status="idle" title="Status de sincronização com banco de dados">
     <span class="sync-dot"></span>
@@ -15831,6 +15941,52 @@
       __vmResizeT = setTimeout(() => {
         if (!localStorage.getItem('fly_view_mode')) applyViewMode();
       }, 150);
+    });
+
+    /* =====================  MODO APRESENTAÇÃO  ===================== */
+    const presentToggle = document.getElementById('presentToggle');
+    function togglePresentMode(force) {
+      const isOn = (typeof force === 'boolean') ? force : !document.body.classList.contains('present-mode');
+      document.body.classList.toggle('present-mode', isOn);
+      // Tenta entrar/sair de fullscreen real do browser
+      try {
+        if (isOn && document.documentElement.requestFullscreen && !document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else if (!isOn && document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      } catch (e) {}
+    }
+    if (presentToggle) presentToggle.addEventListener('click', () => togglePresentMode());
+    document.addEventListener('keydown', (ev) => {
+      const isCmdP = (ev.metaKey || ev.ctrlKey) && (ev.key === 'p' || ev.key === 'P');
+      const isEsc = ev.key === 'Escape';
+      if (isCmdP) { ev.preventDefault(); togglePresentMode(); }
+      if (isEsc && document.body.classList.contains('present-mode')) {
+        ev.preventDefault(); togglePresentMode(false);
+      }
+      // Setas pra navegar (somente em modo apresentação e na tela de grid/detail)
+      if (document.body.classList.contains('present-mode')) {
+        if (ev.key === 'ArrowRight' || ev.key === ' ') {
+          // Próximo: se estiver no grid, abre o primeiro círculo gold; se estiver no detail, próximo tópico (skip);
+          // se estiver em topic, primeiro item; se estiver em item, próximo tab dbx
+          const activeTab = document.querySelector('.dbx-tab.active');
+          if (activeTab) {
+            const all = Array.from(document.querySelectorAll('.dbx-tab'));
+            const idx = all.indexOf(activeTab);
+            const next = all[idx + 1];
+            if (next) { ev.preventDefault(); next.click(); }
+          }
+        } else if (ev.key === 'ArrowLeft') {
+          const activeTab = document.querySelector('.dbx-tab.active');
+          if (activeTab) {
+            const all = Array.from(document.querySelectorAll('.dbx-tab'));
+            const idx = all.indexOf(activeTab);
+            const prev = all[idx - 1];
+            if (prev) { ev.preventDefault(); prev.click(); }
+          }
+        }
+      }
     });
 
     /* =====================  AUTH BUTTONS WIRING  ===================== */
