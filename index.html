@@ -1718,6 +1718,157 @@
     transform: translateY(-1px);
   }
 
+  /* Botão Changelog */
+  .changelog-btn {
+    position: fixed;
+    top: 24px;
+    right: 470px;
+    z-index: 100;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(245,184,66,0.35);
+    color: rgba(255,255,255,.85);
+    width: 38px; height: 38px; padding: 0;
+    border-radius: 50%;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .changelog-btn:hover {
+    background: rgba(245,184,66,0.18);
+    border-color: rgba(245,184,66,0.6);
+    transform: translateY(-1px);
+  }
+  body.admin-mode .changelog-btn { display: inline-flex; }
+  body.present-mode .changelog-btn { display: none !important; }
+
+  /* CHANGELOG VIEWER */
+  .fly-cl-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,.85);
+    backdrop-filter: blur(20px);
+    display: flex; align-items: stretch; justify-content: center;
+    padding: 20px; overflow: auto;
+    animation: cmpFadeIn .3s ease;
+  }
+  .fly-cl-modal {
+    width: 100%; max-width: 900px;
+    background: linear-gradient(180deg, #1a1612 0%, #0c0a08 100%);
+    border: 1px solid rgba(245,184,66,.3);
+    border-radius: 22px;
+    display: flex; flex-direction: column;
+    max-height: calc(100vh - 40px);
+  }
+  .fly-cl-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 28px;
+    border-bottom: 1px solid rgba(245,184,66,.18);
+  }
+  .fly-cl-head h2 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    letter-spacing: 2.5px;
+    color: #FFE099;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .fly-cl-sub { margin: 0; font-size: 11px; color: rgba(255,255,255,.55); }
+  .fly-cl-close {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.05);
+    color: rgba(255,255,255,.7);
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .fly-cl-close:hover { background: rgba(245,184,66,.15); color: #FFE099; }
+
+  .fly-cl-insights {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 18px 28px;
+    border-bottom: 1px solid rgba(245,184,66,.1);
+  }
+  .cl-stat {
+    padding: 10px 14px;
+    background: rgba(0,0,0,.3);
+    border: 1px solid rgba(245,184,66,.15);
+    border-radius: 10px;
+  }
+  .cl-stat .lbl { font-size: 9px; letter-spacing: 1.5px; color: rgba(245,184,66,.6); margin-bottom: 4px; }
+  .cl-stat .val { font-size: 14px; color: #fff; font-weight: 600; }
+
+  .fly-cl-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 28px 28px;
+  }
+
+  .cl-day { margin-bottom: 22px; }
+  .cl-day-head {
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: rgba(245,184,66,.6);
+    font-weight: 700;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(245,184,66,.1);
+  }
+  .cl-card {
+    padding: 12px 14px;
+    background: rgba(255,255,255,.025);
+    border: 1px solid rgba(255,255,255,.06);
+    border-left: 3px solid;
+    border-radius: 0 10px 10px 0;
+    margin-bottom: 8px;
+  }
+  .cl-card-head {
+    display: flex; gap: 10px; align-items: center;
+    font-size: 11px;
+    color: rgba(255,255,255,.7);
+    margin-bottom: 8px;
+  }
+  .cl-card-head .cl-ico { font-size: 14px; }
+  .cl-card-head .cl-tipo {
+    font-size: 9px; letter-spacing: 1.5px; font-weight: 700;
+    padding: 2px 8px;
+    background: rgba(255,255,255,.05);
+    border-radius: 999px;
+  }
+  .cl-card-head .cl-time { color: rgba(255,255,255,.4); font-size: 10px; }
+  .cl-card-head .cl-user { margin-left: auto; color: rgba(255,255,255,.55); font-size: 10px; }
+  .cl-field { font-size: 12px; color: #fff; margin-bottom: 6px; }
+  .cl-field strong { color: #FFE099; }
+  .cl-change { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 11px; }
+  .cl-from { color: rgba(255,138,138,.85); padding: 2px 8px; background: rgba(255,107,107,.08); border-radius: 6px; }
+  .cl-arrow { color: rgba(245,184,66,.7); font-size: 12px; }
+  .cl-to { color: rgba(138,233,182,.95); padding: 2px 8px; background: rgba(111,227,168,.08); border-radius: 6px; font-weight: 600; }
+  .cl-just {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(112,165,255,.05);
+    border-left: 2px solid rgba(112,165,255,.4);
+    font-size: 11px;
+    color: rgba(255,255,255,.75);
+    line-height: 1.5;
+  }
+
+  .fly-cl-empty {
+    padding: 40px;
+    text-align: center;
+    color: rgba(255,255,255,.5);
+  }
+  .fly-cl-empty .ico { font-size: 36px; margin-bottom: 10px; opacity: .5; }
+  .fly-cl-empty h3 { color: #fff; font-size: 14px; margin: 0 0 8px; letter-spacing: 1.5px; }
+  .fly-cl-empty p { font-size: 12px; line-height: 1.5; }
+
   /* PRINT CSS · estilo dedicado pra exportação PDF (Cmd+P do navegador) */
   @media print {
     body {
@@ -8323,6 +8474,9 @@
   <button class="print-btn" id="printBtn" title="Exportar como PDF (Cmd/Ctrl+Shift+P)">
     <span>📄</span><span class="prt-lbl">PDF</span>
   </button>
+  <button class="changelog-btn" id="changelogBtn" title="Histórico de alterações">
+    <span>📜</span>
+  </button>
   <div class="sync-status" id="syncStatus" data-status="idle" title="Status de sincronização com banco de dados">
     <span class="sync-dot"></span>
     <span class="sync-msg">Conectando…</span>
@@ -8398,7 +8552,8 @@
       'fly_basesfly_inline_v1',
       'fly_hierarquia_inline_v1',
       'fly_customcities_v1',
-      'fly_design_overrides_v1'
+      'fly_design_overrides_v1',
+      'fly_changelog_v1'
     ];
     let supaClient = null;
     const __supaPending = new Map(); // key -> timeout id
@@ -8695,6 +8850,127 @@
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
       catch (e) { alert('Não foi possível salvar (armazenamento cheio?). Tente imagens menores.'); }
     }
+
+    /* ============================================================
+       CHANGELOG · log automático de alterações importantes
+       ============================================================ */
+    const FLY_CHANGELOG_KEY = 'fly_changelog_v1';
+    function flyLoadChangelog() {
+      try { return JSON.parse(localStorage.getItem(FLY_CHANGELOG_KEY) || '[]'); }
+      catch (e) { return []; }
+    }
+    function flySaveChangelog(arr) {
+      try { localStorage.setItem(FLY_CHANGELOG_KEY, JSON.stringify(arr)); } catch (e) {}
+    }
+    function flyLogChange({ tipo, campo, antes, depois, contexto, justificativa }) {
+      const log = flyLoadChangelog();
+      log.unshift({
+        id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        ts: Date.now(),
+        usuario: (window.__currentSession?.user?.email) || 'anônimo',
+        tipo: tipo || 'EDIT',
+        campo: campo || '',
+        antes: antes !== undefined ? String(antes) : '',
+        depois: depois !== undefined ? String(depois) : '',
+        contexto: contexto || '',
+        justificativa: justificativa || ''
+      });
+      // Limita a 1000 entradas pra não estourar localStorage
+      if (log.length > 1000) log.length = 1000;
+      flySaveChangelog(log);
+    }
+    window.flyLogChange = flyLogChange;
+
+    function flyOpenChangelogView(filtroContexto) {
+      document.querySelector('.fly-cl-overlay')?.remove();
+      const log = flyLoadChangelog();
+      const filtered = filtroContexto ? log.filter(l => (l.contexto || '').includes(filtroContexto)) : log;
+      const overlay = document.createElement('div');
+      overlay.className = 'fly-cl-overlay';
+
+      const grouped = {};
+      filtered.forEach(l => {
+        const day = new Date(l.ts).toLocaleDateString('pt-BR');
+        if (!grouped[day]) grouped[day] = [];
+        grouped[day].push(l);
+      });
+
+      const totalChanges = filtered.length;
+      const userCounts = {};
+      filtered.forEach(l => { userCounts[l.usuario] = (userCounts[l.usuario] || 0) + 1; });
+      const topUser = Object.entries(userCounts).sort((a, b) => b[1] - a[1])[0];
+      const fieldCounts = {};
+      filtered.forEach(l => { fieldCounts[l.campo] = (fieldCounts[l.campo] || 0) + 1; });
+      const topField = Object.entries(fieldCounts).sort((a, b) => b[1] - a[1])[0];
+
+      const tipoIcon = (t) => ({
+        PRECO: '💰', OPERACAO: '🛠', EQUIPE: '👥', META: '📊',
+        VISUAL: '🎨', DELETE: '🔴', EDIT: '✎'
+      })[t] || '✎';
+      const tipoColor = (t) => ({
+        PRECO: '#6FE3A8', OPERACAO: '#93B6FF', EQUIPE: '#c89bff',
+        META: '#E6C77A', VISUAL: '#aaa', DELETE: '#ff8a8a'
+      })[t] || '#aaa';
+
+      overlay.innerHTML = `
+        <div class="fly-cl-modal">
+          <div class="fly-cl-head">
+            <div>
+              <h2>📜 Histórico de Mudanças${filtroContexto ? ' · ' + escapeHtml(filtroContexto) : ''}</h2>
+              <p class="fly-cl-sub">${totalChanges} alterações registradas · ${Object.keys(userCounts).length} usuários</p>
+            </div>
+            <button class="fly-cl-close">✕</button>
+          </div>
+
+          ${totalChanges > 0 ? `
+            <div class="fly-cl-insights">
+              <div class="cl-stat"><div class="lbl">TOTAL</div><div class="val">${totalChanges}</div></div>
+              <div class="cl-stat"><div class="lbl">CAMPO MAIS ALTERADO</div><div class="val">${topField ? escapeHtml(topField[0]) + ' (' + topField[1] + ')' : '—'}</div></div>
+              <div class="cl-stat"><div class="lbl">USUÁRIO MAIS ATIVO</div><div class="val">${topUser ? escapeHtml(topUser[0]) + ' (' + topUser[1] + ')' : '—'}</div></div>
+            </div>
+          ` : ''}
+
+          <div class="fly-cl-body">
+            ${totalChanges === 0 ? `
+              <div class="fly-cl-empty">
+                <div class="ico">📭</div>
+                <h3>Nenhuma alteração registrada</h3>
+                <p>Edite preços, metas, equipe ou marketing nos pacotes pra ver o histórico aqui.</p>
+              </div>
+            ` : Object.entries(grouped).map(([day, logs]) => `
+              <div class="cl-day">
+                <div class="cl-day-head">${day}</div>
+                ${logs.map(l => `
+                  <div class="cl-card" style="border-left-color: ${tipoColor(l.tipo)};">
+                    <div class="cl-card-head">
+                      <span class="cl-ico" style="color: ${tipoColor(l.tipo)};">${tipoIcon(l.tipo)}</span>
+                      <span class="cl-tipo">${escapeHtml(l.tipo)}</span>
+                      <span class="cl-time">${new Date(l.ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span class="cl-user">👤 ${escapeHtml(l.usuario)}</span>
+                    </div>
+                    <div class="cl-card-body">
+                      <div class="cl-field"><strong>${escapeHtml(l.campo || '—')}</strong>${l.contexto ? ' · ' + escapeHtml(l.contexto) : ''}</div>
+                      ${l.antes !== '' || l.depois !== '' ? `
+                        <div class="cl-change">
+                          <span class="cl-from">${escapeHtml(String(l.antes).slice(0, 80))}</span>
+                          <span class="cl-arrow">→</span>
+                          <span class="cl-to">${escapeHtml(String(l.depois).slice(0, 80))}</span>
+                        </div>
+                      ` : ''}
+                      ${l.justificativa ? `<div class="cl-just">💬 ${escapeHtml(l.justificativa)}</div>` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      overlay.querySelector('.fly-cl-close').addEventListener('click', () => overlay.remove());
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    }
+    window.flyOpenChangelogView = flyOpenChangelogView;
 
     /* ============================================================
        FLY DESIGN EDITOR · admin pode editar logos/textos in-place
@@ -14268,14 +14544,27 @@
       const ticketBtn = panelEl.querySelector('[data-edit="ticket"]');
       if (ticketBtn) {
         ticketBtn.addEventListener('click', () => {
+          const antes = D.vendas.ticketMedio || 0;
           dbxOpenModal({
             title: 'Editar Ticket Médio',
             fields: [
-              { key: 'ticketMedio', label: 'Valor do pacote por cliente (R$)', type: 'number', step: '0.01' }
+              { key: 'ticketMedio', label: 'Valor do pacote por cliente (R$)', type: 'number', step: '0.01' },
+              { key: 'justificativa', label: '💬 Justificativa (motivo da alteração)', type: 'textarea' }
             ],
-            values: { ticketMedio: D.vendas.ticketMedio || 0 },
+            values: { ticketMedio: antes, justificativa: '' },
             onSave: (vals) => {
-              D.vendas.ticketMedio = Number(vals.ticketMedio) || 0;
+              const depois = Number(vals.ticketMedio) || 0;
+              if (depois !== antes) {
+                flyLogChange({
+                  tipo: 'PRECO',
+                  campo: 'Ticket médio',
+                  antes: 'R$ ' + antes.toLocaleString('pt-BR'),
+                  depois: 'R$ ' + depois.toLocaleString('pt-BR'),
+                  contexto: item.name || 'pacote',
+                  justificativa: vals.justificativa || ''
+                });
+              }
+              D.vendas.ticketMedio = depois;
               dbxRefresh(D, item);
             }
           });
@@ -16020,6 +16309,10 @@
         if (!localStorage.getItem('fly_view_mode')) applyViewMode();
       }, 150);
     });
+
+    /* =====================  CHANGELOG BUTTON  ===================== */
+    const changelogBtn = document.getElementById('changelogBtn');
+    if (changelogBtn) changelogBtn.addEventListener('click', () => flyOpenChangelogView());
 
     /* =====================  PDF EXPORT  ===================== */
     const printBtn = document.getElementById('printBtn');
