@@ -6801,6 +6801,228 @@
   }
 
   /* ============================================================ */
+  /* META VS REAL · seção topo do painel Pacotes                  */
+  /* ============================================================ */
+  .mr-section {
+    margin: 14px 0 28px;
+    padding: 22px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0));
+    border: 1px solid rgba(245,184,66,.18);
+  }
+  .mr-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+  }
+  .mr-title {
+    font-size: 12px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: rgba(245,184,66,.85);
+    font-weight: 700;
+  }
+  .mr-edit-btn {
+    background: rgba(245,184,66,.06);
+    border: 1px solid rgba(245,184,66,.3);
+    color: rgba(255,224,153,.85);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .mr-edit-btn:hover { background: rgba(245,184,66,.18); color: #FFE099; }
+
+  .mr-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .mr-card {
+    padding: 16px;
+    border-radius: 14px;
+    background: rgba(0,0,0,.25);
+    border: 1px solid rgba(255,255,255,.06);
+  }
+  .mr-card.status-good { border-color: rgba(111,227,168,.4); background: linear-gradient(180deg, rgba(111,227,168,.05), rgba(0,0,0,.25)); }
+  .mr-card.status-warn { border-color: rgba(245,184,66,.45); background: linear-gradient(180deg, rgba(245,184,66,.06), rgba(0,0,0,.25)); }
+  .mr-card.status-bad  { border-color: rgba(255,107,107,.45); background: linear-gradient(180deg, rgba(255,107,107,.06), rgba(0,0,0,.25)); }
+  .mr-c-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .mr-c-ttl {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.7);
+    font-weight: 700;
+  }
+  .mr-c-diag {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+  }
+  .mr-card.status-good .mr-c-diag { color: #6FE3A8; }
+  .mr-card.status-warn .mr-c-diag { color: #E6C77A; }
+  .mr-card.status-bad  .mr-c-diag { color: #ff8a8a; }
+  .mr-c-bar {
+    position: relative;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(0,0,0,.5);
+    border: 1px solid rgba(255,255,255,.05);
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .mr-c-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #6FE3A8, #E6C77A);
+    transition: width .6s cubic-bezier(.2,.7,.2,1);
+  }
+  .mr-card.status-bad .mr-c-fill { background: linear-gradient(90deg, #ff6b6b, #E6C77A); }
+  .mr-c-now {
+    position: absolute; top: -3px; bottom: -3px;
+    width: 2px;
+    background: rgba(255,255,255,.85);
+    box-shadow: 0 0 6px rgba(255,255,255,.5);
+    pointer-events: none;
+  }
+  .mr-c-vals {
+    font-size: 13px;
+    color: #fff;
+    font-feature-settings: 'tnum';
+    margin-bottom: 4px;
+  }
+  .mr-c-vals strong { color: #FFE099; font-size: 18px; font-weight: 800; }
+  .mr-c-pct { color: rgba(255,255,255,.5); font-size: 11px; }
+  .mr-c-sub {
+    font-size: 10px;
+    color: rgba(255,255,255,.5);
+    line-height: 1.4;
+  }
+
+  .mr-monthly {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 12px;
+    background: rgba(0,0,0,.2);
+    border: 1px solid rgba(255,255,255,.04);
+  }
+  .mr-monthly-ttl {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(245,184,66,.7);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .mr-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-feature-settings: 'tnum';
+    font-size: 10px;
+  }
+  .mr-table th, .mr-table td {
+    padding: 6px 4px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+  }
+  .mr-table th {
+    color: rgba(255,255,255,.5);
+    font-weight: 600;
+    letter-spacing: .5px;
+    font-size: 9px;
+    text-transform: uppercase;
+  }
+  .mr-table th.now {
+    color: #FFE099;
+    background: rgba(245,184,66,.08);
+    border-radius: 6px 6px 0 0;
+  }
+  .mr-table td.lbl {
+    text-align: left;
+    color: rgba(255,255,255,.7);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: .5px;
+    padding-left: 6px;
+  }
+  .mr-table td .m-real { color: rgba(255,255,255,.85); }
+  .mr-table td .m-acum { color: rgba(255,255,255,.4); font-size: 8px; margin-top: 2px; }
+  .mr-table td.past { background: rgba(255,255,255,.02); }
+  .mr-table td.now {
+    background: linear-gradient(180deg, rgba(245,184,66,.12), rgba(245,184,66,.04));
+    box-shadow: inset 0 0 12px rgba(245,184,66,.15);
+  }
+  .mr-table td.now .m-real { color: #FFE099; font-weight: 700; }
+  .mr-table td.future .m-real { color: rgba(255,255,255,.25); }
+  .mr-table td.future .m-acum { display: none; }
+
+  .mr-rescue {
+    margin-top: 18px;
+    padding: 18px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(255,107,107,.08), rgba(255,107,107,.01));
+    border: 1px solid rgba(255,107,107,.3);
+  }
+  .mr-rescue-ttl {
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: #ff8a8a;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .mr-rescue-body p {
+    margin: 0 0 12px;
+    font-size: 12px;
+    color: rgba(255,255,255,.85);
+    line-height: 1.5;
+  }
+  .mr-rescue-body strong { color: #ff8a8a; }
+  .mr-rescue-opts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .mr-opt {
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .mr-opt-ttl {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: rgba(255,255,255,.7);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .mr-opt p {
+    margin: 0;
+    font-size: 11px;
+    color: rgba(255,255,255,.65);
+    line-height: 1.5;
+  }
+  .mr-opt.recommended {
+    border-color: rgba(111,227,168,.4);
+    background: linear-gradient(180deg, rgba(111,227,168,.06), rgba(0,0,0,.2));
+  }
+  .mr-opt.recommended .mr-opt-ttl { color: #6FE3A8; }
+
+  @container fly-vp (max-width: 640px) {
+    .mr-section { padding: 14px; }
+    .mr-cards { grid-template-columns: 1fr; }
+    .mr-rescue-opts { grid-template-columns: 1fr; }
+    .mr-monthly { overflow-x: auto; }
+    .mr-table { min-width: 540px; }
+  }
+
+  /* ============================================================ */
   /* EXPERIÊNCIA VISUAL · upload de foto/vídeo por card           */
   /* ============================================================ */
   .bases-visual-card .img.is-photo,
@@ -12211,6 +12433,15 @@
         melhorConteudo: 'Reels Burj Khalifa por @joaoinf — atribuídas 9 vendas (R$ 346k)'
       },
       // ============================================================
+      // META vs REAL · acompanhamento de execução anual
+      // ============================================================
+      metaReal: {
+        ano: 2026,
+        clientes: { meta: 100, real: 10, mensal: { '01': 1, '02': 2, '03': 1, '04': 3, '05': 3, '06': 0, '07': 0, '08': 0, '09': 0, '10': 0, '11': 0, '12': 0 } },
+        receita:  { meta: 2500000, real: 473400, mensal: { '01': 38500, '02': 77000, '03': 38500, '04': 154000, '05': 165400, '06': 0, '07': 0, '08': 0, '09': 0, '10': 0, '11': 0, '12': 0 } },
+        lucro:    { meta: 1000000, real: 194560, mensal: { '01': 16000, '02': 32000, '03': 16000, '04': 63000, '05': 67560, '06': 0, '07': 0, '08': 0, '09': 0, '10': 0, '11': 0, '12': 0 } }
+      },
+      // ============================================================
       // FORECAST · projeção de receita/clientes futuros
       // ============================================================
       forecast: {
@@ -12849,6 +13080,8 @@
           </div>
         </div>
 
+        <div id="dbx-meta-vs-real">${dbxRenderMetaReal(D)}</div>
+
         <div class="dbx-tabs" id="dbx-tabs">
           <button class="dbx-tab active" data-tab="produto">📦 Produto</button>
           <button class="dbx-tab" data-tab="custos">💰 Custos</button>
@@ -12878,6 +13111,185 @@
       }
       tabs.forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
       setTab('produto');
+      dbxBindMetaReal(wrap, D, item);
+    }
+
+    /* ===== META vs REAL · seção topo do painel Pacotes ===== */
+    function dbxRenderMetaReal(D) {
+      const mr = D.metaReal || {};
+      const now = new Date();
+      const monthNum = now.getMonth() + 1;
+      const propPct = (monthNum / 12) * 100;
+
+      // Calcula status pra cada KPI
+      function calcStatus(real, meta) {
+        if (!meta) return { pct: 0, propMeta: 0, status: 'na', diag: '—' };
+        const pct = (real / meta) * 100;
+        const propMeta = meta * (monthNum / 12);
+        const ratio = propMeta > 0 ? real / propMeta : 0;
+        let status, diag;
+        if (ratio >= 0.95) { status = 'good'; diag = '🟢 NO RITMO'; }
+        else if (ratio >= 0.75) { status = 'warn'; diag = '🟡 ATENÇÃO'; }
+        else { status = 'bad'; diag = '🔴 ATRASADO'; }
+        return { pct: Math.min(pct, 200), propMeta, ratio, status, diag };
+      }
+      const cli = mr.clientes || { meta: 0, real: 0 };
+      const rec = mr.receita  || { meta: 0, real: 0 };
+      const luc = mr.lucro    || { meta: 0, real: 0 };
+      const sCli = calcStatus(cli.real, cli.meta);
+      const sRec = calcStatus(rec.real, rec.meta);
+      const sLuc = calcStatus(luc.real, luc.meta);
+      const monthsRest = 12 - monthNum;
+      const ritmoCli = monthsRest > 0 ? Math.max(0, (cli.meta - cli.real) / monthsRest) : 0;
+      const ritmoRec = monthsRest > 0 ? Math.max(0, (rec.meta - rec.real) / monthsRest) : 0;
+
+      const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      function buildRow(data, fmtFn) {
+        let acum = 0;
+        return meses.map((m, i) => {
+          const k = String(i + 1).padStart(2, '0');
+          const v = Number(data?.mensal?.[k] || 0);
+          acum += v;
+          const isPast = (i + 1) < monthNum;
+          const isNow  = (i + 1) === monthNum;
+          return `
+            <td class="${isNow ? 'now' : (isPast ? 'past' : 'future')}">
+              <div class="m-real">${v > 0 ? fmtFn(v) : '—'}</div>
+              <div class="m-acum">${acum > 0 ? fmtFn(acum) : ''}</div>
+            </td>`;
+        }).join('');
+      }
+      const fmtMon = v => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+      const fmtMoneyMon = v => 'R$ ' + Math.round(Number(v) / 1000) + 'k';
+
+      // Plano de recuperação (se atrasado >20%)
+      const showRescue = sCli.status === 'bad' && cli.meta > 0;
+      const gap = Math.max(0, cli.meta - cli.real);
+
+      return `
+        <div class="mr-section">
+          <div class="mr-head">
+            <span class="mr-title">📊 META vs REALIZADO · ${mr.ano || 2026}</span>
+            <button class="mr-edit-btn" data-act="mr-edit">✎ Editar metas</button>
+          </div>
+
+          <div class="mr-cards">
+            <div class="mr-card status-${sCli.status}">
+              <div class="mr-c-head"><span class="mr-c-ttl">CLIENTES VENDIDOS</span><span class="mr-c-diag">${sCli.diag}</span></div>
+              <div class="mr-c-bar">
+                <div class="mr-c-fill" style="width: ${Math.min(sCli.pct, 100)}%"></div>
+                <div class="mr-c-now" style="left: ${propPct}%" title="Posição esperada agora"></div>
+              </div>
+              <div class="mr-c-vals"><strong>${cli.real}</strong> / ${cli.meta} clientes <span class="mr-c-pct">(${sCli.pct.toFixed(0)}%)</span></div>
+              <div class="mr-c-sub">Mês ${monthNum}/12 · meta proporcional: ${Math.round(sCli.propMeta)} clientes · ritmo necessário: ${ritmoCli.toFixed(1)}/mês</div>
+            </div>
+
+            <div class="mr-card status-${sRec.status}">
+              <div class="mr-c-head"><span class="mr-c-ttl">RECEITA TOTAL</span><span class="mr-c-diag">${sRec.diag}</span></div>
+              <div class="mr-c-bar">
+                <div class="mr-c-fill" style="width: ${Math.min(sRec.pct, 100)}%"></div>
+                <div class="mr-c-now" style="left: ${propPct}%"></div>
+              </div>
+              <div class="mr-c-vals"><strong>${dbxFmtMoney(rec.real)}</strong> / ${dbxFmtMoney(rec.meta)} <span class="mr-c-pct">(${sRec.pct.toFixed(0)}%)</span></div>
+              <div class="mr-c-sub">Meta proporcional: ${dbxFmtMoney(sRec.propMeta)} · ritmo: ${dbxFmtMoney(ritmoRec)}/mês</div>
+            </div>
+
+            <div class="mr-card status-${sLuc.status}">
+              <div class="mr-c-head"><span class="mr-c-ttl">LUCRO LÍQUIDO</span><span class="mr-c-diag">${sLuc.diag}</span></div>
+              <div class="mr-c-bar">
+                <div class="mr-c-fill" style="width: ${Math.min(sLuc.pct, 100)}%"></div>
+                <div class="mr-c-now" style="left: ${propPct}%"></div>
+              </div>
+              <div class="mr-c-vals"><strong>${dbxFmtMoney(luc.real)}</strong> / ${dbxFmtMoney(luc.meta)} <span class="mr-c-pct">(${sLuc.pct.toFixed(0)}%)</span></div>
+              <div class="mr-c-sub">Meta proporcional: ${dbxFmtMoney(sLuc.propMeta)}</div>
+            </div>
+          </div>
+
+          <div class="mr-monthly">
+            <div class="mr-monthly-ttl">Histórico mensal · ${mr.ano || 2026}</div>
+            <table class="mr-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  ${meses.map((m, i) => `<th class="${(i+1) === monthNum ? 'now' : ''}">${m}</th>`).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td class="lbl">Clientes</td>${buildRow(cli, fmtMon)}</tr>
+                <tr><td class="lbl">Receita</td>${buildRow(rec, fmtMoneyMon)}</tr>
+                <tr><td class="lbl">Lucro</td>${buildRow(luc, fmtMoneyMon)}</tr>
+              </tbody>
+            </table>
+          </div>
+
+          ${showRescue ? `
+            <div class="mr-rescue">
+              <div class="mr-rescue-ttl">🚨 PLANO DE RECUPERAÇÃO</div>
+              <div class="mr-rescue-body">
+                <p>Atraso atual: <strong>${gap} clientes</strong> abaixo da meta proporcional. Pra recuperar até dezembro:</p>
+                <div class="mr-rescue-opts">
+                  <div class="mr-opt">
+                    <div class="mr-opt-ttl">A · ACELERAR VOLUME</div>
+                    <p>+R$ 20k/mês em ads = +15 leads · +3 influencers = +25 leads · resultado estimado: +18 clientes em 6 meses</p>
+                  </div>
+                  <div class="mr-opt">
+                    <div class="mr-opt-ttl">B · AJUSTAR META</div>
+                    <p>Manter ritmo atual = ${cli.real + Math.round(ritmoCli * monthsRest)} clientes em ${mr.ano || 2026}. Revisar meta para um número mais realista.</p>
+                  </div>
+                  <div class="mr-opt recommended">
+                    <div class="mr-opt-ttl">C · HÍBRIDO (recomendado)</div>
+                    <p>+30% em mkt + revisão de meta para ${Math.round(cli.real + ritmoCli * monthsRest * 1.5)} clientes. Probabilidade de bater: 78%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function dbxBindMetaReal(wrap, D, item) {
+      const editBtn = wrap.querySelector('[data-act="mr-edit"]');
+      if (editBtn) editBtn.addEventListener('click', () => {
+        const mr = D.metaReal || {};
+        dbxOpenModal({
+          title: '🎯 Editar Metas Anuais',
+          fields: [
+            { key: 'metaCli', label: 'Meta de clientes (ano)', type: 'number', step: '1' },
+            { key: 'metaRec', label: 'Meta de receita (R$)', type: 'number', step: '0.01' },
+            { key: 'metaLuc', label: 'Meta de lucro líquido (R$)', type: 'number', step: '0.01' },
+            { key: 'realCli', label: 'Realizado clientes (ano até hoje)', type: 'number', step: '1' },
+            { key: 'realRec', label: 'Realizado receita (R$)', type: 'number', step: '0.01' },
+            { key: 'realLuc', label: 'Realizado lucro líquido (R$)', type: 'number', step: '0.01' }
+          ],
+          values: {
+            metaCli: mr.clientes?.meta || 100,
+            metaRec: mr.receita?.meta || 2500000,
+            metaLuc: mr.lucro?.meta || 1000000,
+            realCli: mr.clientes?.real || 0,
+            realRec: mr.receita?.real || 0,
+            realLuc: mr.lucro?.real || 0
+          },
+          onSave: (vals) => {
+            if (!D.metaReal) D.metaReal = { ano: new Date().getFullYear() };
+            D.metaReal.clientes = D.metaReal.clientes || { mensal: {} };
+            D.metaReal.receita  = D.metaReal.receita  || { mensal: {} };
+            D.metaReal.lucro    = D.metaReal.lucro    || { mensal: {} };
+            D.metaReal.clientes.meta = Number(vals.metaCli) || 0;
+            D.metaReal.clientes.real = Number(vals.realCli) || 0;
+            D.metaReal.receita.meta  = Number(vals.metaRec) || 0;
+            D.metaReal.receita.real  = Number(vals.realRec) || 0;
+            D.metaReal.lucro.meta    = Number(vals.metaLuc) || 0;
+            D.metaReal.lucro.real    = Number(vals.realLuc) || 0;
+            saveDubaiExplorer();
+            const mrEl = wrap.querySelector('#dbx-meta-vs-real');
+            if (mrEl) {
+              mrEl.innerHTML = dbxRenderMetaReal(D);
+              dbxBindMetaReal(wrap, D, item);
+            }
+          }
+        });
+      });
     }
 
     function renderDbxPanel(key, D, panelEl, item) {
