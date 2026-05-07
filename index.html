@@ -7356,6 +7356,103 @@
   }
 
   /* ============================================================ */
+  /* ALERTAS · TICKETS                                            */
+  /* ============================================================ */
+  .al-kpis {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    margin: 12px 0 18px;
+  }
+  .al-kpi {
+    padding: 14px; border-radius: 12px;
+    background: rgba(255,255,255,.025);
+    border: 1px solid rgba(255,255,255,.08);
+    text-align: center;
+  }
+  .al-kpi .num { font-size: 24px; font-weight: 800; color: #fff; }
+  .al-kpi .lbl { font-size: 9px; letter-spacing: 1.5px; color: rgba(255,255,255,.55); margin-top: 4px; }
+  .al-kpi.crit .num { color: #ff8a8a; } .al-kpi.crit { border-color: rgba(255,107,107,.3); }
+  .al-kpi.warn .num { color: #E6C77A; } .al-kpi.warn { border-color: rgba(245,184,66,.3); }
+  .al-kpi.good .num { color: #6FE3A8; } .al-kpi.good { border-color: rgba(111,227,168,.3); }
+  .al-kpi.info .num { color: #93B6FF; } .al-kpi.info { border-color: rgba(112,165,255,.25); }
+
+  .al-list { display: flex; flex-direction: column; gap: 10px; }
+  .al-card {
+    padding: 14px 16px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.06);
+    border-left: 3px solid;
+    border-radius: 0 12px 12px 0;
+    transition: all .15s;
+  }
+  .al-card:hover { background: rgba(245,184,66,.04); }
+  .al-card.resolved { opacity: .55; }
+  .al-card.ignored { opacity: .4; }
+  .al-head {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    margin-bottom: 6px; font-size: 12px;
+  }
+  .al-head .al-sev { font-size: 14px; }
+  .al-head .al-tit { color: #fff; font-weight: 700; flex: 1; }
+  .al-head .al-tag {
+    font-size: 8px; letter-spacing: 1.5px; padding: 2px 6px;
+    background: rgba(245,184,66,.15); color: rgba(245,184,66,.85);
+    border-radius: 999px; font-weight: 700;
+  }
+  .al-head .al-tag.manual { background: rgba(112,165,255,.15); color: #93B6FF; }
+  .al-head .al-tipo { font-size: 9px; letter-spacing: 1px; color: rgba(255,255,255,.45); }
+  .al-head .al-status {
+    font-size: 9px; letter-spacing: 1.5px; padding: 2px 8px;
+    border-radius: 999px; border: 1px solid rgba(255,255,255,.15);
+    color: rgba(255,255,255,.7);
+  }
+  .al-head .al-status.status-resolvido { color: #6FE3A8; border-color: rgba(111,227,168,.4); background: rgba(111,227,168,.08); }
+  .al-head .al-status.status-andamento { color: #E6C77A; border-color: rgba(245,184,66,.4); background: rgba(245,184,66,.08); }
+  .al-head .al-status.status-ignorado { color: rgba(255,255,255,.4); }
+  .al-desc { font-size: 12px; color: rgba(255,255,255,.75); line-height: 1.5; margin-bottom: 8px; }
+  .al-meta { font-size: 10px; color: rgba(255,255,255,.55); display: flex; gap: 14px; margin-bottom: 6px; }
+  .al-comentarios {
+    margin: 8px 0;
+    padding: 10px;
+    background: rgba(0,0,0,.3);
+    border-radius: 10px;
+    border-left: 2px solid rgba(112,165,255,.3);
+  }
+  .al-com { padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,.05); }
+  .al-com:last-child { border-bottom: 0; }
+  .al-com strong { color: #93B6FF; font-size: 11px; }
+  .al-com-date { color: rgba(255,255,255,.4); font-size: 9px; margin-left: 8px; }
+  .al-com p { margin: 4px 0 0; font-size: 11px; color: rgba(255,255,255,.8); line-height: 1.5; }
+  .al-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .al-mini {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.1);
+    color: rgba(255,255,255,.7);
+    padding: 5px 10px; border-radius: 999px;
+    cursor: pointer; font-size: 10px; letter-spacing: .5px;
+    font-family: inherit;
+    transition: all .15s;
+  }
+  .al-mini:hover { background: rgba(245,184,66,.12); color: #FFE099; border-color: rgba(245,184,66,.4); }
+  .al-mini.good:hover { background: rgba(111,227,168,.15); color: #6FE3A8; border-color: rgba(111,227,168,.4); }
+  .al-mini.warn:hover { background: rgba(245,184,66,.15); color: #E6C77A; }
+  .al-mini.danger:hover { background: rgba(255,107,107,.12); color: #ff8a8a; border-color: rgba(255,107,107,.4); }
+
+  .al-empty {
+    padding: 30px;
+    text-align: center;
+    color: rgba(111,227,168,.7);
+    font-size: 13px;
+    background: rgba(111,227,168,.05);
+    border-radius: 12px;
+    border: 1px dashed rgba(111,227,168,.25);
+  }
+
+  @container fly-vp (max-width: 640px) {
+    .al-kpis { grid-template-columns: repeat(2, 1fr); }
+    .al-kpi .num { font-size: 18px; }
+  }
+
+  /* ============================================================ */
   /* EXPERIÊNCIA VISUAL · upload de foto/vídeo por card           */
   /* ============================================================ */
   .bases-visual-card .img.is-photo,
@@ -13786,6 +13883,7 @@
       else if (key === 'retencao')  dbxBindRetencao(panelEl, D, item);
       else if (key === 'upsell')    dbxBindUpsell(panelEl, D, item);
       else if (key === 'conteudo')  dbxBindConteudo(panelEl, D, item);
+      else if (key === 'alertas')   dbxBindAlertas(panelEl, D, item);
     }
 
     // Banner do hero — reaproveitado pelo painel Produto
@@ -15815,37 +15913,193 @@
 
     /* ===== PAINEL: ALERTAS INTELIGENTES ===== */
     function dbxRenderAlertas(D, fin) {
-      const alerts = [];
-      // Auto-gerados a partir dos dados
-      if (fin.margem < 20) alerts.push({ tipo:'danger', titulo:'Margem baixa', desc:`Margem de ${fin.margem.toFixed(1)}% está abaixo de 20%. Reveja preço ou custos.` });
-      else if (fin.margem >= 40) alerts.push({ tipo:'positive', titulo:'Margem excelente', desc:`Margem de ${fin.margem.toFixed(1)}% — você está escalando com lucro.` });
-      if (fin.roi < 100 && fin.investMkt > 0) alerts.push({ tipo:'warning', titulo:'ROI marketing fraco', desc:`ROI de ${fin.roi.toFixed(0)}% — algumas campanhas estão pagando pouco.` });
-      const checklistOpen = D.operacao.checklist.filter(c => !c.done).length;
-      if (checklistOpen > 0) alerts.push({ tipo:'warning', titulo:'Checklist incompleto', desc:`${checklistOpen} item(ns) pendente(s) na operação.` });
-      const equipePend = D.equipe.filter(e => e.status !== 'confirmado').length;
-      if (equipePend > 0) alerts.push({ tipo:'warning', titulo:'Equipe não confirmada', desc:`${equipePend} pessoa(s) ainda sem confirmação.` });
-      const clientesPend = D.clientes.filter(c => c.status === 'pendente').length;
-      if (clientesPend > 0) alerts.push({ tipo:'warning', titulo:'Pagamentos pendentes', desc:`${clientesPend} cliente(s) com pagamento em aberto.` });
-      if (fin.totalClientes >= 10) alerts.push({ tipo:'positive', titulo:'Alta demanda', desc:`Pacote com ${fin.totalClientes} clientes pagantes — momento de aumentar preço ou abrir nova turma.` });
+      // Ensure tickets array exists
+      if (!Array.isArray(D.alertas)) D.alertas = [];
 
-      if (!alerts.length) alerts.push({ tipo:'positive', titulo:'Tudo em ordem', desc:'Nenhum alerta crítico no momento.' });
+      // Auto-gerados (ephemeral, não persistem; só derivam dos dados atuais)
+      const auto = [];
+      if (fin.margem < 20) auto.push({ id:'auto-margem-baixa', severidade:'critico', titulo:'Margem baixa', desc:`Margem de ${fin.margem.toFixed(1)}% está abaixo de 20%. Reveja preço ou custos.`, tipo:'Financeiro', auto: true });
+      if (fin.roi < 100 && fin.investMkt > 0) auto.push({ id:'auto-roi-fraco', severidade:'atencao', titulo:'ROI marketing fraco', desc:`ROI de ${fin.roi.toFixed(0)}% — algumas campanhas estão pagando pouco.`, tipo:'Marketing', auto: true });
+      const checklistOpen = D.operacao.checklist.filter(c => !c.done).length;
+      if (checklistOpen > 0) auto.push({ id:'auto-check', severidade:'atencao', titulo:'Checklist incompleto', desc:`${checklistOpen} item(ns) pendente(s) na operação.`, tipo:'Operação', auto: true });
+      const equipePend = D.equipe.filter(e => e.status !== 'confirmado').length;
+      if (equipePend > 0) auto.push({ id:'auto-equipe', severidade:'atencao', titulo:'Equipe não confirmada', desc:`${equipePend} pessoa(s) ainda sem confirmação.`, tipo:'Equipe', auto: true });
+      const clientesPend = D.clientes.filter(c => c.status === 'pendente').length;
+      if (clientesPend > 0) auto.push({ id:'auto-pag', severidade:'atencao', titulo:'Pagamentos pendentes', desc:`${clientesPend} cliente(s) com pagamento em aberto.`, tipo:'Financeiro', auto: true });
+      if (fin.totalClientes >= 10) auto.push({ id:'auto-demanda', severidade:'info', titulo:'Alta demanda', desc:`Pacote com ${fin.totalClientes} clientes pagantes — momento de aumentar preço ou abrir nova turma.`, tipo:'Comercial', auto: true });
+
+      // Merged: tickets manuais + auto
+      const all = [...D.alertas, ...auto];
+
+      // KPIs
+      const criticos = all.filter(a => a.severidade === 'critico' && a.status !== 'resolvido' && a.status !== 'ignorado').length;
+      const atencao  = all.filter(a => a.severidade === 'atencao' && a.status !== 'resolvido' && a.status !== 'ignorado').length;
+      const resolvHoje = D.alertas.filter(a => a.status === 'resolvido' && a.resolvidoEm && (Date.now() - a.resolvidoEm) < 86400000).length;
+      const resolved = D.alertas.filter(a => a.status === 'resolvido' && a.criadoEm && a.resolvidoEm);
+      const tempoMed = resolved.length > 0
+        ? (resolved.reduce((s, a) => s + (a.resolvidoEm - a.criadoEm), 0) / resolved.length / 86400000)
+        : 0;
+
+      const sevIcon = (s) => ({ critico: '🔴', atencao: '🟡', info: '🟢' })[s] || '🟢';
+      const sevColor = (s) => ({ critico: '#ff6b6b', atencao: '#E6C77A', info: '#6FE3A8' })[s] || '#aaa';
+      const statusLabel = (s) => ({ aberto: 'Aberto', andamento: 'Em andamento', resolvido: 'Resolvido', ignorado: 'Ignorado' })[s] || 'Aberto';
 
       return `
         <div class="dbx-panel-head">
-          <h2><span class="ico">🚨</span>Alertas Inteligentes</h2>
+          <h2><span class="ico">🚨</span>Alertas · Tickets</h2>
+          <div class="dbx-actions">
+            <button class="dbx-btn ghost" data-act="al-novo">+ Novo Alerta</button>
+          </div>
         </div>
-        <div class="dbx-alerts">
-          ${alerts.map(a => `
-            <div class="dbx-alert ${a.tipo}">
-              <div class="dbx-alert-icon">${a.tipo==='danger'?'🔴':a.tipo==='warning'?'⚠️':'✅'}</div>
-              <div class="dbx-alert-body">
-                <h4>${escapeHtml(a.titulo)}</h4>
-                <p>${escapeHtml(a.desc)}</p>
+
+        <div class="al-kpis">
+          <div class="al-kpi crit"><div class="num">${criticos}</div><div class="lbl">🔴 CRÍTICOS</div></div>
+          <div class="al-kpi warn"><div class="num">${atencao}</div><div class="lbl">🟡 ATENÇÃO</div></div>
+          <div class="al-kpi good"><div class="num">${resolvHoje}</div><div class="lbl">✅ RESOLVIDOS HOJE</div></div>
+          <div class="al-kpi info"><div class="num">${tempoMed.toFixed(1)}d</div><div class="lbl">⏱ TEMPO MÉDIO</div></div>
+        </div>
+
+        <div class="al-list">
+          ${all.length === 0 ? '<div class="al-empty">✅ Nenhum alerta — tudo em ordem!</div>' : all.map((a, i) => {
+            const isAuto = a.auto;
+            const sev = a.severidade || 'atencao';
+            const status = a.status || 'aberto';
+            return `
+            <div class="al-card ${status === 'resolvido' ? 'resolved' : ''} ${status === 'ignorado' ? 'ignored' : ''}" style="border-left-color:${sevColor(sev)};" data-al-idx="${isAuto ? -1 : D.alertas.indexOf(a)}">
+              <div class="al-head">
+                <span class="al-sev">${sevIcon(sev)}</span>
+                <span class="al-tit">${escapeHtml(a.titulo || '—')}</span>
+                ${isAuto ? '<span class="al-tag">AUTO</span>' : `<span class="al-tag manual">MANUAL</span>`}
+                <span class="al-tipo">${escapeHtml(a.tipo || '')}</span>
+                <span class="al-status status-${status}">${statusLabel(status)}</span>
               </div>
+              <div class="al-desc">${escapeHtml(a.desc || '')}</div>
+              ${(a.responsavel || a.prazo) ? `
+                <div class="al-meta">
+                  ${a.responsavel ? `👤 ${escapeHtml(a.responsavel)}` : ''}
+                  ${a.prazo ? `⏰ ${escapeHtml(a.prazo)}` : ''}
+                </div>
+              ` : ''}
+              ${(a.comentarios && a.comentarios.length > 0) ? `
+                <div class="al-comentarios">
+                  ${a.comentarios.map(c => `
+                    <div class="al-com">
+                      <strong>${escapeHtml(c.autor || 'anônimo')}</strong>
+                      <span class="al-com-date">${new Date(c.ts).toLocaleString('pt-BR')}</span>
+                      <p>${escapeHtml(c.texto || '')}</p>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
+              ${!isAuto ? `
+                <div class="al-actions">
+                  <button class="al-mini" data-al-act="comentar" data-al-idx="${D.alertas.indexOf(a)}">💬 Comentar</button>
+                  <button class="al-mini" data-al-act="atribuir" data-al-idx="${D.alertas.indexOf(a)}">👤 Atribuir</button>
+                  <button class="al-mini" data-al-act="prazo" data-al-idx="${D.alertas.indexOf(a)}">⏰ Prazo</button>
+                  ${status !== 'resolvido' ? `<button class="al-mini good" data-al-act="resolver" data-al-idx="${D.alertas.indexOf(a)}">✅ Resolver</button>` : ''}
+                  ${status !== 'ignorado' ? `<button class="al-mini warn" data-al-act="ignorar" data-al-idx="${D.alertas.indexOf(a)}">⏸ Ignorar</button>` : ''}
+                  <button class="al-mini danger" data-al-act="excluir" data-al-idx="${D.alertas.indexOf(a)}">🗑</button>
+                </div>
+              ` : ''}
             </div>
-          `).join('')}
+          `; }).join('')}
         </div>
       `;
+    }
+
+    function dbxBindAlertas(panelEl, D, item) {
+      if (!Array.isArray(D.alertas)) D.alertas = [];
+      const refresh = () => {
+        const fin = dbxComputeFinance(D);
+        panelEl.innerHTML = dbxRenderAlertas(D, fin);
+        dbxBindAlertas(panelEl, D, item);
+      };
+
+      // Novo alerta
+      const novoBtn = panelEl.querySelector('[data-act="al-novo"]');
+      if (novoBtn) novoBtn.addEventListener('click', () => {
+        dbxOpenModal({
+          title: '+ Novo Alerta · Ticket',
+          fields: [
+            { key: 'titulo', label: 'Título', type: 'text' },
+            { key: 'desc', label: 'Descrição', type: 'textarea' },
+            { key: 'severidade', label: 'Severidade', type: 'select', options: [
+              { value: 'critico', label: '🔴 Crítico' }, { value: 'atencao', label: '🟡 Atenção' }, { value: 'info', label: '🟢 Info' }
+            ]},
+            { key: 'tipo', label: 'Tipo', type: 'select', options: [
+              { value: 'Operação', label: 'Operação' }, { value: 'Financeiro', label: 'Financeiro' },
+              { value: 'Equipe', label: 'Equipe' }, { value: 'Marketing', label: 'Marketing' },
+              { value: 'Comercial', label: 'Comercial' }, { value: 'Outro', label: 'Outro' }
+            ]},
+            { key: 'responsavel', label: 'Responsável', type: 'text' },
+            { key: 'prazo', label: 'Prazo (data)', type: 'date' }
+          ],
+          values: { severidade: 'atencao', tipo: 'Operação' },
+          onSave: (vals) => {
+            D.alertas.unshift({
+              id: 'al_' + Date.now(),
+              titulo: vals.titulo || 'Sem título',
+              desc: vals.desc || '',
+              severidade: vals.severidade || 'atencao',
+              tipo: vals.tipo || 'Outro',
+              responsavel: vals.responsavel || '',
+              prazo: vals.prazo || '',
+              status: 'aberto',
+              criadoEm: Date.now(),
+              comentarios: []
+            });
+            saveDubaiExplorer();
+            refresh();
+          }
+        });
+      });
+
+      // Ações dos cards
+      panelEl.querySelectorAll('[data-al-act]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const act = btn.dataset.alAct;
+          const idx = parseInt(btn.dataset.alIdx, 10);
+          if (idx < 0 || idx >= D.alertas.length) return;
+          const a = D.alertas[idx];
+
+          if (act === 'comentar') {
+            dbxOpenModal({
+              title: 'Comentar', fields: [{ key: 'texto', label: 'Comentário', type: 'textarea' }],
+              values: { texto: '' },
+              onSave: (v) => {
+                if (!a.comentarios) a.comentarios = [];
+                a.comentarios.push({
+                  autor: (window.__currentSession?.user?.email) || 'anônimo',
+                  texto: v.texto || '', ts: Date.now()
+                });
+                saveDubaiExplorer(); refresh();
+              }
+            });
+          } else if (act === 'atribuir') {
+            dbxOpenModal({
+              title: 'Atribuir responsável', fields: [{ key: 'r', label: 'Responsável', type: 'text' }],
+              values: { r: a.responsavel || '' },
+              onSave: (v) => { a.responsavel = v.r || ''; saveDubaiExplorer(); refresh(); }
+            });
+          } else if (act === 'prazo') {
+            dbxOpenModal({
+              title: 'Definir prazo', fields: [{ key: 'p', label: 'Prazo', type: 'date' }],
+              values: { p: a.prazo || '' },
+              onSave: (v) => { a.prazo = v.p || ''; saveDubaiExplorer(); refresh(); }
+            });
+          } else if (act === 'resolver') {
+            a.status = 'resolvido'; a.resolvidoEm = Date.now();
+            saveDubaiExplorer(); refresh();
+          } else if (act === 'ignorar') {
+            a.status = 'ignorado';
+            saveDubaiExplorer(); refresh();
+          } else if (act === 'excluir') {
+            if (!confirm('Excluir alerta?')) return;
+            D.alertas.splice(idx, 1);
+            saveDubaiExplorer(); refresh();
+          }
+        });
+      });
     }
 
     /* =====================  VIEW 4 (ITEM HUB)  ===================== */
