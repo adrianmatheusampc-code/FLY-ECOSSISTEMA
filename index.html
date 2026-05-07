@@ -1688,6 +1688,81 @@
   }
   body.present-mode .present-toggle { opacity: .25; }
   body.present-mode .present-toggle:hover { opacity: 1; }
+
+  /* Botão PDF */
+  .print-btn {
+    position: fixed;
+    top: 24px;
+    right: 412px;
+    z-index: 100;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(245,184,66,0.35);
+    color: rgba(255,255,255,.85);
+    padding: 8px 14px;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    border-radius: 30px;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .print-btn:hover {
+    background: rgba(245,184,66,0.18);
+    color: var(--gold-bright);
+    border-color: rgba(245,184,66,0.6);
+    transform: translateY(-1px);
+  }
+
+  /* PRINT CSS · estilo dedicado pra exportação PDF (Cmd+P do navegador) */
+  @media print {
+    body {
+      max-width: none !important;
+      min-width: 0 !important;
+      background: #fff !important;
+      color: #000 !important;
+    }
+    /* Esconde toda a chrome */
+    #brandLogo, .back-btn, .admin-toggle, .pin-change-btn, .pin-lock-btn,
+    .view-mode-toggle, .present-toggle, .print-btn, .sync-status,
+    .topic-admin-bar, .delete-btn, .hub-edit, .edit-banner-btn,
+    .dbx-card-actions, .dbx-add-card, .dbx-add-row, .dbx-mini-btn,
+    .dbx-actions, .mr-edit-btn, .dre-add-btn, .dre-edit-btn, .dre-del-btn,
+    .dre-toggle, .dre-mini-action, .pin-gate-overlay,
+    .topic-comparador-bar, .fc-slider, .fc-input, .dre-allocation .dre-slider {
+      display: none !important;
+    }
+    /* Recolore com paleta papel */
+    .stage, .grid-view, .detail-view, .topic-view, .item-view,
+    .dbx-module, .dbx-block, .mr-section, .dre-waterfall {
+      background: #fff !important;
+      color: #000 !important;
+      border-color: #ccc !important;
+      box-shadow: none !important;
+    }
+    /* Mantém destaques dourados em ouro escuro pra impressão */
+    .dre-line.dre-net.dre-hero { background: #f5e6c4 !important; border: 2px solid #c6a85a !important; box-shadow: none !important; }
+    .dre-line.dre-net .dre-value, .dre-line.dre-net .dre-label { color: #1a1000 !important; text-shadow: none !important; }
+    .grid-circle.gold { background: #f5d77b !important; }
+    .topic-banner h1, .grid-title .title, .center-text .ano {
+      color: #1a1000 !important; text-shadow: none !important;
+    }
+    /* Quebra de página entre seções principais */
+    .dbx-block, .mr-section, .dre-line.dre-net.dre-hero {
+      page-break-inside: avoid;
+    }
+    .dbx-tabs { display: none !important; }
+    /* Mostra TODOS os dbx-panel content (não só o ativo) — ideal pra exportar tudo */
+    .dbx-panel { background: #fff !important; }
+    @page {
+      size: A4;
+      margin: 18mm 14mm;
+    }
+  }
   body.present-mode .stage,
   body.present-mode #gridView,
   body.present-mode #detailView,
@@ -8244,6 +8319,9 @@
   </button>
   <button class="present-toggle" id="presentToggle" title="Modo Apresentação (Cmd/Ctrl+P)">
     <span>🎬</span><span class="pt-lbl">APRESENTAÇÃO</span>
+  </button>
+  <button class="print-btn" id="printBtn" title="Exportar como PDF (Cmd/Ctrl+Shift+P)">
+    <span>📄</span><span class="prt-lbl">PDF</span>
   </button>
   <div class="sync-status" id="syncStatus" data-status="idle" title="Status de sincronização com banco de dados">
     <span class="sync-dot"></span>
@@ -15941,6 +16019,18 @@
       __vmResizeT = setTimeout(() => {
         if (!localStorage.getItem('fly_view_mode')) applyViewMode();
       }, 150);
+    });
+
+    /* =====================  PDF EXPORT  ===================== */
+    const printBtn = document.getElementById('printBtn');
+    if (printBtn) {
+      printBtn.addEventListener('click', () => window.print());
+    }
+    document.addEventListener('keydown', (ev) => {
+      if ((ev.metaKey || ev.ctrlKey) && ev.shiftKey && (ev.key === 'p' || ev.key === 'P')) {
+        ev.preventDefault();
+        window.print();
+      }
     });
 
     /* =====================  MODO APRESENTAÇÃO  ===================== */
