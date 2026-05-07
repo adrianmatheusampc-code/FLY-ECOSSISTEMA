@@ -1974,6 +1974,194 @@
     .pin-gate-sub { font-size: 10px; }
   }
 
+  /* ================================================ */
+  /* FLY DESIGN EDITOR · highlight + popover         */
+  /* ================================================ */
+  body.admin-mode [data-design-id].design-editable {
+    position: relative;
+    cursor: pointer !important;
+    transition: all .15s;
+  }
+  body.admin-mode [data-design-id].design-editable:hover {
+    outline: 2px dashed rgba(245,184,66,.7);
+    outline-offset: 4px;
+    box-shadow: 0 0 0 1px rgba(245,184,66,.15);
+  }
+  body.admin-mode [data-design-id].design-editable::before {
+    content: '✎';
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #E6C77A, #C6A85A);
+    color: #1a1000;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,.5);
+    opacity: 0;
+    transform: scale(.7);
+    transition: all .2s;
+    pointer-events: none;
+    z-index: 50;
+  }
+  body.admin-mode [data-design-id].design-editable:hover::before {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .fly-design-popover {
+    position: fixed;
+    z-index: 99998;
+    width: 340px;
+    background: linear-gradient(180deg, #1a1612 0%, #0c0a08 100%);
+    border: 1px solid rgba(245,184,66,.35);
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow:
+      0 30px 80px -10px rgba(0,0,0,.8),
+      0 0 0 1px rgba(245,184,66,.06) inset,
+      0 0 40px rgba(245,184,66,.08);
+    animation: fdpIn .25s cubic-bezier(.2,.7,.2,1);
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+  }
+  @keyframes fdpIn {
+    from { opacity: 0; transform: translateY(-6px) scale(.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .fdp-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(245,184,66,.15);
+    margin-bottom: 12px;
+  }
+  .fdp-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold-bright);
+    font-weight: 700;
+  }
+  .fdp-close {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.15);
+    color: rgba(255,255,255,.7);
+    cursor: pointer;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fdp-close:hover { background: rgba(245,184,66,.18); color: var(--gold-bright); }
+
+  .fdp-label {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(245,184,66,.7);
+    font-weight: 600;
+    margin: 10px 0 5px;
+  }
+  .fdp-text, .fly-design-popover input, .fly-design-popover select {
+    width: 100%;
+    padding: 9px 11px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(245,184,66,.2);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .fdp-text { resize: vertical; min-height: 50px; }
+  .fly-design-popover input:focus, .fly-design-popover select:focus, .fdp-text:focus {
+    outline: none;
+    border-color: rgba(245,184,66,.6);
+    background: rgba(245,184,66,.05);
+  }
+  .fdp-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .fdp-col { min-width: 0; }
+  .fly-design-popover input[type="color"] {
+    height: 36px;
+    padding: 2px;
+    cursor: pointer;
+  }
+  .fly-design-popover input[type="file"] {
+    padding: 7px;
+    font-size: 11px;
+  }
+  .fdp-preview {
+    margin-top: 8px;
+    height: 100px;
+    border-radius: 10px;
+    background: #0a0a0a center/contain no-repeat;
+    border: 1px dashed rgba(245,184,66,.25);
+  }
+  .fdp-align { display: flex; gap: 4px; }
+  .fdp-align-btn {
+    flex: 1;
+    padding: 7px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(245,184,66,.2);
+    color: rgba(255,255,255,.65);
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    transition: all .15s;
+  }
+  .fdp-align-btn.active {
+    background: rgba(245,184,66,.15);
+    border-color: rgba(245,184,66,.55);
+    color: var(--gold-bright);
+  }
+  .fdp-align-btn:hover { color: var(--gold-bright); }
+  .fdp-actions {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(245,184,66,.15);
+    display: flex;
+    gap: 8px;
+  }
+  .fdp-btn {
+    flex: 1;
+    padding: 9px;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 0;
+    transition: all .15s;
+  }
+  .fdp-btn.ghost {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.15);
+    color: rgba(255,255,255,.65);
+  }
+  .fdp-btn.ghost:hover { color: var(--gold-bright); border-color: rgba(245,184,66,.5); }
+  .fdp-btn.primary {
+    background: linear-gradient(180deg, #FFE099 0%, #E6C77A 50%, #C6A85A 100%);
+    color: #1a1000;
+    box-shadow: 0 4px 14px rgba(230,199,122,.35);
+    text-shadow: 0 1px 0 rgba(255,255,255,.18);
+  }
+  .fdp-btn.primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+  @container fly-vp (max-width: 640px) {
+    .fly-design-popover { width: calc(100vw - 24px); left: 12px !important; }
+  }
+
   .edit-banner-btn {
     position: absolute;
     top: 12px; right: 12px;
@@ -6873,7 +7061,8 @@
       'fly_basesfly_visual_v1',
       'fly_basesfly_inline_v1',
       'fly_hierarquia_inline_v1',
-      'fly_customcities_v1'
+      'fly_customcities_v1',
+      'fly_design_overrides_v1'
     ];
     let supaClient = null;
     const __supaPending = new Map(); // key -> timeout id
@@ -7170,6 +7359,251 @@
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
       catch (e) { alert('Não foi possível salvar (armazenamento cheio?). Tente imagens menores.'); }
     }
+
+    /* ============================================================
+       FLY DESIGN EDITOR · admin pode editar logos/textos in-place
+       ============================================================ */
+    const FLY_DESIGN_KEY = 'fly_design_overrides_v1';
+    window.FlyDesign = (function() {
+      let overrides = {};
+      try { overrides = JSON.parse(localStorage.getItem(FLY_DESIGN_KEY) || '{}') || {}; } catch (e) { overrides = {}; }
+
+      function persist() {
+        try { localStorage.setItem(FLY_DESIGN_KEY, JSON.stringify(overrides)); } catch (e) {}
+      }
+      function get(id) { return overrides[id] || {}; }
+      function set(id, props) {
+        overrides[id] = Object.assign({}, get(id), props);
+        persist();
+      }
+      function reset(id) { delete overrides[id]; persist(); }
+
+      // Aplica overrides salvos no elemento (texto, imagem, estilo)
+      function applyTo(el, id, type) {
+        if (!el) return;
+        const o = get(id);
+        if (!o) return;
+        if (type === 'text') {
+          if (o.text !== undefined && o.text !== null) {
+            // Se o elemento tem filhos não-texto, só substitui o nó de texto
+            if (el.children.length === 0) el.textContent = o.text;
+            else {
+              // Para elementos com children, troca apenas o último texto
+              const tn = Array.from(el.childNodes).find(n => n.nodeType === 3);
+              if (tn) tn.nodeValue = o.text;
+              else el.textContent = o.text;
+            }
+          }
+          if (o.fontSize)       el.style.fontSize = o.fontSize + 'px';
+          if (o.color)          el.style.color = o.color;
+          if (o.letterSpacing !== undefined) el.style.letterSpacing = o.letterSpacing + 'px';
+          if (o.fontWeight)     el.style.fontWeight = o.fontWeight;
+          if (o.textAlign)      el.style.textAlign = o.textAlign;
+          if (o.x || o.y) {
+            const existing = el.style.transform || '';
+            const cleaned = existing.replace(/translate\([^)]*\)/g, '').trim();
+            el.style.transform = `translate(${o.x||0}px, ${o.y||0}px) ${cleaned}`.trim();
+          }
+        } else if (type === 'image') {
+          if (o.image) el.src = o.image;
+        } else if (type === 'background') {
+          if (o.image) el.style.backgroundImage = `url('${o.image}')`;
+        }
+      }
+
+      // Marca elemento como editável + aplica overrides
+      function bindEditable(el, id, opts = {}) {
+        if (!el) return;
+        const type = opts.type || 'text';
+        el.dataset.designId = id;
+        el.dataset.designType = type;
+        if (opts.label) el.dataset.designLabel = opts.label;
+        applyTo(el, id, type);
+        if (!el._flyDesignBound) {
+          el._flyDesignBound = true;
+          el.addEventListener('click', (ev) => {
+            if (!document.body.classList.contains('admin-mode')) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            openEditor(el, id, opts);
+          }, true);
+        }
+      }
+
+      function openEditor(el, id, opts) {
+        // Remove qualquer popover anterior
+        document.querySelectorAll('.fly-design-popover').forEach(p => p.remove());
+        const o = get(id);
+        const type = opts.type || 'text';
+        const label = opts.label || id;
+        const pop = document.createElement('div');
+        pop.className = 'fly-design-popover';
+        const isImage = (type === 'image' || type === 'background');
+
+        // Posicionar perto do elemento
+        const rect = el.getBoundingClientRect();
+        pop.style.left = Math.max(12, Math.min(window.innerWidth - 360, rect.left + rect.width/2 - 170)) + 'px';
+        pop.style.top  = Math.min(window.innerHeight - 420, rect.bottom + 8) + 'px';
+
+        // Detect current values from element if no override
+        const computedColor = getComputedStyle(el).color;
+        const computedFs = parseFloat(getComputedStyle(el).fontSize) || 16;
+        const currentText = (o.text !== undefined && o.text !== null) ? o.text : (el.textContent || '').trim();
+
+        pop.innerHTML = `
+          <div class="fdp-head">
+            <div class="fdp-title">${escapeHtml(label)}</div>
+            <button class="fdp-close" type="button" title="Fechar">✕</button>
+          </div>
+          ${isImage ? `
+            <label class="fdp-label">IMAGEM (PNG/JPG)</label>
+            <input type="file" accept="image/png,image/jpeg,image/svg+xml" class="fdp-file">
+            <div class="fdp-preview" id="fdpPreview" style="${o.image ? `background-image:url('${o.image}')` : ''}"></div>
+          ` : `
+            <label class="fdp-label">TEXTO</label>
+            <textarea class="fdp-text" rows="2">${escapeHtml(currentText)}</textarea>
+            <div class="fdp-row">
+              <div class="fdp-col">
+                <label class="fdp-label">TAMANHO (PX)</label>
+                <input type="number" class="fdp-fs" min="6" max="200" step="1" value="${o.fontSize || Math.round(computedFs)}">
+              </div>
+              <div class="fdp-col">
+                <label class="fdp-label">COR</label>
+                <input type="color" class="fdp-color" value="${o.color ? toHex(o.color) : toHex(computedColor)}">
+              </div>
+            </div>
+            <div class="fdp-row">
+              <div class="fdp-col">
+                <label class="fdp-label">ESPAÇAMENTO</label>
+                <input type="number" class="fdp-ls" min="-5" max="20" step=".5" value="${o.letterSpacing !== undefined ? o.letterSpacing : ''}">
+              </div>
+              <div class="fdp-col">
+                <label class="fdp-label">PESO</label>
+                <select class="fdp-fw">
+                  <option value="">— padrão —</option>
+                  <option value="300" ${o.fontWeight==='300'?'selected':''}>Light 300</option>
+                  <option value="400" ${o.fontWeight==='400'?'selected':''}>Regular 400</option>
+                  <option value="500" ${o.fontWeight==='500'?'selected':''}>Medium 500</option>
+                  <option value="600" ${o.fontWeight==='600'?'selected':''}>Semibold 600</option>
+                  <option value="700" ${o.fontWeight==='700'?'selected':''}>Bold 700</option>
+                  <option value="800" ${o.fontWeight==='800'?'selected':''}>Extrabold 800</option>
+                  <option value="900" ${o.fontWeight==='900'?'selected':''}>Black 900</option>
+                </select>
+              </div>
+            </div>
+            <label class="fdp-label">ALINHAMENTO</label>
+            <div class="fdp-align">
+              ${['left','center','right'].map(a => `
+                <button class="fdp-align-btn ${o.textAlign === a ? 'active' : ''}" data-align="${a}" type="button">${a==='left'?'◀':(a==='center'?'■':'▶')}</button>
+              `).join('')}
+            </div>
+            <label class="fdp-label">POSIÇÃO (X / Y)</label>
+            <div class="fdp-row">
+              <div class="fdp-col">
+                <input type="number" class="fdp-x" step="1" placeholder="X" value="${o.x || 0}">
+              </div>
+              <div class="fdp-col">
+                <input type="number" class="fdp-y" step="1" placeholder="Y" value="${o.y || 0}">
+              </div>
+            </div>
+          `}
+          <div class="fdp-actions">
+            <button class="fdp-btn ghost" type="button" data-act="reset">↺ Resetar</button>
+            <button class="fdp-btn primary" type="button" data-act="save">Salvar</button>
+          </div>
+        `;
+        document.body.appendChild(pop);
+
+        // Wire close
+        pop.querySelector('.fdp-close').addEventListener('click', () => pop.remove());
+        const closeOnOutside = (ev) => {
+          if (!pop.contains(ev.target)) {
+            pop.remove();
+            document.removeEventListener('mousedown', closeOnOutside, true);
+          }
+        };
+        setTimeout(() => document.addEventListener('mousedown', closeOnOutside, true), 100);
+
+        // Live updates
+        if (!isImage) {
+          // Align
+          pop.querySelectorAll('.fdp-align-btn').forEach(b => b.addEventListener('click', () => {
+            pop.querySelectorAll('.fdp-align-btn').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+          }));
+        } else {
+          // Image upload preview
+          const fileIn = pop.querySelector('.fdp-file');
+          const preview = pop.querySelector('#fdpPreview');
+          fileIn.addEventListener('change', async () => {
+            const f = fileIn.files && fileIn.files[0];
+            if (!f) return;
+            const dataUrl = await compressImage(f, 1200, 0.9);
+            preview.style.backgroundImage = `url('${dataUrl}')`;
+            preview.dataset.newImage = dataUrl;
+          });
+        }
+
+        // Save
+        pop.querySelector('[data-act="save"]').addEventListener('click', () => {
+          if (isImage) {
+            const newImg = pop.querySelector('#fdpPreview').dataset.newImage;
+            if (newImg) set(id, { image: newImg });
+          } else {
+            const text = pop.querySelector('.fdp-text').value;
+            const fs = pop.querySelector('.fdp-fs').value;
+            const color = pop.querySelector('.fdp-color').value;
+            const ls = pop.querySelector('.fdp-ls').value;
+            const fw = pop.querySelector('.fdp-fw').value;
+            const align = pop.querySelector('.fdp-align-btn.active')?.dataset.align;
+            const x = pop.querySelector('.fdp-x').value;
+            const y = pop.querySelector('.fdp-y').value;
+            const props = {};
+            props.text = text;
+            if (fs) props.fontSize = parseInt(fs, 10);
+            if (color) props.color = color;
+            if (ls !== '') props.letterSpacing = parseFloat(ls);
+            if (fw) props.fontWeight = fw;
+            if (align) props.textAlign = align;
+            if (x !== '' && parseInt(x, 10) !== 0) props.x = parseInt(x, 10); else if (x === '0') props.x = 0;
+            if (y !== '' && parseInt(y, 10) !== 0) props.y = parseInt(y, 10); else if (y === '0') props.y = 0;
+            set(id, props);
+          }
+          applyTo(el, id, type);
+          pop.remove();
+        });
+
+        // Reset
+        pop.querySelector('[data-act="reset"]').addEventListener('click', () => {
+          if (!confirm('Resetar este elemento para o padrão?')) return;
+          reset(id);
+          // Reload to re-render from defaults (simpler than undoing inline styles)
+          location.reload();
+        });
+      }
+
+      function toHex(c) {
+        if (!c) return '#ffffff';
+        if (c.startsWith('#')) return c.length >= 7 ? c.slice(0,7) : c;
+        const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+        if (m) {
+          return '#' + [m[1], m[2], m[3]].map(n => parseInt(n,10).toString(16).padStart(2,'0')).join('');
+        }
+        return '#ffffff';
+      }
+
+      // Quando admin-mode liga/desliga, atualiza highlight dos editáveis
+      function refreshAdminHighlight() {
+        const isAdmin = document.body.classList.contains('admin-mode');
+        document.querySelectorAll('[data-design-id]').forEach(el => {
+          if (isAdmin) el.classList.add('design-editable');
+          else el.classList.remove('design-editable');
+        });
+      }
+
+      return { get, set, reset, applyTo, bindEditable, openEditor, refreshAdminHighlight };
+    })();
+
     function getTopic(yearKey, topicKey) {
       data[yearKey] = data[yearKey] || {};
       if (!data[yearKey][topicKey]) {
@@ -7611,16 +8045,41 @@
     let selectedIds = new Set();    // ids of selected items in select mode
 
     /* =====================  VIEW 1  ===================== */
+    // Marca elementos editáveis no Home (logos + textos)
+    function bindHomeEditables() {
+      const brandImg = document.querySelector('#brandLogo img');
+      if (brandImg) FlyDesign.bindEditable(brandImg, 'home.brandLogo', { type: 'image', label: 'Logo Topo (Brand)' });
+      const ecoLabel = document.querySelector('#brandLogo .eco-label');
+      if (ecoLabel) FlyDesign.bindEditable(ecoLabel, 'home.brandLabel', { type: 'text', label: 'Texto "ECOSSISTEMA FLY"' });
+      const mainLogo = document.querySelector('.grid-title .grid-main-logo');
+      if (mainLogo) FlyDesign.bindEditable(mainLogo, 'home.mainLogo', { type: 'image', label: 'Logo principal (centro topo)' });
+      const titleEl = document.querySelector('.grid-title .title');
+      if (titleEl) FlyDesign.bindEditable(titleEl, 'home.title', { type: 'text', label: 'Título "7 ANOS"' });
+      const subEl = document.querySelector('.grid-title .sub');
+      if (subEl) FlyDesign.bindEditable(subEl, 'home.sub', { type: 'text', label: 'Período "SET 2025 — ABR 2032"' });
+      const hintEl = document.querySelector('.grid-hint');
+      if (hintEl) FlyDesign.bindEditable(hintEl, 'home.hint', { type: 'text', label: 'Texto "Clique em um dos círculos…"' });
+    }
+    bindHomeEditables();
+
     years.forEach((y, i) => {
       const c = document.createElement('div');
       c.className = 'grid-circle' + (i === 0 ? ' gold' : '');
       // First (golden) circle = FLY logo (black) inside; others stay as text label
       if (i === 0 && y.label === 'FLY') {
         c.innerHTML = '<img class="grid-fly-logo" src="assets/fly-logo-black.svg" alt="FLY">';
+        const flyImg = c.querySelector('.grid-fly-logo');
+        FlyDesign.bindEditable(flyImg, 'home.circleLogo', { type: 'image', label: 'Logo do círculo dourado' });
       } else {
         c.textContent = y.label;
+        FlyDesign.bindEditable(c, `home.year_${y.label}`, { type: 'text', label: `Círculo "${y.label}"` });
       }
-      c.addEventListener('click', () => showDetail(i));
+      c.addEventListener('click', () => {
+        // Em modo admin, clique abre editor (handled em FlyDesign.bindEditable);
+        // se não admin, navega normalmente
+        if (document.body.classList.contains('admin-mode')) return;
+        showDetail(i);
+      });
       gridRow.appendChild(c);
     });
 
@@ -7679,6 +8138,7 @@
       mark.className = 'top-mark';
       mark.innerHTML = '<span>A FLY</span><span class="gold-text">COMPANY ✈</span>';
       stage.appendChild(mark);
+      FlyDesign.bindEditable(mark, 'detail.topMark', { type: 'text', label: 'Marca "A FLY COMPANY ✈"' });
 
       const cc = document.createElement('div');
       cc.className = 'center-circle';
@@ -7688,12 +8148,21 @@
         cc.innerHTML = '<div class="glyph">' + y.label + '</div>';
       }
       stage.appendChild(cc);
+      // Logo central editável
+      const centerLogo = cc.querySelector('.center-fly-logo');
+      if (centerLogo) FlyDesign.bindEditable(centerLogo, 'detail.centerLogo', { type: 'image', label: 'Logo FLY central' });
+      const centerGlyph = cc.querySelector('.glyph');
+      if (centerGlyph && !centerLogo) FlyDesign.bindEditable(centerGlyph, `detail.centerGlyph_${y.label}`, { type: 'text', label: `Texto central "${y.label}"` });
 
       const ct = document.createElement('div');
       ct.className = 'center-text';
       const anoClass = y.ano.length > 8 ? 'ano long' : 'ano';
       ct.innerHTML = '<div class="' + anoClass + '">' + y.ano + '</div><div class="period">' + y.period + '</div>';
       stage.appendChild(ct);
+      const anoEl = ct.querySelector('.ano');
+      if (anoEl) FlyDesign.bindEditable(anoEl, `detail.title_${y.label}`, { type: 'text', label: `Título "${y.ano}"` });
+      const periodEl = ct.querySelector('.period');
+      if (periodEl) FlyDesign.bindEditable(periodEl, `detail.period_${y.label}`, { type: 'text', label: `Período "${y.period}"` });
 
       // Em mobile, distanciamos os labels (labelR maior) para caberem
       const ringR  = 35;
@@ -7726,7 +8195,14 @@
         lbl.innerHTML = t.name;
         lbl.style.left = (50 + labelR * cos) + '%';
         lbl.style.top  = (50 + labelR * sin) + '%';
-        lbl.addEventListener('click', () => { currentFolder = null; selectMode = false; selectedIds.clear(); document.body.classList.remove('select-mode'); showTopic(t); });
+        lbl.addEventListener('click', () => {
+          // Em admin-mode o click abre editor (handled via FlyDesign)
+          if (document.body.classList.contains('admin-mode')) return;
+          currentFolder = null; selectMode = false; selectedIds.clear();
+          document.body.classList.remove('select-mode');
+          showTopic(t);
+        });
+        FlyDesign.bindEditable(lbl, `detail.topic_${t.key}`, { type: 'text', label: `Tópico "${t.name}"` });
 
         if (cos > 0.3) {
           lbl.style.transform = 'translate(0, -50%)';
@@ -10122,15 +10598,17 @@
         const bTitle = document.createElement('h1');
         bTitle.textContent = t.banner.title || topic.key;
         banner.appendChild(bTitle);
+        FlyDesign.bindEditable(bTitle, `topic.banner_${topic.key}`, { type: 'text', label: `Título "${t.banner.title || topic.key}"` });
 
         const iconWrap = document.createElement('div');
         iconWrap.className = 'banner-icons';
-        t.banner.icons.forEach(ic => {
+        t.banner.icons.forEach((ic, i) => {
           const el = document.createElement('div');
           el.className = 'banner-icon';
           if (ic.image) el.style.backgroundImage = `url("${ic.image}")`;
           el.innerHTML = `<span>${ic.label || ''}</span>`;
           iconWrap.appendChild(el);
+          FlyDesign.bindEditable(el, `topic.banner_${topic.key}_icon_${i}`, { type: 'background', label: `Ícone ${i + 1}` });
         });
         banner.appendChild(iconWrap);
 
@@ -10474,6 +10952,9 @@
       card.addEventListener('click', e => {
         if (e.target.classList.contains('delete-btn')) return;
         if (e.target.classList.contains('remove-from-folder-btn')) return;
+        // Em admin-mode click no NOME (que é editável) abre design editor;
+        // o card propriamente continua navegando.
+        if (document.body.classList.contains('admin-mode') && e.target.closest('[data-design-id]')) return;
         onClick();
       });
       const del = document.createElement('button');
@@ -10485,6 +10966,11 @@
         if (confirm('Remover "' + (entry.name || 'item') + '"?')) onDelete();
       });
       card.appendChild(del);
+      // Marca o título do item como editável (texto/cor/tamanho/posição)
+      const nameEl = card.querySelector('.name');
+      const topicKey = (topicData && topicData.banner && topicData.banner.title) || (currentTopic && currentTopic.key) || 'topic';
+      const safeName = (entry.name || entry.id || 'item').replace(/\s+/g, '_').slice(0, 40);
+      if (nameEl) FlyDesign.bindEditable(nameEl, `topic.${topicKey}.itemName_${safeName}`, { type: 'text', label: `Item "${entry.name || ''}"` });
       return card;
     }
 
@@ -12847,7 +13333,11 @@
         selectMode = false;
         selectedIds.clear();
         document.body.classList.remove('select-mode');
+        // Fechar qualquer popover de design aberto
+        document.querySelectorAll('.fly-design-popover').forEach(p => p.remove());
       }
+      // Refresh design editor highlight em todos os elementos
+      if (window.FlyDesign && FlyDesign.refreshAdminHighlight) FlyDesign.refreshAdminHighlight();
       // re-render current view to show/hide admin controls
       if (currentView === 'topic') showTopic(currentTopic);
       if (currentView === 'item' && currentItemRef) showItem(currentItemRef.topicData, currentItemRef.kind, currentItemRef.idx);
