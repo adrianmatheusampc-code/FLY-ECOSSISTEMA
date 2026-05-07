@@ -13349,6 +13349,14 @@
     }
 
     /* =====================  SUPABASE + AUTH INIT  ===================== */
+    // ============================================================
+    // 🔑 LIGA/DESLIGA TELA DE LOGIN
+    // Trocar pra `true` exige login (Supabase Auth).
+    // Trocar pra `false` libera acesso pra qualquer um com a URL.
+    // Os dados continuam sincronizando no Supabase normalmente nos dois modos.
+    // ============================================================
+    const FLY_AUTH_ENABLED = false;
+
     // Espera SDK carregar, conecta no Supabase, roda gate de Auth (login).
     // Se offline, libera direto (cache local).
     async function bootSupabase() {
@@ -13364,14 +13372,14 @@
 
       const ok = await initSupabase();
 
-      if (ok) {
+      if (ok && FLY_AUTH_ENABLED) {
         document.body.classList.add('fly-locked');
         const unlocked = await runAuthGate();
         if (unlocked) document.body.classList.remove('fly-locked');
       }
 
-      // Auto-logout se token expirar / sessão for revogada
-      if (supaClient) {
+      // Auto-logout se token expirar / sessão for revogada (só se auth ligado)
+      if (supaClient && FLY_AUTH_ENABLED) {
         supaClient.auth.onAuthStateChange((event, session) => {
           if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
             __currentSession = null;
