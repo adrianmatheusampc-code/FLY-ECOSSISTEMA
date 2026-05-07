@@ -7453,6 +7453,234 @@
   }
 
   /* ============================================================ */
+  /* CRM · FICHA DO CLIENTE 360°                                  */
+  /* ============================================================ */
+  .cliente-clickable { cursor: pointer; transition: all .15s; }
+  .cliente-clickable:hover {
+    background: rgba(245,184,66,.06) !important;
+    transform: translateX(2px);
+  }
+
+  .fly-ficha-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,.85);
+    backdrop-filter: blur(20px);
+    display: flex; align-items: stretch; justify-content: center;
+    padding: 20px; overflow: auto;
+    animation: cmpFadeIn .3s ease;
+  }
+  .fly-ficha-modal {
+    width: 100%; max-width: 1400px;
+    background: linear-gradient(180deg, #1a1612 0%, #0c0a08 100%);
+    border: 1px solid rgba(245,184,66,.3);
+    border-radius: 22px;
+    display: flex; flex-direction: column;
+    max-height: calc(100vh - 40px);
+  }
+  .ficha-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 28px;
+    border-bottom: 1px solid rgba(245,184,66,.18);
+  }
+  .ficha-head h2 {
+    margin: 0; font-size: 18px; letter-spacing: 2px;
+    color: #fff; font-weight: 700;
+  }
+  .ficha-sub { margin: 2px 0 0; font-size: 11px; color: rgba(255,255,255,.55); }
+  .ficha-close {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.05);
+    color: rgba(255,255,255,.7);
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .ficha-close:hover { background: rgba(245,184,66,.15); color: #FFE099; }
+
+  .ficha-body {
+    flex: 1; overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1fr;
+    gap: 18px;
+    padding: 18px 24px 24px;
+  }
+  .ficha-col { display: flex; flex-direction: column; gap: 14px; }
+
+  .ficha-section {
+    padding: 14px;
+    background: rgba(255,255,255,.025);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 12px;
+  }
+  .ficha-sec-ttl {
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    color: rgba(245,184,66,.7); font-weight: 700;
+    margin-bottom: 10px; padding-bottom: 6px;
+    border-bottom: 1px solid rgba(245,184,66,.1);
+  }
+  .ficha-row {
+    display: flex; justify-content: space-between;
+    padding: 6px 0;
+    font-size: 11px;
+    border-bottom: 1px dashed rgba(255,255,255,.04);
+  }
+  .ficha-row:last-child { border-bottom: 0; }
+  .ficha-row span { color: rgba(255,255,255,.55); }
+  .ficha-row strong { color: #fff; font-weight: 500; text-align: right; }
+  .ficha-row a { color: #93B6FF; text-decoration: none; }
+  .ficha-row a:hover { color: #FFE099; }
+  .ficha-row em { color: rgba(255,255,255,.3); font-style: italic; }
+
+  .ficha-avatar { text-align: center; padding: 8px; }
+  .avatar-circle {
+    width: 84px; height: 84px;
+    margin: 0 auto 10px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFE099, #C6A85A);
+    color: #1a1000;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; font-weight: 800;
+    box-shadow: 0 0 30px rgba(245,184,66,.4);
+  }
+  .ficha-name { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .ficha-tags {
+    display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .tag-vip, .tag-new, .tag-status {
+    font-size: 9px; letter-spacing: 1.5px;
+    padding: 3px 8px; border-radius: 999px; font-weight: 700;
+  }
+  .tag-vip { background: rgba(245,184,66,.2); color: #FFE099; border: 1px solid rgba(245,184,66,.4); }
+  .tag-new { background: rgba(112,165,255,.15); color: #93B6FF; border: 1px solid rgba(112,165,255,.3); }
+  .tag-status.status-pago { background: rgba(111,227,168,.15); color: #6FE3A8; border: 1px solid rgba(111,227,168,.3); }
+  .tag-status.status-pendente { background: rgba(245,184,66,.15); color: #E6C77A; border: 1px solid rgba(245,184,66,.3); }
+  .tag-status.status-cancelado { background: rgba(255,107,107,.15); color: #ff8a8a; border: 1px solid rgba(255,107,107,.3); }
+
+  .ficha-score {
+    display: flex; align-items: center; gap: 12px;
+    justify-content: center; margin-top: 14px;
+  }
+  .score-circle {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: conic-gradient(#FFE099 0% var(--pct, 75%), rgba(255,255,255,.08) var(--pct, 75%) 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: #FFE099; font-weight: 800;
+    position: relative;
+  }
+  .score-circle::before {
+    content: ''; position: absolute; inset: 4px;
+    border-radius: 50%; background: #1a1612;
+  }
+  .score-circle span, .score-circle small { position: relative; z-index: 1; }
+  .score-circle span { font-size: 22px; }
+  .score-circle small { font-size: 8px; color: rgba(255,255,255,.5); }
+  .score-label { font-size: 10px; letter-spacing: 1.5px; color: rgba(255,255,255,.6); }
+
+  .ficha-tags-wrap { display: flex; flex-wrap: wrap; gap: 5px; }
+  .ficha-tag {
+    background: rgba(245,184,66,.1);
+    color: #E6C77A;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    border: 1px solid rgba(245,184,66,.3);
+  }
+  .ficha-obs {
+    font-size: 11px;
+    color: rgba(255,255,255,.75);
+    line-height: 1.5;
+    background: rgba(0,0,0,.2);
+    padding: 10px;
+    border-radius: 8px;
+    border-left: 2px solid rgba(245,184,66,.3);
+  }
+
+  .ficha-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .ficha-stat {
+    padding: 10px;
+    background: rgba(0,0,0,.3);
+    border: 1px solid rgba(245,184,66,.15);
+    border-radius: 10px;
+    text-align: center;
+  }
+  .ficha-stat .num { color: #FFE099; font-size: 13px; font-weight: 700; }
+  .ficha-stat .lbl { font-size: 9px; letter-spacing: 1px; color: rgba(255,255,255,.55); margin-top: 2px; }
+
+  .ficha-timeline { max-height: 260px; overflow-y: auto; }
+  .ficha-int {
+    padding: 10px;
+    background: rgba(0,0,0,.2);
+    border-left: 2px solid rgba(112,165,255,.4);
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 6px;
+  }
+  .ficha-int-head {
+    display: flex; justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .ficha-int-tipo { font-size: 11px; color: #93B6FF; font-weight: 600; }
+  .ficha-int-date { font-size: 10px; color: rgba(255,255,255,.4); }
+  .ficha-int-text { font-size: 11px; color: rgba(255,255,255,.8); line-height: 1.5; }
+  .ficha-empty-tl { text-align: center; padding: 20px; color: rgba(255,255,255,.4); }
+  .ficha-empty-tl em { display: block; margin-bottom: 10px; }
+
+  .ficha-nps strong { font-size: 24px; }
+  .ficha-nps p { font-style: italic; color: rgba(255,255,255,.7); font-size: 11px; margin-top: 8px; }
+
+  .ficha-pref .ficha-row { padding: 6px 0; }
+
+  .ficha-quick { display: flex; flex-direction: column; gap: 8px; }
+  .ficha-quick-btn {
+    display: block;
+    padding: 10px 14px;
+    background: rgba(245,184,66,.08);
+    border: 1px solid rgba(245,184,66,.3);
+    color: rgba(255,224,153,.85);
+    border-radius: 10px;
+    text-decoration: none;
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: .5px;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .ficha-quick-btn:hover {
+    background: rgba(245,184,66,.18);
+    color: #FFE099;
+    transform: translateX(2px);
+  }
+  .ficha-quick-btn.ghost { opacity: .5; cursor: not-allowed; }
+  .ficha-btn-mini {
+    background: rgba(245,184,66,.12);
+    border: 1px solid rgba(245,184,66,.4);
+    color: #FFE099;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+
+  .ficha-insights { display: flex; flex-direction: column; gap: 10px; }
+  .ficha-insight {
+    padding: 10px;
+    background: rgba(112,165,255,.05);
+    border-radius: 8px;
+    border-left: 2px solid rgba(112,165,255,.4);
+  }
+  .ficha-insight strong { color: #93B6FF; font-size: 11px; display: block; margin-bottom: 4px; }
+  .ficha-insight p { margin: 0; font-size: 11px; color: rgba(255,255,255,.75); line-height: 1.5; }
+  .ficha-insight ul { margin: 4px 0 0; padding-left: 18px; font-size: 11px; color: rgba(255,255,255,.75); line-height: 1.7; }
+
+  @container fly-vp (max-width: 900px) {
+    .ficha-body { grid-template-columns: 1fr; }
+  }
+
+  /* ============================================================ */
   /* EXPERIÊNCIA VISUAL · upload de foto/vídeo por card           */
   /* ============================================================ */
   .bases-visual-card .img.is-photo,
@@ -14513,9 +14741,10 @@
               <div>Nome</div><div>Origem</div><div>Status</div><div>Quarto</div><div>Tipo</div>
             </div>
             ${cl.map((c, i) => `
-              <div class="dbx-tr dbx-editable" data-idx="${i}">
+              <div class="dbx-tr dbx-editable cliente-clickable" data-idx="${i}" data-cliente-idx="${i}">
                 <div class="dbx-card-actions">
                   <button class="dbx-act-btn" data-edit="cliente" data-idx="${i}" title="Editar">✎</button>
+                  <button class="dbx-act-btn" data-ficha="${i}" title="Ficha 360°">👤</button>
                   <button class="dbx-act-btn danger" data-del="cliente" data-idx="${i}" title="Excluir">✕</button>
                 </div>
                 <div><strong>${escapeHtml(c.nome)}</strong></div>
@@ -14588,7 +14817,265 @@
           dbxRefresh(D, item);
         }
       }));
+      // Ficha 360°
+      panelEl.querySelectorAll('[data-ficha]').forEach(b => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const i = parseInt(b.dataset.ficha, 10);
+        flyOpenFichaCliente(D, i, item);
+      }));
+      // Click no row também abre ficha
+      panelEl.querySelectorAll('.cliente-clickable').forEach(row => {
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('.dbx-card-actions')) return;
+          const i = parseInt(row.dataset.clienteIdx, 10);
+          flyOpenFichaCliente(D, i, item);
+        });
+      });
     }
+
+    /* ============================================================
+       CRM · FICHA DO CLIENTE 360°
+       ============================================================ */
+    function flyOpenFichaCliente(D, idx, item) {
+      const c = D.clientes[idx];
+      if (!c) return;
+      document.querySelector('.fly-ficha-overlay')?.remove();
+
+      // Score Fly heurístico (0-100)
+      const score = Math.min(100, Math.round(
+        (c.recorrente ? 30 : 10) +
+        (c.status === 'pago' ? 30 : c.status === 'pendente' ? 10 : 0) +
+        (c.nps ? Number(c.nps) * 4 : 30)
+      ));
+
+      // Histórico mock + dados reais
+      const interacoes = c.interacoes || [];
+      const tags = c.tags || [];
+      const obs = c.observacoes || '';
+      const pref = c.preferencias || {};
+      const fin = dbxComputeFinance(D);
+      const ticket = D.vendas?.ticketMedio || 0;
+      const valorTotal = c.recorrente ? ticket * 2 : ticket;
+      const ltv = valorTotal * (c.recorrente ? 1.8 : 1.2);
+      const indicacoes = c.indicacoes || [];
+
+      const overlay = document.createElement('div');
+      overlay.className = 'fly-ficha-overlay';
+      overlay.innerHTML = `
+        <div class="fly-ficha-modal">
+          <div class="ficha-head">
+            <div>
+              <h2>👤 ${escapeHtml(c.nome || 'Cliente')}</h2>
+              <p class="ficha-sub">Ficha 360° · ${item.name || 'pacote'}</p>
+            </div>
+            <button class="ficha-close">✕</button>
+          </div>
+          <div class="ficha-body">
+            <!-- COL 1: Perfil -->
+            <div class="ficha-col ficha-perfil">
+              <div class="ficha-avatar">
+                <div class="avatar-circle">${escapeHtml((c.nome || '?').charAt(0).toUpperCase())}</div>
+                <div class="ficha-name">${escapeHtml(c.nome || 'Cliente')}</div>
+                <div class="ficha-tags">
+                  ${c.recorrente ? '<span class="tag-vip">🔁 RECORRENTE</span>' : '<span class="tag-new">✨ NOVO</span>'}
+                  <span class="tag-status status-${c.status}">${c.status}</span>
+                </div>
+                <div class="ficha-score">
+                  <div class="score-circle"><span>${score}</span><small>/100</small></div>
+                  <div class="score-label">Score FLY</div>
+                </div>
+              </div>
+
+              <div class="ficha-section">
+                <div class="ficha-sec-ttl">📋 DADOS</div>
+                <div class="ficha-row"><span>Tipo de quarto</span><strong>${escapeHtml(c.tipoQuarto || '—')}</strong></div>
+                <div class="ficha-row"><span>Origem</span><strong>${escapeHtml(c.origem || '—')}</strong></div>
+                <div class="ficha-row"><span>Status</span><strong>${escapeHtml(c.status || '—')}</strong></div>
+                ${c.cidade ? `<div class="ficha-row"><span>Cidade</span><strong>${escapeHtml(c.cidade)}</strong></div>` : ''}
+                ${c.profissao ? `<div class="ficha-row"><span>Profissão</span><strong>${escapeHtml(c.profissao)}</strong></div>` : ''}
+                ${c.aniversario ? `<div class="ficha-row"><span>Aniversário</span><strong>${escapeHtml(c.aniversario)}</strong></div>` : ''}
+              </div>
+
+              <div class="ficha-section">
+                <div class="ficha-sec-ttl">📞 CONTATOS</div>
+                ${c.whatsapp ? `<div class="ficha-row"><span>WhatsApp</span><a href="https://wa.me/${c.whatsapp.replace(/\\D/g,'')}" target="_blank">${escapeHtml(c.whatsapp)}</a></div>` : '<div class="ficha-row"><span>WhatsApp</span><em>—</em></div>'}
+                ${c.email ? `<div class="ficha-row"><span>Email</span><a href="mailto:${c.email}">${escapeHtml(c.email)}</a></div>` : '<div class="ficha-row"><span>Email</span><em>—</em></div>'}
+                ${c.instagram ? `<div class="ficha-row"><span>Instagram</span><a href="https://instagram.com/${c.instagram.replace('@','')}" target="_blank">${escapeHtml(c.instagram)}</a></div>` : ''}
+              </div>
+
+              <div class="ficha-section">
+                <div class="ficha-sec-ttl">🏷️ TAGS</div>
+                <div class="ficha-tags-wrap">
+                  ${tags.length === 0 ? '<em>nenhuma tag</em>' : tags.map(t => `<span class="ficha-tag">${escapeHtml(t)}</span>`).join('')}
+                </div>
+              </div>
+
+              <div class="ficha-section">
+                <div class="ficha-sec-ttl">📝 OBSERVAÇÕES</div>
+                <div class="ficha-obs">${obs ? escapeHtml(obs) : '<em>Sem observações</em>'}</div>
+              </div>
+            </div>
+
+            <!-- COL 2: Atividade -->
+            <div class="ficha-col ficha-activity">
+              <div class="ficha-section">
+                <div class="ficha-sec-ttl">📊 INDICADORES</div>
+                <div class="ficha-stats">
+                  <div class="ficha-stat"><div class="num">${dbxFmtMoney(valorTotal)}</div><div class="lbl">Total Pago</div></div>
+                  <div class="ficha-stat"><div class="num">${dbxFmtMoney(ltv)}</div><div class="lbl">LTV Projetado</div></div>
+                  <div class="ficha-stat"><div class="num">${indicacoes.length}</div><div class="lbl">Indicações</div></div>
+                </div>
+              </div>
+
+              <div class="ficha-section">
+                <div class="ficha-sec-ttl">📅 TIMELINE DE INTERAÇÕES</div>
+                <div class="ficha-timeline">
+                  ${interacoes.length === 0 ? `
+                    <div class="ficha-empty-tl">
+                      <em>Sem interações registradas ainda.</em>
+                      <button class="ficha-btn-mini" data-ficha-act="add-int">+ Adicionar interação</button>
+                    </div>
+                  ` : interacoes.map(int => `
+                    <div class="ficha-int">
+                      <div class="ficha-int-head">
+                        <span class="ficha-int-tipo">${escapeHtml(int.tipo || '💬')}</span>
+                        <span class="ficha-int-date">${new Date(int.ts || Date.now()).toLocaleDateString('pt-BR')}</span>
+                      </div>
+                      <div class="ficha-int-text">${escapeHtml(int.texto || '')}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+
+              <div class="ficha-section">
+                <div class="ficha-sec-ttl">⭐ NPS / FEEDBACK</div>
+                <div class="ficha-nps">
+                  ${c.nps ? `<strong style="color:${Number(c.nps) >= 8 ? '#6FE3A8' : Number(c.nps) >= 6 ? '#E6C77A' : '#ff8a8a'};">${c.nps}/10</strong>` : '<em>NPS não coletado ainda</em>'}
+                  ${c.feedback ? `<p>"${escapeHtml(c.feedback)}"</p>` : ''}
+                </div>
+              </div>
+
+              <div class="ficha-section">
+                <div class="ficha-sec-ttl">⚙️ PREFERÊNCIAS</div>
+                <div class="ficha-pref">
+                  ${Object.keys(pref).length === 0 ? '<em>nenhuma preferência</em>' : Object.entries(pref).map(([k, v]) => `
+                    <div class="ficha-row"><span>${escapeHtml(k)}</span><strong>${escapeHtml(v)}</strong></div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+
+            <!-- COL 3: Ações -->
+            <div class="ficha-col ficha-actions">
+              <div class="ficha-section">
+                <div class="ficha-sec-ttl">⚡ AÇÕES RÁPIDAS</div>
+                <div class="ficha-quick">
+                  ${c.whatsapp ? `<a href="https://wa.me/${c.whatsapp.replace(/\\D/g,'')}" target="_blank" class="ficha-quick-btn">💬 WhatsApp</a>` : '<button class="ficha-quick-btn ghost" disabled>💬 WhatsApp</button>'}
+                  ${c.email ? `<a href="mailto:${c.email}" class="ficha-quick-btn">📧 Email</a>` : '<button class="ficha-quick-btn ghost" disabled>📧 Email</button>'}
+                  <button class="ficha-quick-btn" data-ficha-act="add-int">📝 Registrar Interação</button>
+                  <button class="ficha-quick-btn" data-ficha-act="add-tag">🏷️ Adicionar Tag</button>
+                  <button class="ficha-quick-btn" data-ficha-act="edit-obs">📋 Editar Observações</button>
+                  <button class="ficha-quick-btn" data-ficha-act="edit-info">✎ Editar Info Pessoal</button>
+                </div>
+              </div>
+
+              <div class="ficha-section">
+                <div class="ficha-sec-ttl">🧠 INSIGHTS DO CLIENTE</div>
+                <div class="ficha-insights">
+                  <div class="ficha-insight">
+                    <strong>Análise de perfil:</strong>
+                    <p>${score >= 75 ? `Cliente premium altamente engajado (score ${score}/100). Ótimo candidato a upsell e indicações.` : score >= 50 ? `Cliente em desenvolvimento (score ${score}/100). Foco em fortalecer relacionamento.` : `Score baixo (${score}/100). Investir em onboarding e follow-up.`}</p>
+                  </div>
+                  <div class="ficha-insight">
+                    <strong>Recomendações:</strong>
+                    <ul>
+                      ${c.recorrente ? '<li>✓ Já é cliente recorrente — manter engajamento</li>' : '<li>Foco em transformar em recorrente: oferecer pacote complementar</li>'}
+                      ${c.aniversario ? '<li>📅 Lembrar do aniversário — oportunidade comercial</li>' : '<li>Solicitar data de aniversário</li>'}
+                      ${indicacoes.length > 0 ? `<li>🎁 Já indicou ${indicacoes.length} pessoas — recompensar</li>` : '<li>Convidar para programa de indicações</li>'}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      overlay.querySelector('.ficha-close').addEventListener('click', () => overlay.remove());
+      overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+      // Ações
+      const addInt = () => dbxOpenModal({
+        title: 'Registrar Interação',
+        fields: [
+          { key: 'tipo', label: 'Tipo', type: 'select', options: ['💬 WhatsApp', '📧 Email', '📞 Ligação', '🤝 Reunião', '📝 Outro'] },
+          { key: 'texto', label: 'Resumo', type: 'textarea' }
+        ],
+        values: { tipo: '💬 WhatsApp', texto: '' },
+        onSave: (vals) => {
+          if (!c.interacoes) c.interacoes = [];
+          c.interacoes.unshift({ tipo: vals.tipo, texto: vals.texto, ts: Date.now() });
+          saveDubaiExplorer();
+          overlay.remove();
+          flyOpenFichaCliente(D, idx, item);
+        }
+      });
+      overlay.querySelectorAll('[data-ficha-act="add-int"]').forEach(b => b.addEventListener('click', addInt));
+      overlay.querySelector('[data-ficha-act="add-tag"]')?.addEventListener('click', () => {
+        dbxOpenModal({
+          title: 'Adicionar Tag',
+          fields: [{ key: 'tag', label: 'Tag', type: 'text', placeholder: 'Ex: Empresário, Premium, VIP...' }],
+          values: { tag: '' },
+          onSave: (vals) => {
+            if (!c.tags) c.tags = [];
+            if (vals.tag) c.tags.push(vals.tag);
+            saveDubaiExplorer();
+            overlay.remove();
+            flyOpenFichaCliente(D, idx, item);
+          }
+        });
+      });
+      overlay.querySelector('[data-ficha-act="edit-obs"]')?.addEventListener('click', () => {
+        dbxOpenModal({
+          title: 'Observações',
+          fields: [{ key: 'obs', label: 'Anotações livres', type: 'textarea' }],
+          values: { obs: c.observacoes || '' },
+          onSave: (vals) => {
+            c.observacoes = vals.obs || '';
+            saveDubaiExplorer();
+            overlay.remove();
+            flyOpenFichaCliente(D, idx, item);
+          }
+        });
+      });
+      overlay.querySelector('[data-ficha-act="edit-info"]')?.addEventListener('click', () => {
+        dbxOpenModal({
+          title: 'Editar Info Pessoal',
+          fields: [
+            { key: 'whatsapp', label: 'WhatsApp', type: 'text' },
+            { key: 'email', label: 'Email', type: 'text' },
+            { key: 'instagram', label: 'Instagram (@)', type: 'text' },
+            { key: 'cidade', label: 'Cidade', type: 'text' },
+            { key: 'profissao', label: 'Profissão', type: 'text' },
+            { key: 'aniversario', label: 'Aniversário (DD/MM/AAAA)', type: 'text' },
+            { key: 'nps', label: 'NPS (0-10)', type: 'number' },
+            { key: 'feedback', label: 'Feedback', type: 'textarea' }
+          ],
+          values: {
+            whatsapp: c.whatsapp || '', email: c.email || '', instagram: c.instagram || '',
+            cidade: c.cidade || '', profissao: c.profissao || '', aniversario: c.aniversario || '',
+            nps: c.nps || '', feedback: c.feedback || ''
+          },
+          onSave: (vals) => {
+            Object.assign(c, vals);
+            saveDubaiExplorer();
+            overlay.remove();
+            flyOpenFichaCliente(D, idx, item);
+          }
+        });
+      });
+    }
+    window.flyOpenFichaCliente = flyOpenFichaCliente;
 
     /* ===== PAINEL: VENDAS ===== */
     function dbxRenderVendas(D, fin) {
