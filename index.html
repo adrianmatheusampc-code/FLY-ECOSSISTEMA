@@ -5891,6 +5891,298 @@
   }
 
   /* ============================================================ */
+  /* DRE WATERFALL · cascata financeira premium                   */
+  /* ============================================================ */
+  .dre-waterfall {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .dre-line {
+    position: relative;
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 18px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.06);
+    background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+    transition: all .2s ease;
+  }
+  .dre-line:hover {
+    border-color: rgba(245,184,66,.22);
+    background: linear-gradient(180deg, rgba(245,184,66,.04), rgba(255,255,255,0));
+  }
+  .dre-marker {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800;
+    font-size: 13px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: rgba(255,255,255,.7);
+  }
+  .dre-content { min-width: 0; }
+  .dre-label {
+    font-size: 11px;
+    letter-spacing: 2.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .dre-detail {
+    font-size: 11px;
+    color: rgba(255,255,255,.55);
+    letter-spacing: .3px;
+    line-height: 1.4;
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  }
+  .dre-detail strong { color: #E6C77A; font-weight: 600; }
+  .dre-value {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    font-feature-settings: 'tnum';
+    white-space: nowrap;
+  }
+
+  /* Receita (verde) */
+  .dre-line.dre-revenue {
+    background: linear-gradient(180deg, rgba(111,227,168,.1), rgba(111,227,168,.02));
+    border-color: rgba(111,227,168,.32);
+  }
+  .dre-line.dre-revenue .dre-marker {
+    background: linear-gradient(135deg, rgba(111,227,168,.3), rgba(111,227,168,.1));
+    border-color: rgba(111,227,168,.5);
+    color: #6FE3A8;
+  }
+  .dre-line.dre-revenue .dre-label { color: #6FE3A8; }
+  .dre-line.dre-revenue .dre-value { color: #6FE3A8; }
+  .dre-line.dre-revenue.dre-big .dre-label { font-size: 13px; }
+  .dre-line.dre-revenue.dre-big .dre-value { font-size: 24px; }
+
+  /* Custo (vermelho discreto) */
+  .dre-line.dre-cost {
+    background: linear-gradient(180deg, rgba(255,107,107,.05), rgba(255,107,107,.01));
+    border-color: rgba(255,107,107,.18);
+  }
+  .dre-line.dre-cost .dre-marker {
+    background: rgba(255,107,107,.12);
+    border-color: rgba(255,107,107,.3);
+    color: #ff8a8a;
+  }
+  .dre-line.dre-cost .dre-label { color: rgba(255,138,138,.95); }
+  .dre-line.dre-cost .dre-value { color: #ff8a8a; }
+  .dre-line.dre-indent { margin-left: 28px; }
+
+  /* Lucro Bruto (verde escuro destaque) */
+  .dre-line.dre-profit.dre-mid {
+    background: linear-gradient(180deg, rgba(75,170,120,.18), rgba(75,170,120,.04));
+    border-color: rgba(75,170,120,.45);
+    border-width: 1.5px;
+  }
+  .dre-line.dre-profit .dre-marker {
+    background: linear-gradient(135deg, rgba(75,170,120,.4), rgba(75,170,120,.15));
+    border-color: rgba(75,170,120,.55);
+    color: #6FE3A8;
+  }
+  .dre-line.dre-profit .dre-label { color: #8AE9B6; font-size: 12px; }
+  .dre-line.dre-profit .dre-value { color: #8AE9B6; font-size: 20px; }
+
+  /* Lucro Líquido (DOURADO BRILHANTE com glow) */
+  .dre-line.dre-net.dre-hero {
+    background: linear-gradient(180deg, rgba(245,184,66,.22), rgba(245,184,66,.06));
+    border: 1.5px solid rgba(245,184,66,.6);
+    box-shadow:
+      0 0 32px rgba(245,184,66,.22),
+      inset 0 0 30px rgba(245,184,66,.1);
+    margin-top: 8px;
+    padding: 18px 22px;
+  }
+  .dre-line.dre-net .dre-marker {
+    background: linear-gradient(135deg, #FFE099, #C6A85A);
+    border-color: #E6C77A;
+    color: #1a1000;
+    box-shadow: 0 0 12px rgba(245,184,66,.5);
+  }
+  .dre-line.dre-net .dre-label {
+    color: #FFE099;
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-shadow: 0 0 16px rgba(245,184,66,.4);
+  }
+  .dre-line.dre-net .dre-value {
+    color: #FFE099;
+    font-size: 28px;
+    font-weight: 800;
+    text-shadow: 0 0 20px rgba(245,184,66,.5);
+  }
+  .dre-line.dre-net .dre-bench {
+    margin-top: 6px;
+    font-size: 11px;
+    color: rgba(255,224,153,.85);
+  }
+
+  /* Sublist (custos/marketing/admin detalhados) */
+  .dre-sublist {
+    margin-top: 10px;
+    display: flex; flex-direction: column; gap: 4px;
+    background: rgba(0,0,0,.25);
+    border-radius: 8px;
+    padding: 8px 10px;
+    border: 1px solid rgba(255,255,255,.04);
+  }
+  .dre-sublist.hidden { display: none; }
+  .dre-subrow {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 6px 4px;
+    font-size: 11px;
+    border-bottom: 1px dashed rgba(255,255,255,.05);
+  }
+  .dre-subrow:last-of-type { border-bottom: 0; }
+  .dre-subrow .lbl { color: rgba(255,255,255,.75); font-size: 11px; }
+  .dre-subrow .val { color: #E6C77A; font-weight: 600; font-feature-settings: 'tnum'; }
+  .dre-edit-btn, .dre-del-btn {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.12);
+    background: transparent;
+    color: rgba(255,255,255,.55);
+    cursor: pointer;
+    font-size: 10px;
+    transition: all .15s;
+  }
+  .dre-edit-btn:hover { color: #E6C77A; border-color: rgba(245,184,66,.4); }
+  .dre-del-btn:hover { color: #ff8a8a; border-color: rgba(255,107,107,.5); background: rgba(255,107,107,.08); }
+  .dre-add-btn {
+    margin-top: 6px;
+    background: transparent;
+    border: 1px dashed rgba(245,184,66,.25);
+    color: rgba(245,184,66,.65);
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 11px;
+    letter-spacing: 1px;
+    font-family: inherit;
+    transition: all .15s;
+  }
+  .dre-add-btn:hover {
+    background: rgba(245,184,66,.06);
+    color: #E6C77A;
+    border-color: rgba(245,184,66,.5);
+  }
+  .dre-toggle, .dre-mini-action {
+    background: transparent;
+    border: 1px solid rgba(245,184,66,.22);
+    color: rgba(245,184,66,.7);
+    padding: 2px 8px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 10px;
+    font-family: inherit;
+    margin-left: 4px;
+  }
+  .dre-toggle:hover, .dre-mini-action:hover {
+    background: rgba(245,184,66,.1);
+    color: #E6C77A;
+  }
+
+  /* Destinação do lucro */
+  .dre-allocation {
+    margin-top: 14px;
+    padding: 18px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(112,165,255,.06), rgba(112,165,255,.01));
+    border: 1px solid rgba(112,165,255,.22);
+  }
+  .dre-allocation-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px;
+    font-size: 11px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #93B6FF;
+    font-weight: 700;
+  }
+  .dre-allocation-sum.warn { color: #ff8a8a; }
+  .dre-slider-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 10px 0;
+    border-top: 1px solid rgba(255,255,255,.04);
+  }
+  .dre-slider-row:first-of-type { border-top: 0; }
+  .dre-slider-row label {
+    font-size: 11px;
+    color: rgba(255,255,255,.75);
+    letter-spacing: .5px;
+  }
+  .dre-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(245,184,66,.5), rgba(245,184,66,.15));
+    outline: none;
+    cursor: pointer;
+  }
+  .dre-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFE099, #C6A85A);
+    border: 2px solid #1a1612;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(245,184,66,.5);
+  }
+  .dre-slider::-moz-range-thumb {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFE099, #C6A85A);
+    border: 2px solid #1a1612;
+    cursor: pointer;
+  }
+  .dre-slider-vals {
+    display: flex; flex-direction: column; align-items: flex-end;
+    min-width: 110px;
+    font-feature-settings: 'tnum';
+  }
+  .dre-slider-pct {
+    color: #E6C77A;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .dre-slider-money {
+    color: rgba(255,255,255,.6);
+    font-size: 11px;
+  }
+
+  /* Mobile DRE */
+  @container fly-vp (max-width: 640px) {
+    .dre-line { grid-template-columns: 28px 1fr; padding: 12px 14px; gap: 10px; }
+    .dre-line .dre-value {
+      grid-column: 1 / -1; text-align: right; margin-top: 4px;
+    }
+    .dre-line.dre-indent { margin-left: 16px; }
+    .dre-line.dre-revenue.dre-big .dre-value { font-size: 20px; }
+    .dre-line.dre-net.dre-hero .dre-value { font-size: 22px; }
+    .dre-slider-row { grid-template-columns: 1fr; gap: 6px; }
+    .dre-slider-vals { flex-direction: row; gap: 10px; min-width: 0; }
+  }
+
+  /* ============================================================ */
   /* EXPERIÊNCIA VISUAL · upload de foto/vídeo por card           */
   /* ============================================================ */
   .bases-visual-card .img.is-photo,
@@ -11279,6 +11571,48 @@
         videos: 86,
         reels: 42,
         melhorConteudo: 'Reels Burj Khalifa por @joaoinf — atribuídas 9 vendas (R$ 346k)'
+      },
+      // ============================================================
+      // DRE · Demonstração de Resultados em formato cascata
+      // ============================================================
+      dre: {
+        // Custos diretos do pacote (somatória detalhada)
+        custosDiretos: [
+          { lbl: 'Hotel (Atlantis · 6 noites)', val: 28000 },
+          { lbl: 'Voo (Emirates · ida/volta)',  val: 18000 },
+          { lbl: 'Passeios e ingressos',        val: 22000 },
+          { lbl: 'Transfer (Mercedes V)',       val: 12000 },
+          { lbl: 'Equipe Dubai (líder + guia)', val: 18000 },
+          { lbl: 'Press Kit + Souvenirs',       val: 6500 },
+          { lbl: 'Comissão Fly (5%)',           val: 22000 }
+        ],
+        // Marketing — gastos de aquisição
+        marketing: [
+          { lbl: 'Tráfego pago (Meta/Google)',  val: 35000 },
+          { lbl: 'Comissão de influencers',     val: 22000 },
+          { lbl: 'Eventos Welcome',             val: 8000 },
+          { lbl: 'Conteúdo (vídeos / fotos)',   val: 10000 }
+        ],
+        // Impostos: alíquota configurável (% sobre receita bruta)
+        aliquotaImpostos: 10, // %
+        // Rateio administrativo
+        administrativo: [
+          { lbl: 'Salário CEO (rateado)',  val: 12000 },
+          { lbl: 'Contador',                val: 4000 },
+          { lbl: 'Jurídico',                val: 5000 },
+          { lbl: 'Software/SaaS',           val: 4000 },
+          { lbl: 'Escritório (rateado)',    val: 5000 }
+        ],
+        // Destinação do lucro líquido (devem somar 100)
+        destinacao: {
+          reinvestimento: 50,
+          reserva: 30,
+          distribuicao: 20
+        },
+        // Cenários salvos pelo simulador
+        cenarios: {
+          atual: { receita: 0, custosDiretos: 0, marketing: 0, lucroLiquido: 0, ts: 0 } // preenchido on-the-fly
+        }
       }
     };
 
@@ -11532,6 +11866,7 @@
           <button class="dbx-tab" data-tab="vendas">📊 Vendas</button>
           <button class="dbx-tab" data-tab="marketing">📣 Marketing</button>
           <button class="dbx-tab" data-tab="analise">🧠 Análise</button>
+          <button class="dbx-tab" data-tab="dre">📈 DRE</button>
           <button class="dbx-tab" data-tab="retencao">🔁 Retenção</button>
           <button class="dbx-tab" data-tab="upsell">💎 Upsell</button>
           <button class="dbx-tab" data-tab="conteudo">📸 Conteúdo</button>
@@ -11562,6 +11897,7 @@
       else if (key === 'vendas')   panelEl.innerHTML = dbxRenderVendas(D, fin);
       else if (key === 'marketing') panelEl.innerHTML = dbxRenderMarketing(D);
       else if (key === 'analise')   panelEl.innerHTML = dbxRenderAnalise(D, fin);
+      else if (key === 'dre')       panelEl.innerHTML = dbxRenderDRE(D, fin);
       else if (key === 'retencao')  panelEl.innerHTML = dbxRenderRetencao(D, fin);
       else if (key === 'upsell')    panelEl.innerHTML = dbxRenderUpsell(D);
       else if (key === 'conteudo')  panelEl.innerHTML = dbxRenderConteudo(D);
@@ -11575,6 +11911,7 @@
       else if (key === 'clientes')  dbxBindClientes(panelEl, D, item);
       else if (key === 'vendas')    dbxBindVendas(panelEl, D, item);
       else if (key === 'marketing') dbxBindMarketing(panelEl, D, item);
+      else if (key === 'dre')       dbxBindDRE(panelEl, D, item);
       else if (key === 'retencao')  dbxBindRetencao(panelEl, D, item);
       else if (key === 'upsell')    dbxBindUpsell(panelEl, D, item);
       else if (key === 'conteudo')  dbxBindConteudo(panelEl, D, item);
@@ -12631,6 +12968,425 @@
           <div class="dbx-stat"><div class="lbl">Retornado pelo mkt</div><div class="val">${dbxFmtMoney(fin.receitaMkt)}</div></div>
         </div>
       `;
+    }
+
+    /* ===== PAINEL: DRE — DEMONSTRAÇÃO DE RESULTADOS (CASCATA) ===== */
+    function dbxComputeDRE(D, fin) {
+      const dre = D.dre || {};
+      // Receita = receita pacote (clientes × ticket) + upsell
+      const receitaBruta = (fin.totalReceita || 0) + (fin.upsellReceita || 0);
+      const numClientes = fin.totalClientes || 0;
+      const custosDiretosTot = (dre.custosDiretos || []).reduce((s, x) => s + (Number(x.val) || 0), 0);
+      const lucroBruto = receitaBruta - custosDiretosTot;
+      const margemBruta = receitaBruta > 0 ? (lucroBruto / receitaBruta) * 100 : 0;
+      const marketingTot = (dre.marketing || []).reduce((s, x) => s + (Number(x.val) || 0), 0);
+      const cacImplicito = numClientes > 0 ? marketingTot / numClientes : 0;
+      const aliq = Number(dre.aliquotaImpostos || 10);
+      const impostos = receitaBruta * (aliq / 100);
+      const adminTot = (dre.administrativo || []).reduce((s, x) => s + (Number(x.val) || 0), 0);
+      const lucroLiquido = lucroBruto - marketingTot - impostos - adminTot;
+      const margemLiquida = receitaBruta > 0 ? (lucroLiquido / receitaBruta) * 100 : 0;
+      const dest = dre.destinacao || { reinvestimento: 50, reserva: 30, distribuicao: 20 };
+      const reinv = (lucroLiquido > 0 ? lucroLiquido : 0) * (Number(dest.reinvestimento || 0) / 100);
+      const reserva = (lucroLiquido > 0 ? lucroLiquido : 0) * (Number(dest.reserva || 0) / 100);
+      const distrib = (lucroLiquido > 0 ? lucroLiquido : 0) * (Number(dest.distribuicao || 0) / 100);
+      return {
+        receitaBruta, numClientes, custosDiretosTot, lucroBruto, margemBruta,
+        marketingTot, cacImplicito, aliq, impostos, adminTot, lucroLiquido, margemLiquida,
+        dest, reinv, reserva, distrib
+      };
+    }
+
+    function dbxRenderDRE(D, fin) {
+      const r = dbxComputeDRE(D, fin);
+      const dre = D.dre || {};
+      const benchTxt = r.margemLiquida >= 15
+        ? `🟢 Acima da média do setor de turismo (12-15%) — ${r.margemLiquida.toFixed(1)}%`
+        : (r.margemLiquida >= 12
+          ? `🟡 Dentro da média do setor de turismo (12-15%)`
+          : `🔴 Abaixo da média do setor de turismo (12-15%)`);
+      const receitaPacote = fin.totalReceita || 0;
+      const upsell = fin.upsellReceita || 0;
+      return `
+        <div class="dbx-panel-head">
+          <h2><span class="ico">📈</span>DRE · Demonstração de Resultados (Waterfall)</h2>
+          <div class="dbx-actions">
+            <button class="dbx-btn ghost" data-act="dre-simular">⚗ Simular Cenário</button>
+            <button class="dbx-btn ghost" data-act="dre-export-pdf">📄 PDF</button>
+            <button class="dbx-btn ghost" data-act="dre-export-csv">📊 CSV</button>
+          </div>
+        </div>
+
+        <div class="dre-waterfall">
+          <!-- Linha 1: Receita Bruta -->
+          <div class="dre-line dre-revenue dre-big" data-line="receita">
+            <div class="dre-marker">+</div>
+            <div class="dre-content">
+              <div class="dre-label">RECEITA BRUTA</div>
+              <div class="dre-detail">${r.numClientes} clientes · pacote ${dbxFmtMoney(receitaPacote)} + upsell ${dbxFmtMoney(upsell)}</div>
+            </div>
+            <div class="dre-value">${dbxFmtMoney(r.receitaBruta)}</div>
+          </div>
+
+          <!-- Linha 2: Custos Diretos -->
+          <div class="dre-line dre-cost dre-indent" data-line="custos">
+            <div class="dre-marker">−</div>
+            <div class="dre-content">
+              <div class="dre-label">CUSTOS DIRETOS DO PACOTE</div>
+              <div class="dre-detail">${r.receitaBruta > 0 ? ((r.custosDiretosTot / r.receitaBruta) * 100).toFixed(1) : 0}% sobre a receita · ${(dre.custosDiretos || []).length} itens
+                <button class="dre-toggle" data-toggle="custos">▾</button>
+              </div>
+              <div class="dre-sublist hidden" data-sub="custos">
+                ${(dre.custosDiretos || []).map((c, i) => `
+                  <div class="dre-subrow" data-cat="custos" data-idx="${i}">
+                    <span class="lbl">${escapeHtml(c.lbl || '')}</span>
+                    <span class="val">${dbxFmtMoney(c.val || 0)}</span>
+                    <button class="dre-edit-btn" data-edit-cat="custos" data-edit-idx="${i}" title="Editar">✎</button>
+                    <button class="dre-del-btn" data-del-cat="custos" data-del-idx="${i}" title="Remover">✕</button>
+                  </div>
+                `).join('')}
+                <button class="dre-add-btn" data-add-cat="custos">+ Adicionar custo direto</button>
+              </div>
+            </div>
+            <div class="dre-value">−${dbxFmtMoney(r.custosDiretosTot)}</div>
+          </div>
+
+          <!-- Linha 3: Lucro Bruto -->
+          <div class="dre-line dre-profit dre-mid">
+            <div class="dre-marker">=</div>
+            <div class="dre-content">
+              <div class="dre-label">LUCRO BRUTO</div>
+              <div class="dre-detail">Margem bruta: <strong>${r.margemBruta.toFixed(1)}%</strong></div>
+            </div>
+            <div class="dre-value">${dbxFmtMoney(r.lucroBruto)}</div>
+          </div>
+
+          <!-- Linha 4: Marketing -->
+          <div class="dre-line dre-cost dre-indent" data-line="marketing">
+            <div class="dre-marker">−</div>
+            <div class="dre-content">
+              <div class="dre-label">MARKETING</div>
+              <div class="dre-detail">CAC implícito: <strong>${dbxFmtMoney(r.cacImplicito)}</strong> · ${(dre.marketing || []).length} itens
+                <button class="dre-toggle" data-toggle="marketing">▾</button>
+              </div>
+              <div class="dre-sublist hidden" data-sub="marketing">
+                ${(dre.marketing || []).map((c, i) => `
+                  <div class="dre-subrow" data-cat="marketing" data-idx="${i}">
+                    <span class="lbl">${escapeHtml(c.lbl || '')}</span>
+                    <span class="val">${dbxFmtMoney(c.val || 0)}</span>
+                    <button class="dre-edit-btn" data-edit-cat="marketing" data-edit-idx="${i}" title="Editar">✎</button>
+                    <button class="dre-del-btn" data-del-cat="marketing" data-del-idx="${i}" title="Remover">✕</button>
+                  </div>
+                `).join('')}
+                <button class="dre-add-btn" data-add-cat="marketing">+ Adicionar item de marketing</button>
+              </div>
+            </div>
+            <div class="dre-value">−${dbxFmtMoney(r.marketingTot)}</div>
+          </div>
+
+          <!-- Linha 5: Impostos -->
+          <div class="dre-line dre-cost dre-indent" data-line="impostos">
+            <div class="dre-marker">−</div>
+            <div class="dre-content">
+              <div class="dre-label">IMPOSTOS ESTIMADOS</div>
+              <div class="dre-detail">Alíquota: <strong>${r.aliq}%</strong> sobre receita bruta
+                <button class="dre-mini-action" data-act="dre-aliq">Ajustar alíquota</button>
+              </div>
+            </div>
+            <div class="dre-value">−${dbxFmtMoney(r.impostos)}</div>
+          </div>
+
+          <!-- Linha 6: Administrativo -->
+          <div class="dre-line dre-cost dre-indent" data-line="admin">
+            <div class="dre-marker">−</div>
+            <div class="dre-content">
+              <div class="dre-label">RATEIO ADMINISTRATIVO</div>
+              <div class="dre-detail">${(dre.administrativo || []).length} itens
+                <button class="dre-toggle" data-toggle="admin">▾</button>
+              </div>
+              <div class="dre-sublist hidden" data-sub="admin">
+                ${(dre.administrativo || []).map((c, i) => `
+                  <div class="dre-subrow" data-cat="admin" data-idx="${i}">
+                    <span class="lbl">${escapeHtml(c.lbl || '')}</span>
+                    <span class="val">${dbxFmtMoney(c.val || 0)}</span>
+                    <button class="dre-edit-btn" data-edit-cat="admin" data-edit-idx="${i}" title="Editar">✎</button>
+                    <button class="dre-del-btn" data-del-cat="admin" data-del-idx="${i}" title="Remover">✕</button>
+                  </div>
+                `).join('')}
+                <button class="dre-add-btn" data-add-cat="admin">+ Adicionar item administrativo</button>
+              </div>
+            </div>
+            <div class="dre-value">−${dbxFmtMoney(r.adminTot)}</div>
+          </div>
+
+          <!-- Linha 7: Lucro Líquido (DESTAQUE DOURADO) -->
+          <div class="dre-line dre-net dre-hero">
+            <div class="dre-marker">=</div>
+            <div class="dre-content">
+              <div class="dre-label">LUCRO LÍQUIDO REAL</div>
+              <div class="dre-detail">Margem líquida: <strong>${r.margemLiquida.toFixed(1)}%</strong></div>
+              <div class="dre-bench">${benchTxt}</div>
+            </div>
+            <div class="dre-value">${dbxFmtMoney(r.lucroLiquido)}</div>
+          </div>
+
+          <!-- Linha 8: Destinação do Lucro -->
+          <div class="dre-allocation">
+            <div class="dre-allocation-head">
+              <span>💼 DESTINAÇÃO DO LUCRO LÍQUIDO</span>
+              <span class="dre-allocation-sum">Soma: <span id="dreAllocSum">${(r.dest.reinvestimento + r.dest.reserva + r.dest.distribuicao).toFixed(0)}</span>%</span>
+            </div>
+            <div class="dre-slider-row">
+              <label>Reinvestimento na operação</label>
+              <input type="range" min="0" max="100" step="1" class="dre-slider" data-dest="reinvestimento" value="${r.dest.reinvestimento}">
+              <div class="dre-slider-vals">
+                <span class="dre-slider-pct">${r.dest.reinvestimento}%</span>
+                <span class="dre-slider-money">${dbxFmtMoney(r.reinv)}</span>
+              </div>
+            </div>
+            <div class="dre-slider-row">
+              <label>Reserva de caixa</label>
+              <input type="range" min="0" max="100" step="1" class="dre-slider" data-dest="reserva" value="${r.dest.reserva}">
+              <div class="dre-slider-vals">
+                <span class="dre-slider-pct">${r.dest.reserva}%</span>
+                <span class="dre-slider-money">${dbxFmtMoney(r.reserva)}</span>
+              </div>
+            </div>
+            <div class="dre-slider-row">
+              <label>Distribuição (sócios)</label>
+              <input type="range" min="0" max="100" step="1" class="dre-slider" data-dest="distribuicao" value="${r.dest.distribuicao}">
+              <div class="dre-slider-vals">
+                <span class="dre-slider-pct">${r.dest.distribuicao}%</span>
+                <span class="dre-slider-money">${dbxFmtMoney(r.distrib)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ===== BIND: DRE ===== */
+    function dbxBindDRE(panelEl, D, item) {
+      // Helper: re-render DRE in place (mantém aba ativa)
+      const refresh = () => {
+        const fin = dbxComputeFinance(D);
+        panelEl.innerHTML = dbxRenderDRE(D, fin);
+        dbxBindDRE(panelEl, D, item); // re-bind
+      };
+
+      // Toggle de seções (custos / marketing / admin)
+      panelEl.querySelectorAll('.dre-toggle').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const k = btn.dataset.toggle;
+          const sub = panelEl.querySelector(`[data-sub="${k}"]`);
+          if (sub) sub.classList.toggle('hidden');
+          btn.textContent = sub.classList.contains('hidden') ? '▾' : '▴';
+        });
+      });
+
+      // Editar item de uma categoria
+      panelEl.querySelectorAll('[data-edit-cat]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const cat = btn.dataset.editCat;
+          const idx = parseInt(btn.dataset.editIdx, 10);
+          const target = D.dre[cat === 'admin' ? 'administrativo' : cat === 'custos' ? 'custosDiretos' : 'marketing'];
+          const cur = target[idx] || { lbl: '', val: 0 };
+          dbxOpenModal({
+            title: 'Editar item · DRE',
+            fields: [
+              { key: 'lbl', label: 'Descrição', type: 'text' },
+              { key: 'val', label: 'Valor (R$)', type: 'number', step: '0.01' }
+            ],
+            values: cur,
+            onSave: (vals) => {
+              target[idx] = { lbl: vals.lbl || '', val: Number(vals.val) || 0 };
+              saveDubaiExplorer();
+              refresh();
+            }
+          });
+        });
+      });
+
+      // Excluir item
+      panelEl.querySelectorAll('[data-del-cat]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const cat = btn.dataset.delCat;
+          const idx = parseInt(btn.dataset.delIdx, 10);
+          if (!confirm('Remover este item?')) return;
+          const targetKey = cat === 'admin' ? 'administrativo' : cat === 'custos' ? 'custosDiretos' : 'marketing';
+          D.dre[targetKey].splice(idx, 1);
+          saveDubaiExplorer();
+          refresh();
+        });
+      });
+
+      // Adicionar item
+      panelEl.querySelectorAll('[data-add-cat]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const cat = btn.dataset.addCat;
+          dbxOpenModal({
+            title: 'Adicionar item · DRE',
+            fields: [
+              { key: 'lbl', label: 'Descrição', type: 'text' },
+              { key: 'val', label: 'Valor (R$)', type: 'number', step: '0.01' }
+            ],
+            values: { lbl: '', val: 0 },
+            onSave: (vals) => {
+              const targetKey = cat === 'admin' ? 'administrativo' : cat === 'custos' ? 'custosDiretos' : 'marketing';
+              D.dre[targetKey].push({ lbl: vals.lbl || '', val: Number(vals.val) || 0 });
+              saveDubaiExplorer();
+              refresh();
+            }
+          });
+        });
+      });
+
+      // Ajustar alíquota
+      const aliqBtn = panelEl.querySelector('[data-act="dre-aliq"]');
+      if (aliqBtn) aliqBtn.addEventListener('click', () => {
+        dbxOpenModal({
+          title: 'Ajustar alíquota de impostos',
+          fields: [
+            { key: 'aliquota', label: 'Alíquota total (%)', type: 'number', step: '0.1' }
+          ],
+          values: { aliquota: D.dre.aliquotaImpostos || 10 },
+          onSave: (vals) => {
+            D.dre.aliquotaImpostos = Number(vals.aliquota) || 0;
+            saveDubaiExplorer();
+            refresh();
+          }
+        });
+      });
+
+      // Sliders de destinação — recalcula em tempo real, salva no blur
+      const sliders = panelEl.querySelectorAll('.dre-slider');
+      const allocSumEl = panelEl.querySelector('#dreAllocSum');
+      const updateSliderVisual = () => {
+        let sum = 0;
+        sliders.forEach(s => {
+          const pct = Number(s.value) || 0;
+          sum += pct;
+          const row = s.closest('.dre-slider-row');
+          if (row) row.querySelector('.dre-slider-pct').textContent = pct + '%';
+        });
+        if (allocSumEl) {
+          allocSumEl.textContent = sum;
+          allocSumEl.parentElement.classList.toggle('warn', sum !== 100);
+        }
+      };
+      sliders.forEach(s => {
+        s.addEventListener('input', updateSliderVisual);
+        s.addEventListener('change', () => {
+          const dest = D.dre.destinacao || (D.dre.destinacao = { reinvestimento: 50, reserva: 30, distribuicao: 20 });
+          dest[s.dataset.dest] = Number(s.value) || 0;
+          saveDubaiExplorer();
+          // Atualiza valores em R$ próximos ao slider sem re-render completo
+          const fin = dbxComputeFinance(D);
+          const r = dbxComputeDRE(D, fin);
+          const moneyByKey = { reinvestimento: r.reinv, reserva: r.reserva, distribuicao: r.distrib };
+          panelEl.querySelectorAll('.dre-slider').forEach(sl => {
+            const k = sl.dataset.dest;
+            const row = sl.closest('.dre-slider-row');
+            if (row) row.querySelector('.dre-slider-money').textContent = dbxFmtMoney(moneyByKey[k] || 0);
+          });
+        });
+      });
+
+      // Simulador
+      const simulBtn = panelEl.querySelector('[data-act="dre-simular"]');
+      if (simulBtn) simulBtn.addEventListener('click', () => {
+        const fin0 = dbxComputeFinance(D);
+        const r0 = dbxComputeDRE(D, fin0);
+        dbxOpenModal({
+          title: '⚗ Simular Cenário · DRE',
+          fields: [
+            { key: 'numClientes', label: 'Nº de clientes', type: 'number', step: '1' },
+            { key: 'ticketMedio', label: 'Ticket médio (R$)', type: 'number', step: '0.01' },
+            { key: 'upsellTotal', label: 'Upsell total (R$)', type: 'number', step: '0.01' },
+            { key: 'custosVar', label: 'Custos variáveis/cliente (R$)', type: 'number', step: '0.01' },
+            { key: 'custosFix', label: 'Custos fixos da turma (R$)', type: 'number', step: '0.01' },
+            { key: 'mktTot', label: 'Marketing total (R$)', type: 'number', step: '0.01' }
+          ],
+          values: {
+            numClientes: r0.numClientes,
+            ticketMedio: D.vendas?.ticketMedio || 0,
+            upsellTotal: fin0.upsellReceita || 0,
+            custosVar: D.custos?.variavelPorCliente || 0,
+            custosFix: (D.custos?.fixos || []).reduce((s, c) => s + (Number(c.val) || 0), 0),
+            mktTot: r0.marketingTot
+          },
+          onSave: (vals) => {
+            const numClientes = Number(vals.numClientes) || 0;
+            const tk = Number(vals.ticketMedio) || 0;
+            const ups = Number(vals.upsellTotal) || 0;
+            const cvar = Number(vals.custosVar) || 0;
+            const cfix = Number(vals.custosFix) || 0;
+            const mkt = Number(vals.mktTot) || 0;
+            const receita = numClientes * tk + ups;
+            const custosDir = numClientes * cvar + cfix;
+            const lucroBr = receita - custosDir;
+            const aliq = Number(D.dre?.aliquotaImpostos || 10);
+            const imp = receita * aliq / 100;
+            const adm = (D.dre?.administrativo || []).reduce((s, c) => s + (Number(c.val) || 0), 0);
+            const ll = lucroBr - mkt - imp - adm;
+            const ml = receita > 0 ? (ll / receita * 100) : 0;
+            alert(
+              `═══ SIMULAÇÃO ═══\n\n` +
+              `Receita Bruta:        ${dbxFmtMoney(receita)}\n` +
+              `(-) Custos Diretos:   ${dbxFmtMoney(custosDir)}\n` +
+              `(=) Lucro Bruto:      ${dbxFmtMoney(lucroBr)}\n` +
+              `(-) Marketing:        ${dbxFmtMoney(mkt)}\n` +
+              `(-) Impostos (${aliq}%):  ${dbxFmtMoney(imp)}\n` +
+              `(-) Administrativo:   ${dbxFmtMoney(adm)}\n` +
+              `(=) Lucro Líquido:    ${dbxFmtMoney(ll)}\n` +
+              `Margem Líquida:       ${ml.toFixed(1)}%\n\n` +
+              `Comparativo com cenário atual:\n` +
+              `Lucro líquido atual: ${dbxFmtMoney(r0.lucroLiquido)}\n` +
+              `Variação: ${dbxFmtMoney(ll - r0.lucroLiquido)} (${(((ll - r0.lucroLiquido) / Math.abs(r0.lucroLiquido || 1)) * 100).toFixed(1)}%)`
+            );
+          }
+        });
+      });
+
+      // Export PDF (placeholder simples — print da aba)
+      const pdfBtn = panelEl.querySelector('[data-act="dre-export-pdf"]');
+      if (pdfBtn) pdfBtn.addEventListener('click', () => {
+        window.print();
+      });
+
+      // Export CSV
+      const csvBtn = panelEl.querySelector('[data-act="dre-export-csv"]');
+      if (csvBtn) csvBtn.addEventListener('click', () => {
+        const fin = dbxComputeFinance(D);
+        const r = dbxComputeDRE(D, fin);
+        const rows = [
+          ['LINHA', 'VALOR (R$)', 'OBSERVAÇÃO'],
+          ['Receita Bruta', r.receitaBruta, `${r.numClientes} clientes`],
+          ['Custos Diretos', -r.custosDiretosTot, ''],
+          ...(D.dre.custosDiretos || []).map(c => ['  ' + c.lbl, -c.val, '']),
+          ['Lucro Bruto', r.lucroBruto, `Margem ${r.margemBruta.toFixed(1)}%`],
+          ['Marketing', -r.marketingTot, `CAC ${dbxFmtMoney(r.cacImplicito)}`],
+          ...(D.dre.marketing || []).map(c => ['  ' + c.lbl, -c.val, '']),
+          ['Impostos', -r.impostos, `Alíquota ${r.aliq}%`],
+          ['Administrativo', -r.adminTot, ''],
+          ...(D.dre.administrativo || []).map(c => ['  ' + c.lbl, -c.val, '']),
+          ['LUCRO LÍQUIDO', r.lucroLiquido, `Margem ${r.margemLiquida.toFixed(1)}%`],
+          ['', '', ''],
+          ['Reinvestimento', r.reinv, `${r.dest.reinvestimento}%`],
+          ['Reserva de caixa', r.reserva, `${r.dest.reserva}%`],
+          ['Distribuição sócios', r.distrib, `${r.dest.distribuicao}%`]
+        ];
+        const csv = rows.map(row => row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `DRE_${(item.name || 'pacote').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a); a.click(); a.remove();
+      });
     }
 
     /* ===== PAINEL: RETENÇÃO ===== */
