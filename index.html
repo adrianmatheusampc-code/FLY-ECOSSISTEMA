@@ -9293,7 +9293,7 @@
 
     const FLY_SUPA_URL = 'https://ezfmvblirhmootdvqmsr.supabase.co';
     const FLY_SUPA_KEY = 'sb_publishable_5vVImnH7PBHM0E5jDP1bAA_CiHZz6jt';
-    const SYNCED_KEYS = [
+    const _BASE_SYNCED_KEYS = [
       'fly_7anos_data_v1',
       'fly_basesfly_pins_v2',
       'fly_basesfly_visual_v1',
@@ -9304,6 +9304,19 @@
       'fly_changelog_v1',
       'fly_turmas_v1'
     ];
+    // Cada chave tem 3 variantes (demo / _operational / _goal) sincronizadas separadamente
+    const SYNCED_KEYS = [
+      ..._BASE_SYNCED_KEYS,
+      ..._BASE_SYNCED_KEYS.filter(k => k !== 'fly_7anos_data_v1' && k !== 'fly_changelog_v1' && k !== 'fly_design_overrides_v1' && k !== 'fly_customcities_v1' && k !== 'fly_turmas_v1')
+        .flatMap(k => [k + '_operational', k + '_goal'])
+    ];
+
+    // Helper: dado uma chave base, retorna a chave do modo atual
+    // (chama getDataMode que pode não estar definida ainda — fallback 'demo')
+    function flyModeKey(baseKey) {
+      const m = (typeof getDataMode === 'function') ? getDataMode() : 'demo';
+      return m === 'demo' ? baseKey : (baseKey + '_' + m);
+    }
     let supaClient = null;
     const __supaPending = new Map(); // key -> timeout id
     let __supaInitialPullDone = false;
@@ -11149,27 +11162,41 @@
     }
 
     function getHierData(t) {
-      // Persistência: data[ano][HIERARQUIA] guarda { hier: { '2026': [...], '2027': [...], '2028': [...] }, currentYear: '2026' }
-      if (!t.hier) {
-        t.hier = {
+      // 3 MODOS: hier (demo) / hier_operational (vazio) / hier_goal (full crescido)
+      const mode = (typeof getDataMode === 'function') ? getDataMode() : 'demo';
+
+      // Sempre garante o demo populado (usado como base pra goal)
+      if (!t._hierDemo) {
+        t._hierDemo = {
           '2026': HIER_SEED['2026'].map(e => ({...e})),
-          '2027': null,
-          '2028': null
+          '2027': null, '2028': null
         };
-        t.hierYear = '2026';
-        saveData();
       }
-      // Lazy expand
-      if (!t.hier['2027']) {
-        t.hier['2027'] = expandHierYear(38, HIER_SEED['2026'].map(e => ({...e})), 'h27');
-        saveData();
+      // Lazy expand do demo
+      if (!t._hierDemo['2027']) t._hierDemo['2027'] = expandHierYear(38, HIER_SEED['2026'].map(e => ({...e})), 'h27');
+      if (!t._hierDemo['2028']) t._hierDemo['2028'] = expandHierYear(90, t._hierDemo['2027'].map(e => ({...e})), 'h28');
+
+      if (mode === 'demo') {
+        t.hier = t._hierDemo;
+      } else if (mode === 'operational') {
+        if (!t._hierOperational) {
+          t._hierOperational = { '2026': [], '2027': [], '2028': [] };
+        }
+        t.hier = t._hierOperational;
+      } else if (mode === 'goal') {
+        if (!t._hierGoal) {
+          // Modo META: organograma já cumprido em 100% (cópia do demo, mas todos como 'ativo' e cargos preenchidos)
+          t._hierGoal = JSON.parse(JSON.stringify(t._hierDemo));
+          for (const yr of Object.keys(t._hierGoal)) {
+            (t._hierGoal[yr] || []).forEach(e => { e.status = 'ativo'; });
+          }
+        }
+        t.hier = t._hierGoal;
       }
-      if (!t.hier['2028']) {
-        t.hier['2028'] = expandHierYear(90, t.hier['2027'].map(e => ({...e})), 'h28');
-        saveData();
-      }
+
       if (!t.hierYear) t.hierYear = '2026';
       if (!t.hierTab)  t.hierTab  = 'organograma';
+      try { saveData(); } catch (e) {}
       return t;
     }
 
@@ -11309,11 +11336,28 @@
 
     // Pins customizados — clique no mapa, escolha foto + nome + país + cidade
     // Estrutura: [{ x, y, name, photo, pais, cidade }]
+    // 3 MODOS: pins demo (atual) / pins_operational (vazio) / pins_goal (todas as bases planejadas)
     const PINS_KEY = 'fly_basesfly_pins_v2';
     function loadPins() {
       try {
-        const raw = localStorage.getItem(PINS_KEY);
-        if (!raw) return [];
+        const k = flyModeKey(PINS_KEY);
+        let raw = localStorage.getItem(k);
+        // Primeira vez no modo (sem dados) — popula fallback
+        if (!raw) {
+          const mode = getDataMode();
+          if (mode === 'operational') {
+            // Vazio — user vai marcar bases conforme abrir
+            raw = '[]';
+            localStorage.setItem(k, raw);
+          } else if (mode === 'goal') {
+            // Modo META: popula com todas as bases planejadas (Brasil + UAE + expansão)
+            const goalPins = createGoalPins();
+            raw = JSON.stringify(goalPins);
+            localStorage.setItem(k, raw);
+          } else {
+            return [];
+          }
+        }
         const parsed = JSON.parse(raw);
         return Array.isArray(parsed) ? parsed : [];
       } catch (e) {
@@ -11321,7 +11365,29 @@
       }
     }
     function savePins(pins) {
-      try { localStorage.setItem(PINS_KEY, JSON.stringify(pins)); } catch (e) { console.warn('savePins failed (storage cheio?):', e); }
+      try { localStorage.setItem(flyModeKey(PINS_KEY), JSON.stringify(pins)); }
+      catch (e) { console.warn('savePins failed (storage cheio?):', e); }
+    }
+
+    function createGoalPins() {
+      // Modo META · todas as bases FLY se o plano de 7 anos for cumprido
+      return [
+        { x: 0.18, y: 0.62, name: 'Base GRU Aeroporto', pais: 'Brasil', cidade: 'São Paulo', dataAbertura: '2026-09', photo: '' },
+        { x: 0.20, y: 0.65, name: 'Base Galeão Aeroporto', pais: 'Brasil', cidade: 'Rio de Janeiro', dataAbertura: '2026-12', photo: '' },
+        { x: 0.21, y: 0.68, name: 'Base Santos Dumont', pais: 'Brasil', cidade: 'Rio de Janeiro', dataAbertura: '2027-03', photo: '' },
+        { x: 0.16, y: 0.58, name: 'Base Brasília', pais: 'Brasil', cidade: 'Brasília', dataAbertura: '2027-06', photo: '' },
+        { x: 0.62, y: 0.52, name: 'Base DXB Aeroporto', pais: 'Emirados Árabes', cidade: 'Dubai', dataAbertura: '2026-05', photo: '' },
+        { x: 0.65, y: 0.50, name: 'Base Marina Dubai', pais: 'Emirados Árabes', cidade: 'Dubai', dataAbertura: '2026-08', photo: '' },
+        { x: 0.66, y: 0.51, name: 'Base JBR The Walk', pais: 'Emirados Árabes', cidade: 'Dubai', dataAbertura: '2027-01', photo: '' },
+        { x: 0.64, y: 0.49, name: 'Base Mall of Emirates', pais: 'Emirados Árabes', cidade: 'Dubai', dataAbertura: '2027-04', photo: '' },
+        { x: 0.63, y: 0.51, name: 'Base Palm Jumeirah', pais: 'Emirados Árabes', cidade: 'Dubai', dataAbertura: '2027-07', photo: '' },
+        { x: 0.65, y: 0.49, name: 'Base Burj Khalifa', pais: 'Emirados Árabes', cidade: 'Dubai', dataAbertura: '2027-10', photo: '' },
+        { x: 0.61, y: 0.50, name: 'Base Abu Dhabi', pais: 'Emirados Árabes', cidade: 'Abu Dhabi', dataAbertura: '2028-02', photo: '' },
+        { x: 0.50, y: 0.55, name: 'Base Riyadh', pais: 'Arábia Saudita', cidade: 'Riyadh', dataAbertura: '2028-08', photo: '' },
+        { x: 0.85, y: 0.55, name: 'Base Singapore', pais: 'Singapura', cidade: 'Singapura', dataAbertura: '2029-03', photo: '' },
+        { x: 0.92, y: 0.45, name: 'Base Tokyo', pais: 'Japão', cidade: 'Tóquio', dataAbertura: '2030-01', photo: '' },
+        { x: 0.45, y: 0.30, name: 'Base London', pais: 'Reino Unido', cidade: 'Londres', dataAbertura: '2031-06', photo: '' }
+      ];
     }
 
     // --- Mídia da Experiência Visual (foto ou vídeo por card) ---
@@ -11329,12 +11395,12 @@
     const BASES_VISUAL_KEY = 'fly_basesfly_visual_v1';
     function loadBasesVisual() {
       try {
-        const raw = localStorage.getItem(BASES_VISUAL_KEY);
+        const raw = localStorage.getItem(flyModeKey(BASES_VISUAL_KEY));
         return raw ? JSON.parse(raw) : {};
       } catch (e) { return {}; }
     }
     function saveBasesVisual(map) {
-      try { localStorage.setItem(BASES_VISUAL_KEY, JSON.stringify(map)); }
+      try { localStorage.setItem(flyModeKey(BASES_VISUAL_KEY), JSON.stringify(map)); }
       catch (e) { console.warn('saveBasesVisual failed:', e); }
     }
     // Lê arquivo de vídeo como dataURL (vídeos curtos · max ~15MB)
@@ -11601,10 +11667,12 @@
       // ============================================================
       const BASES_INLINE_KEY = 'fly_basesfly_inline_v1';
       const inlineEdits = (() => {
-        try { return JSON.parse(localStorage.getItem(BASES_INLINE_KEY) || '{}'); } catch (e) { return {}; }
+        try { return JSON.parse(localStorage.getItem(flyModeKey(BASES_INLINE_KEY)) || '{}'); } catch (e) { return {}; }
       })();
+      // Em modo NORMAL: apaga todos os defaults inline editáveis (deixa vazio)
+      // Em modo META: usa textos padrão fortalecidos (já vêm do HTML, então só clear se for goal precisar)
       function persistInline() {
-        try { localStorage.setItem(BASES_INLINE_KEY, JSON.stringify(inlineEdits)); } catch (e) {}
+        try { localStorage.setItem(flyModeKey(BASES_INLINE_KEY), JSON.stringify(inlineEdits)); } catch (e) {}
       }
       // Marca cada elemento com um ID único e torna editável
       const editTargets = wrap.querySelectorAll(
@@ -12693,10 +12761,10 @@
     // ============================================================
     const HIER_INLINE_KEY = 'fly_hierarquia_inline_v1';
     function hierLoadInlineEdits() {
-      try { return JSON.parse(localStorage.getItem(HIER_INLINE_KEY) || '{}'); } catch (e) { return {}; }
+      try { return JSON.parse(localStorage.getItem(flyModeKey(HIER_INLINE_KEY)) || '{}'); } catch (e) { return {}; }
     }
     function hierPersistInlineEdits(map) {
-      try { localStorage.setItem(HIER_INLINE_KEY, JSON.stringify(map)); } catch (e) {}
+      try { localStorage.setItem(flyModeKey(HIER_INLINE_KEY), JSON.stringify(map)); } catch (e) {}
     }
     function hierEnableInlineEditing(panel) {
       const inlineEdits = hierLoadInlineEdits();
@@ -14191,9 +14259,18 @@
       if (!['demo', 'operational', 'goal'].includes(m)) return;
       localStorage.setItem(FLY_DATA_MODE_KEY, m);
       applyDataModeUI();
-      // Re-render se estiver vendo um item
-      if (typeof currentView !== 'undefined' && currentView === 'item' && currentItemRef) {
-        showItem(currentItemRef.topicData, currentItemRef.kind, currentItemRef.idx);
+      // Re-render hard: o modo afeta dados em todas as views (item/topic/etc)
+      if (typeof currentView !== 'undefined') {
+        if (currentView === 'item' && currentItemRef) {
+          // Item view (Pacotes/Hierarquia/Bases) — re-render
+          showItem(currentItemRef.topicData, currentItemRef.kind, currentItemRef.idx);
+        } else if (currentView === 'topic' && currentTopic) {
+          showTopic(currentTopic);
+        } else if (currentView === 'detail' && currentYear) {
+          // Recarrega via clique no círculo do ano se possível
+          const idx = years.indexOf(currentYear);
+          if (idx >= 0) showDetail(idx);
+        }
       }
     }
     window.flySetDataMode = setDataMode;
