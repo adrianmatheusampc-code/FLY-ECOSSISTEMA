@@ -1745,6 +1745,74 @@
   body.admin-mode .changelog-btn { display: inline-flex; }
   body.present-mode .changelog-btn { display: none !important; }
 
+  /* Botão Modo de Dados (Demo / Normal / Meta) */
+  .data-mode-toggle {
+    position: fixed;
+    top: 76px;
+    right: 130px;
+    z-index: 100;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(245,184,66,0.4);
+    color: rgba(255,255,255,.85);
+    padding: 8px 14px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    border-radius: 30px;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 4px 14px rgba(245,184,66,.15);
+  }
+  .data-mode-toggle:hover {
+    background: rgba(245,184,66,0.18);
+    color: #FFE099;
+    border-color: rgba(245,184,66,0.7);
+    transform: translateY(-1px);
+  }
+  .data-mode-toggle[data-mode="operational"] {
+    background: rgba(112,165,255,0.15);
+    color: #93B6FF;
+    border-color: rgba(112,165,255,0.5);
+  }
+  .data-mode-toggle[data-mode="goal"] {
+    background: rgba(111,227,168,0.15);
+    color: #6FE3A8;
+    border-color: rgba(111,227,168,0.5);
+  }
+  body.present-mode .data-mode-toggle { display: none !important; }
+
+  /* Indicador no topo do painel quando em modos não-DEMO */
+  body[data-data-mode="operational"] .dbx-module::before,
+  body[data-data-mode="goal"] .dbx-module::before {
+    content: attr(data-mode-banner);
+    display: block;
+    margin: 0 0 16px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  body[data-data-mode="operational"] .dbx-module::before {
+    background: linear-gradient(180deg, rgba(112,165,255,0.18), rgba(112,165,255,0.05));
+    border: 1px solid rgba(112,165,255,0.5);
+    color: #93B6FF;
+    content: '⚙ MODO NORMAL · seu painel real · preencha conforme opera';
+  }
+  body[data-data-mode="goal"] .dbx-module::before {
+    background: linear-gradient(180deg, rgba(111,227,168,0.18), rgba(111,227,168,0.05));
+    border: 1px solid rgba(111,227,168,0.5);
+    color: #6FE3A8;
+    content: '🎯 MODO META · simulação se você bater 100% das metas';
+  }
+
   /* Botão Turmas */
   .turmas-btn {
     position: fixed;
@@ -9154,6 +9222,9 @@
   <button class="turmas-btn" id="turmasBtn" title="Turmas Operacionais (war room)">
     <span>🛫</span><span class="tb-lbl">TURMAS</span>
   </button>
+  <button class="data-mode-toggle" id="dataModeToggle" title="Modo de visualização (Demo/Normal/Meta)" data-mode="demo">
+    <span class="dm-ico">👁</span><span class="dm-lbl">DEMO</span>
+  </button>
   <div class="sync-status" id="syncStatus" data-status="idle" title="Status de sincronização com banco de dados">
     <span class="sync-dot"></span>
     <span class="sync-msg">Conectando…</span>
@@ -14090,23 +14161,181 @@
       }
     };
 
+    /* ============================================================
+       3 MODOS DE DADOS · Demo / Normal / Meta
+       Cada item tem seu próprio armazenamento por modo, salvo separado.
+       ============================================================ */
+    const FLY_DATA_MODE_KEY = 'fly_data_mode';
+    function getDataMode() {
+      const m = localStorage.getItem(FLY_DATA_MODE_KEY);
+      return ['demo', 'operational', 'goal'].includes(m) ? m : 'demo';
+    }
+    function applyDataModeUI() {
+      const mode = getDataMode();
+      document.body.dataset.dataMode = mode;
+      const btn = document.getElementById('dataModeToggle');
+      if (btn) {
+        btn.dataset.mode = mode;
+        const lbl = btn.querySelector('.dm-lbl');
+        const ico = btn.querySelector('.dm-ico');
+        if (lbl) lbl.textContent = ({ demo: 'DEMO', operational: 'NORMAL', goal: 'META' })[mode];
+        if (ico) ico.textContent = ({ demo: '👁', operational: '⚙', goal: '🎯' })[mode];
+        btn.title = ({
+          demo: 'MODO DEMO · números preenchidos pra apresentação · click pra Normal',
+          operational: 'MODO NORMAL · em branco, seu painel real · click pra Meta',
+          goal: 'MODO META · simulação se bater 100% das metas · click pra Demo'
+        })[mode];
+      }
+    }
+    function setDataMode(m) {
+      if (!['demo', 'operational', 'goal'].includes(m)) return;
+      localStorage.setItem(FLY_DATA_MODE_KEY, m);
+      applyDataModeUI();
+      // Re-render se estiver vendo um item
+      if (typeof currentView !== 'undefined' && currentView === 'item' && currentItemRef) {
+        showItem(currentItemRef.topicData, currentItemRef.kind, currentItemRef.idx);
+      }
+    }
+    window.flySetDataMode = setDataMode;
+
+    function createEmptyDubai(item) {
+      const e = JSON.parse(JSON.stringify(DUBAI_EXPLORER_DEFAULTS));
+      e.produto.nome = item.name || '';
+      e.produto.duracao = '';
+      e.produto.tipo = '';
+      e.produto.descricao = '';
+      e.produto.banner = '';
+      e.produto.experiencias = [];
+      e.produto.incluso = [];
+      e.custos.fixos = [];
+      e.custos.variaveis = [];
+      e.operacao = { rotina: [], checklist: [] };
+      e.equipe = [];
+      e.clientes = [];
+      e.vendas = { ticketMedio: 0, origem: {} };
+      e.marketing = { influencers: [], artistas: [], campanhas: [] };
+      e.retencao = { voltaram: 0, novosCompraram: 0, recompraOutroPacote: 0 };
+      e.upsell = { extras: [] };
+      e.conteudo = { fotos: 0, videos: 0, reels: 0, melhorConteudo: '' };
+      e.dre = { custosDiretos: [], marketing: [], aliquotaImpostos: 10, administrativo: [],
+                destinacao: { reinvestimento: 50, reserva: 30, distribuicao: 20 },
+                cenarios: { atual: { receita: 0, custosDiretos: 0, marketing: 0, lucroLiquido: 0, ts: 0 } } };
+      e.metaReal = {
+        ano: new Date().getFullYear(),
+        clientes: { meta: 0, real: 0, mensal: {} },
+        receita:  { meta: 0, real: 0, mensal: {} },
+        lucro:    { meta: 0, real: 0, mensal: {} }
+      };
+      e.forecast = {
+        pipeline: {
+          frios: { qtd: 0, origem: {} },
+          quentes: { qtd: 0, tempoMedioDias: 0, status: 'saudavel' },
+          negociacao: { qtd: 0, valorPotencial: 0, probabilidade: 0 },
+          fecharaoMes: { qtd: 0, receitaProjetada: 0, confianca: 0 }
+        },
+        historico: [],
+        metaMensal: { clientes: 0, receita: 0 },
+        premissas: {
+          taxaConversao: 0, leadsMes: 0, aumentoPreco: 0, taxaChurn: 0,
+          sazonalidade: { jan:1,fev:1,mar:1,abr:1,mai:1,jun:1,jul:1,ago:1,set:1,out:1,nov:1,dez:1 }
+        },
+        cenarios: { otimistaMult: 1.15, pessimistaMult: 0.80 },
+        horizonteMeses: 7
+      };
+      e.alertas = [];
+      return e;
+    }
+
+    function createGoalDubai(item) {
+      // Goal mode = projeção se bater 100% das metas
+      const demo = item.dubai || DUBAI_EXPLORER_DEFAULTS;
+      const g = JSON.parse(JSON.stringify(demo));
+      g.produto.nome = item.name || g.produto.nome;
+      const meta = g.metaReal || demo.metaReal || {};
+      const metaCli = meta.clientes?.meta || 100;
+      const metaRec = meta.receita?.meta || 2500000;
+      const metaLuc = meta.lucro?.meta || 1000000;
+      const ticketGoal = metaCli > 0 ? Math.round(metaRec / metaCli) : 0;
+      const monthsLeft = 12;
+
+      // Marca real = meta (100% atingido)
+      g.metaReal = g.metaReal || {};
+      g.metaReal.clientes = g.metaReal.clientes || {};
+      g.metaReal.receita = g.metaReal.receita || {};
+      g.metaReal.lucro = g.metaReal.lucro || {};
+      g.metaReal.clientes.meta = metaCli;
+      g.metaReal.clientes.real = metaCli;
+      g.metaReal.receita.meta = metaRec;
+      g.metaReal.receita.real = metaRec;
+      g.metaReal.lucro.meta = metaLuc;
+      g.metaReal.lucro.real = metaLuc;
+      // Distribuir mensal igualmente
+      const cliM = Math.ceil(metaCli / 12);
+      const recM = Math.round(metaRec / 12);
+      const lucM = Math.round(metaLuc / 12);
+      g.metaReal.clientes.mensal = {};
+      g.metaReal.receita.mensal = {};
+      g.metaReal.lucro.mensal = {};
+      for (let m = 1; m <= 12; m++) {
+        const k = String(m).padStart(2, '0');
+        g.metaReal.clientes.mensal[k] = cliM;
+        g.metaReal.receita.mensal[k] = recM;
+        g.metaReal.lucro.mensal[k] = lucM;
+      }
+      // Vendas com ticket goal
+      g.vendas = g.vendas || {};
+      g.vendas.ticketMedio = ticketGoal;
+      // Forecast com pipeline saudável projetado
+      g.forecast = g.forecast || {};
+      g.forecast.metaMensal = { clientes: cliM, receita: recM };
+      g.forecast.pipeline = {
+        frios: { qtd: cliM * 4, origem: { 'Tráfego Pago': cliM * 2, 'Indicação': cliM, 'Influenciador': cliM } },
+        quentes: { qtd: cliM * 2, tempoMedioDias: 7, status: 'saudavel' },
+        negociacao: { qtd: cliM, valorPotencial: cliM * ticketGoal, probabilidade: 80 },
+        fecharaoMes: { qtd: cliM, receitaProjetada: recM, confianca: 95 }
+      };
+      g.forecast.premissas = g.forecast.premissas || {};
+      g.forecast.premissas.taxaConversao = 25;
+      g.forecast.premissas.leadsMes = cliM * 4;
+      // Clientes "todos pagos" simulando meta
+      g.clientes = [];
+      for (let i = 0; i < metaCli; i++) {
+        g.clientes.push({
+          nome: 'Cliente ' + (i + 1),
+          origem: ['Tráfego Pago', 'Influenciador', 'Indicação', 'Orgânico'][i % 4],
+          status: 'pago',
+          tipoQuarto: 'Ocean View',
+          recorrente: i % 4 === 0
+        });
+      }
+      g.alertas = [];
+      return g;
+    }
+
     function loadDubaiExplorer(item) {
-      if (!item.dubai) {
-        item.dubai = JSON.parse(JSON.stringify(DUBAI_EXPLORER_DEFAULTS));
-        // Para itens que NÃO são o "DUBAI EXPLORER" original, usa o nome do item
-        // como nome do produto (ex: BILLIONAIRE, DUBAI GTA, DUBAI IN LOVE, DUBAI FAMILY)
-        const isOriginalDubai = ((item.name || '').toUpperCase() === 'DUBAI EXPLORER');
-        if (!isOriginalDubai && item.name) {
-          item.dubai.produto.nome = item.name;
+      const mode = getDataMode();
+      const key = mode === 'demo' ? 'dubai' : ('dubai_' + mode);
+
+      if (!item[key]) {
+        if (mode === 'demo') {
+          item[key] = JSON.parse(JSON.stringify(DUBAI_EXPLORER_DEFAULTS));
+          const isOriginalDubai = ((item.name || '').toUpperCase() === 'DUBAI EXPLORER');
+          if (!isOriginalDubai && item.name) {
+            item[key].produto.nome = item.name;
+          }
+        } else if (mode === 'operational') {
+          item[key] = createEmptyDubai(item);
+        } else if (mode === 'goal') {
+          item[key] = createGoalDubai(item);
         }
         try { saveData(); } catch (e) {}
       }
       // Mescla defaults para campos novos que possam ter aparecido após updates
       const def = DUBAI_EXPLORER_DEFAULTS;
       for (const k of Object.keys(def)) {
-        if (item.dubai[k] === undefined) item.dubai[k] = JSON.parse(JSON.stringify(def[k]));
+        if (item[key][k] === undefined) item[key][k] = JSON.parse(JSON.stringify(def[k]));
       }
-      return item.dubai;
+      return item[key];
     }
     function saveDubaiExplorer() { try { saveData(); } catch (e) {} }
 
@@ -17834,6 +18063,18 @@
     /* =====================  TURMAS BUTTON  ===================== */
     const turmasBtn = document.getElementById('turmasBtn');
     if (turmasBtn) turmasBtn.addEventListener('click', () => flyOpenTurmas());
+
+    /* =====================  DATA MODE TOGGLE (Demo/Normal/Meta) ===================== */
+    const dataModeToggle = document.getElementById('dataModeToggle');
+    if (dataModeToggle) {
+      dataModeToggle.addEventListener('click', () => {
+        const cur = getDataMode();
+        const next = cur === 'demo' ? 'operational' : cur === 'operational' ? 'goal' : 'demo';
+        setDataMode(next);
+      });
+    }
+    // Aplicar modo inicial ao body
+    applyDataModeUI();
 
     /* =====================  PDF EXPORT  ===================== */
     const printBtn = document.getElementById('printBtn');
