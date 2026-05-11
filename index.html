@@ -508,6 +508,26 @@
   }
   body.admin-mode .pacote-card .delete-btn,
   body.admin-mode .item-card .delete-btn { display: flex; align-items: center; justify-content: center; }
+  .pacote-card .card-edit-btn,
+  .item-card .card-edit-btn {
+    position: absolute;
+    top: 6px; left: 6px;
+    background: rgba(0, 0, 0, 0.72);
+    border: 1px solid rgba(245,184,66,0.75);
+    color: var(--gold);
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 900;
+    display: none;
+    z-index: 6;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 14px rgba(245,184,66,0.28);
+  }
+  body.admin-mode .pacote-card .card-edit-btn,
+  body.admin-mode .item-card .card-edit-btn { display: flex; }
 
   .items-grid {
     width: 100%;
@@ -6114,6 +6134,145 @@
   .dbx-pill.pendente  { background: rgba(242,194,107,.15); color: var(--dbx-warn); }
   .dbx-pill.cancelado { background: rgba(255,107,107,.15); color: var(--dbx-neg); }
 
+  /* PRESS KIT · painel operacional dentro de Produtos */
+  .presskit-module {
+    --pk-green: #6FE3A8;
+    --pk-blue: #8EC7FF;
+  }
+  .presskit-module .dbx-hero {
+    background:
+      radial-gradient(circle at 20% 20%, rgba(111,227,168,.12), transparent 30%),
+      radial-gradient(circle at 82% 18%, rgba(198,168,90,.18), transparent 32%),
+      linear-gradient(180deg, #14130f, #070707);
+  }
+  .presskit-module .pk-edit-main {
+    position: absolute;
+    right: 22px;
+    top: 22px;
+    z-index: 3;
+  }
+  .pk-kit-switch,
+  .pk-card-grid,
+  .pk-delivery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .pk-card {
+    position: relative;
+    padding: 16px;
+    border: 1px solid rgba(198,168,90,.18);
+    border-radius: 14px;
+    background: rgba(0,0,0,.28);
+    min-width: 0;
+  }
+  .pk-card strong {
+    color: #fff;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    font-size: 12px;
+  }
+  .pk-card p,
+  .pk-card small {
+    color: rgba(255,255,255,.62);
+    line-height: 1.45;
+  }
+  .pk-card small { display: block; margin-top: 6px; font-size: 11px; }
+  .pk-item-photo {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border: 1px solid rgba(198,168,90,.18);
+    border-radius: 12px;
+    background: rgba(255,255,255,.035) center/cover no-repeat;
+    display: grid;
+    place-items: center;
+    color: rgba(255,255,255,.35);
+    font-size: 28px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .pk-item-photo.has-img { background-size: cover; background-position: center; }
+  .pk-item-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .pk-mini {
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.055);
+  }
+  .pk-mini .lbl {
+    display: block;
+    color: rgba(255,255,255,.42);
+    font-size: 8px;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .pk-mini .val {
+    color: rgba(255,255,255,.86);
+    font-size: 12px;
+  }
+  .pk-item-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .pk-stage {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    border: 1px solid rgba(198,168,90,.28);
+    color: var(--dbx-gold-bright);
+    background: rgba(198,168,90,.08);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 800;
+  }
+  .pk-stage.dubai { border-color: rgba(142,199,255,.32); color: var(--pk-blue); background: rgba(142,199,255,.08); }
+  .pk-stage.premium { border-color: rgba(111,227,168,.34); color: var(--pk-green); background: rgba(111,227,168,.08); }
+  .pk-bases {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .pk-base {
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.05);
+    color: rgba(255,255,255,.7);
+    font-size: 10px;
+  }
+  .pk-table .dbx-tr { grid-template-columns: 1.6fr .8fr .8fr .8fr 1.1fr; }
+  .pk-table.inventory .dbx-tr { grid-template-columns: 1.5fr .8fr .8fr .8fr 1.5fr; }
+  .pk-alert {
+    border-left: 3px solid var(--dbx-warn);
+  }
+  .pk-alert.critico { border-left-color: var(--dbx-neg); }
+  .pk-alert.oportunidade { border-left-color: var(--pk-green); }
+  .pk-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .pk-gallery-thumb {
+    min-height: 150px;
+    border-radius: 14px;
+    border: 1px solid rgba(198,168,90,.16);
+    background: rgba(255,255,255,.035) center/cover no-repeat;
+    display: grid;
+    place-items: center;
+    color: rgba(255,255,255,.35);
+  }
+
   /* LISTS (custos) */
   .dbx-list { display: flex; flex-direction: column; gap: 6px; }
   .dbx-list-row {
@@ -8531,11 +8690,11 @@
   }
 
   /* ============================================================ */
-  /* FORMAT PICKER · escolha entre Padrão e Pacotes no modal       */
+  /* FORMAT PICKER · escolha do painel do item                     */
   /* ============================================================ */
   .format-picker {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 10px;
     margin-bottom: 10px;
   }
@@ -8601,6 +8760,17 @@
   .format-card.premium {
     background: linear-gradient(135deg, rgba(245,184,66,.06), rgba(255,255,255,.01));
     border-color: rgba(245,184,66,.22);
+  }
+  .format-card.presskit {
+    background: linear-gradient(135deg, rgba(111,227,168,.08), rgba(245,184,66,.045));
+    border-color: rgba(111,227,168,.24);
+  }
+  .format-opt.active .format-card.presskit,
+  .format-opt input:checked ~ .format-card.presskit,
+  .format-opt:has(input:checked) .format-card.presskit {
+    border-color: rgba(111,227,168,.68);
+    background: linear-gradient(135deg, rgba(111,227,168,.14), rgba(245,184,66,.06));
+    box-shadow: 0 6px 22px -8px rgba(111,227,168,.42);
   }
   @container fly-vp (max-width: 640px) {
     .format-picker { grid-template-columns: 1fr; gap: 8px; }
@@ -9416,7 +9586,7 @@
     // Cada chave tem 3 variantes (demo / _operational / _goal) sincronizadas separadamente
     const SYNCED_KEYS = [
       ..._BASE_SYNCED_KEYS,
-      ..._BASE_SYNCED_KEYS.filter(k => k !== 'fly_7anos_data_v1' && k !== 'fly_changelog_v1' && k !== 'fly_design_overrides_v1' && k !== 'fly_basesfly_custom_cities_v1' && k !== 'fly_turmas_v1')
+      ..._BASE_SYNCED_KEYS.filter(k => k !== 'fly_7anos_data_v1' && k !== 'fly_changelog_v1' && k !== 'fly_design_overrides_v1' && k !== 'fly_basesfly_custom_cities_v1')
         .flatMap(k => [k + '_operational', k + '_goal'])
     ];
 
@@ -9727,18 +9897,19 @@
        ============================================================ */
     const FLY_TURMAS_KEY = 'fly_turmas_v1';
     function flyLoadTurmas() {
-      try { return JSON.parse(localStorage.getItem(FLY_TURMAS_KEY) || '[]'); }
+      try { return JSON.parse(localStorage.getItem(flyModeKey(FLY_TURMAS_KEY)) || '[]'); }
       catch (e) { return []; }
     }
     function flySaveTurmas(arr) {
-      try { localStorage.setItem(FLY_TURMAS_KEY, JSON.stringify(arr)); } catch (e) {}
+      try { localStorage.setItem(flyModeKey(FLY_TURMAS_KEY), JSON.stringify(arr)); } catch (e) {}
     }
 
     function flyOpenTurmas() {
       document.querySelector('.fly-tu-overlay')?.remove();
+      const turmaMode = (typeof getDataMode === 'function') ? getDataMode() : 'demo';
       const turmas = flyLoadTurmas();
-      // Default: cria turma de exemplo se não houver nenhuma
-      if (turmas.length === 0) {
+      // Demo: cria turma de exemplo se não houver nenhuma. Normal fica em branco.
+      if (turmas.length === 0 && turmaMode === 'demo') {
         turmas.push({
           id: 't_' + Date.now(),
           pacote: 'DUBAI EXPLORER',
@@ -9785,6 +9956,55 @@
           ],
           receita: 348000
         });
+        flySaveTurmas(turmas);
+      }
+      // Meta: mostra um plano-alvo separado do operacional real.
+      if (turmas.length === 0 && turmaMode === 'goal') {
+        turmas.push(
+          {
+            id: 'tg_' + Date.now(),
+            pacote: 'DUBAI EXPLORER',
+            nome: 'META JUNHO 2026 · 3 TURMAS',
+            banner: '',
+            dataInicio: '2026-06-05',
+            dataFim: '2026-06-26',
+            lider: 'Operação FLY',
+            status: 'proxima',
+            diaAtual: 0,
+            diasTotal: 21,
+            atividadeAtual: 'Planejamento de escala',
+            passageiros: [],
+            atividades: [
+              { dia: 1, hora: '09:00', titulo: 'Fechar allotment aéreo', status: 'pendente' },
+              { dia: 3, hora: '11:00', titulo: 'Confirmar hotéis e transfers', status: 'pendente' },
+              { dia: 7, hora: '15:00', titulo: 'Enviar Press Kits origem', status: 'pendente' }
+            ],
+            incidentes: [],
+            comunicacao: [],
+            receita: 1155000
+          },
+          {
+            id: 'tg2_' + Date.now(),
+            pacote: 'BILLIONAIRE DUBAI',
+            nome: 'META Q3 2026 · TURMA HIGH TICKET',
+            banner: '',
+            dataInicio: '2026-08-12',
+            dataFim: '2026-08-19',
+            lider: 'Victor + Concierge Dubai',
+            status: 'proxima',
+            diaAtual: 0,
+            diasTotal: 7,
+            atividadeAtual: 'Captação e curadoria VIP',
+            passageiros: [],
+            atividades: [
+              { dia: 1, hora: '10:00', titulo: 'Concierge individual', status: 'pendente' },
+              { dia: 2, hora: '18:00', titulo: 'Entrega Press Kit Premium', status: 'pendente' }
+            ],
+            incidentes: [],
+            comunicacao: [],
+            receita: 1600000
+          }
+        );
         flySaveTurmas(turmas);
       }
 
@@ -9839,7 +10059,7 @@
           <div class="fly-tu-head">
             <div>
               <h2>🌍 OPERAÇÃO FLY · TURMAS</h2>
-              <p class="tu-sub">War room operacional · ${ativas.length} ativas · ${proximas.length} próximas · ${concluidas.length} concluídas</p>
+              <p class="tu-sub">${({ demo: 'Modo Demo · simulação preenchida', operational: 'Modo Normal · operação real', goal: 'Modo Meta · plano-alvo' })[turmaMode] || 'War room'} · ${ativas.length} ativas · ${proximas.length} próximas · ${concluidas.length} concluídas</p>
             </div>
             <div class="fly-tu-actions">
               <button class="fly-cmp-btn ghost" id="tuNova">+ Nova Turma</button>
@@ -13981,6 +14201,7 @@
       card.innerHTML = `<div class="name">${entry.name || ''}</div>`;
       card.addEventListener('click', e => {
         if (e.target.classList.contains('delete-btn')) return;
+        if (e.target.classList.contains('card-edit-btn')) return;
         if (e.target.classList.contains('remove-from-folder-btn')) return;
         // Em admin-mode click no NOME (que é editável) abre design editor;
         // o card propriamente continua navegando.
@@ -13996,6 +14217,18 @@
         if (confirm('Remover "' + (entry.name || 'item') + '"?')) onDelete();
       });
       card.appendChild(del);
+      if (topicData && Array.isArray(topicData.items)) {
+        const edit = document.createElement('button');
+        edit.className = 'card-edit-btn';
+        edit.textContent = '✎';
+        edit.title = 'Editar item e formato de painel';
+        edit.addEventListener('click', e => {
+          e.stopPropagation();
+          const editIdx = topicData.items.findIndex(x => x === entry || (x.id && entry.id && x.id === entry.id));
+          if (editIdx >= 0) openItemEditor(topicData, 'item', editIdx);
+        });
+        card.appendChild(edit);
+      }
       // Marca o título do item como editável (texto/cor/tamanho/posição)
       const nameEl = card.querySelector('.name');
       const topicKey = (topicData && topicData.banner && topicData.banner.title) || (currentTopic && currentTopic.key) || 'topic';
@@ -14019,7 +14252,7 @@
         image: '',
         categoria: '',
         folder: '',
-        format: 'default', // 'default' | 'pacotes' — formato de painel quando aberto
+        format: 'default', // 'default' | 'pacotes' | 'presskit' — formato de painel quando aberto
         descricao: '',
         inclui: [],
         publico: '',
@@ -14042,7 +14275,7 @@
       it.id = it.id || base.id;
       it.categoria = it.categoria || '';
       it.folder = it.folder || '';
-      it.format = (it.format === 'pacotes' || it.format === 'default') ? it.format : 'default';
+      it.format = (it.format === 'pacotes' || it.format === 'presskit' || it.format === 'default') ? it.format : 'default';
       it.descricao = it.descricao || '';
       it.inclui = Array.isArray(it.inclui) ? it.inclui : [];
       it.publico = it.publico || '';
@@ -14381,6 +14614,7 @@
           if (idx >= 0) showDetail(idx);
         }
       }
+      if (document.querySelector('.fly-tu-overlay')) flyOpenTurmas();
     }
     window.flySetDataMode = setDataMode;
 
@@ -15020,6 +15254,545 @@
       if (activeBtn && panelEl) {
         renderDbxPanel(activeBtn.dataset.tab, D, panelEl, item);
       }
+    }
+
+    /* ============================================================
+       PRESS KIT FLY — operação dentro de Produtos
+       ============================================================ */
+    const PRESS_KIT_DEFAULTS = {
+      meta: {
+        producedMonth: 47,
+        targetMonth: 80,
+        costAvg: 753,
+        perceivedValue: 2480,
+        nps: 9.4,
+        leadTime: 9,
+        personalizationRate: 100,
+        monthSpend: 35391,
+        yearSpend: 178450,
+        deliveredYear: 367,
+        errorCount: 4,
+        postsPerKit: 4.2,
+        mediaValuePerKit: 1800,
+        roi: 270
+      },
+      deliveries: [
+        { cliente: 'João Silva', pacote: 'Dubai Explorer', embarque: '2026-05-12', status: 'em produção', responsavel: 'Jeferson', onde: 'Sede Brasil', etapa: 'Origem' },
+        { cliente: 'Mariana Souza', pacote: 'Dubai Family', embarque: '2026-05-15', status: 'pronto', responsavel: 'Amanda', onde: 'Casa do cliente', etapa: 'Origem' },
+        { cliente: 'Pedro Almeida', pacote: 'Dubai GTA', embarque: '2026-05-19', status: 'em trânsito', responsavel: 'Base Dubai', onde: 'Hotel Dubai', etapa: 'Destino' }
+      ],
+      items: [
+        { id: 'pk_mochila', kit: 'brasil', name: 'Mochila Premium Fly', photo: '', category: 'Funcional', supplier: 'Couro & Cia (SP)', unitCost: 145, perceivedValue: 380, qty: 1, stock: 23, minStock: 15, leadTime: 12, status: 'ok', personalization: 'Logo Fly bordado', personalizationDays: 2, packages: ['Explorer','Family','In Love','GTA','Billionaire'], deliveryStage: 'Origem', deliveryWhen: '7 dias antes do embarque', deliveryWhere: 'Sede Brasil ou casa do cliente', bases: ['Sede Brasil'] },
+        { id: 'pk_souvenir', kit: 'brasil', name: 'Souvenir Exclusivo Dubai', photo: '', category: 'Emocional', supplier: 'Resina Art Premium', unitCost: 95, perceivedValue: 260, qty: 1, stock: 8, minStock: 10, leadTime: 10, status: 'attention', personalization: 'Avião + skyline Dubai em resina', personalizationDays: 1, packages: ['Explorer','Family','In Love','GTA','Billionaire'], deliveryStage: 'Origem', deliveryWhen: '7 dias antes do embarque', deliveryWhere: 'Dentro da mochila origem', bases: ['Sede Brasil'] },
+        { id: 'pk_passaporte', kit: 'brasil', name: 'Envelope Passaporte', photo: '', category: 'Documentação', supplier: 'Gráfica Alpha', unitCost: 9, perceivedValue: 35, qty: 1, stock: 60, minStock: 30, leadTime: 5, status: 'ok', personalization: 'Nome do cliente', personalizationDays: 1, packages: ['Explorer','Family','In Love','GTA','Billionaire'], deliveryStage: 'Origem', deliveryWhen: '7 dias antes do embarque', deliveryWhere: 'Kit documentação', bases: ['Sede Brasil'] },
+        { id: 'pk_reserva', kit: 'brasil', name: 'Envelope Reserva Aérea + Hotel', photo: '', category: 'Documentação', supplier: 'Gráfica Alpha', unitCost: 9, perceivedValue: 35, qty: 1, stock: 60, minStock: 30, leadTime: 5, status: 'ok', personalization: 'Reserva impressa + capa Fly', personalizationDays: 1, packages: ['Explorer','Family','In Love','GTA','Billionaire'], deliveryStage: 'Origem', deliveryWhen: '7 dias antes do embarque', deliveryWhere: 'Kit documentação', bases: ['Sede Brasil'] },
+        { id: 'pk_qr', kit: 'brasil', name: 'Pulseira QR Code', photo: '', category: 'Tecnologia', supplier: 'QR Smart Bands', unitCost: 12, perceivedValue: 90, qty: 1, stock: 4, minStock: 20, leadTime: 8, status: 'critical', personalization: 'QR individual com link do app', personalizationDays: 1, packages: ['Explorer','Family','In Love','GTA','Billionaire'], deliveryStage: 'Origem', deliveryWhen: '7 dias antes do embarque', deliveryWhere: 'Mochila origem', bases: ['Sede Brasil'] },
+        { id: 'pk_travesseiro', kit: 'brasil', name: 'Travesseiro de Pescoço Fly', photo: '', category: 'Conforto', supplier: 'Travel Comfort BR', unitCost: 38, perceivedValue: 120, qty: 1, stock: 22, minStock: 15, leadTime: 9, status: 'ok', personalization: 'Tag Fly', personalizationDays: 1, packages: ['Explorer','Family','In Love','GTA','Billionaire'], deliveryStage: 'Origem', deliveryWhen: '7 dias antes do embarque', deliveryWhere: 'Mochila origem', bases: ['Sede Brasil'] },
+        { id: 'pk_cartao', kit: 'brasil', name: 'Cartão Pré-pago + Case', photo: '', category: 'Financeiro', supplier: 'Couro & Cia (SP)', unitCost: 25, perceivedValue: 140, qty: 1, stock: 35, minStock: 20, leadTime: 7, status: 'ok', personalization: 'Case de couro com iniciais', personalizationDays: 2, packages: ['Explorer','Family','In Love','GTA','Billionaire'], deliveryStage: 'Origem', deliveryWhen: '7 dias antes do embarque', deliveryWhere: 'Envelope financeiro', bases: ['Sede Brasil'] },
+        { id: 'pk_carta', kit: 'brasil', name: 'Carta Personalizada do CEO', photo: '', category: 'Emocional', supplier: 'Interno Fly', unitCost: 5, perceivedValue: 220, qty: 1, stock: 999, minStock: 0, leadTime: 1, status: 'ok', personalization: 'Texto individual assinado pelo Victor', personalizationDays: 1, packages: ['Explorer','Family','In Love','GTA','Billionaire'], deliveryStage: 'Origem', deliveryWhen: '7 dias antes do embarque', deliveryWhere: 'Topo do kit origem', bases: ['Sede Brasil'] },
+        { id: 'pk_funko', kit: 'brasil', name: 'Funko Exclusivo do Cliente', photo: '', category: 'Personalização', supplier: '3D Toy Studio', unitCost: 75, perceivedValue: 390, qty: 1, stock: 0, minStock: 0, leadTime: 14, status: 'ondemand', personalization: 'Escultura a partir de foto', personalizationDays: 7, packages: ['Explorer','Family','In Love','GTA'], deliveryStage: 'Origem', deliveryWhen: '7 dias antes do embarque', deliveryWhere: 'Caixa individual dentro do kit', bases: ['Sede Brasil'] },
+        { id: 'pk_powerbank', kit: 'brasil', name: 'Power Bank Fly', photo: '', category: 'Tecnologia', supplier: 'Tech Gifts BR', unitCost: 65, perceivedValue: 220, qty: 1, stock: 18, minStock: 12, leadTime: 10, status: 'ok', personalization: 'Logo Fly gravado', personalizationDays: 2, packages: ['Explorer','Family','In Love','GTA','Billionaire'], deliveryStage: 'Origem', deliveryWhen: '7 dias antes do embarque', deliveryWhere: 'Mochila origem', bases: ['Sede Brasil'] },
+        { id: 'pk_chaveiro', kit: 'dubai', name: 'Chaveiro Burj Khalifa', photo: '', category: 'Souvenir Dubai', supplier: 'Dubai Local Gifts', unitCost: 28, perceivedValue: 95, qty: 1, stock: 40, minStock: 25, leadTime: 5, status: 'ok', personalization: 'Sem personalização', personalizationDays: 0, packages: ['Explorer','Family','In Love','GTA','Billionaire'], deliveryStage: 'Destino', deliveryWhen: 'Na chegada ao hotel em Dubai', deliveryWhere: 'Quarto do hotel', bases: ['Base Dubai'] },
+        { id: 'pk_welcome', kit: 'dubai', name: 'Kit Boas-vindas Dubai', photo: '', category: 'Operacional', supplier: 'Interno Fly Dubai', unitCost: 18, perceivedValue: 120, qty: 1, stock: 50, minStock: 30, leadTime: 2, status: 'ok', personalization: 'Mapa + itinerário + informações úteis', personalizationDays: 1, packages: ['Explorer','Family','In Love','GTA','Billionaire'], deliveryStage: 'Destino', deliveryWhen: 'Na chegada ao hotel em Dubai', deliveryWhere: 'Recepção ou quarto', bases: ['Base Dubai'] },
+        { id: 'pk_toalha', kit: 'dubai', name: 'Toalha Personalizada Bordada', photo: '', category: 'Têxtil', supplier: 'Couro & Cia (SP)', unitCost: 22, perceivedValue: 130, qty: 1, stock: 28, minStock: 18, leadTime: 12, status: 'ok', personalization: 'Nome bordado', personalizationDays: 3, packages: ['Family','In Love','GTA','Billionaire'], deliveryStage: 'Destino', deliveryWhen: 'Primeira noite em Dubai', deliveryWhere: 'Quarto do hotel', bases: ['Base Dubai','Sede Brasil'] },
+        { id: 'pk_camelinho', kit: 'dubai', name: 'Camelinho de Pelúcia', photo: '', category: 'Souvenir Dubai', supplier: 'Dubai Local Gifts', unitCost: 15, perceivedValue: 70, qty: 1, stock: 30, minStock: 25, leadTime: 5, status: 'ok', personalization: 'Tag Fly', personalizationDays: 0, packages: ['Family'], deliveryStage: 'Destino', deliveryWhen: 'Na chegada ao hotel em Dubai', deliveryWhere: 'Kit destino', bases: ['Base Dubai'] },
+        { id: 'pk_chocolate', kit: 'dubai', name: 'Chocolate Local', photo: '', category: 'Alimentos', supplier: 'Dates & Chocolate DXB', unitCost: 18, perceivedValue: 80, qty: 1, stock: 35, minStock: 24, leadTime: 3, status: 'ok', personalization: 'Preferência/alergia do cliente', personalizationDays: 0, packages: ['Explorer','Family','In Love','GTA','Billionaire'], deliveryStage: 'Destino', deliveryWhen: 'Na chegada ao hotel em Dubai', deliveryWhere: 'Quarto do hotel', bases: ['Base Dubai'] },
+        { id: 'pk_stanley', kit: 'dubai', name: 'Copo Stanley Fly', photo: '', category: 'Funcional Premium', supplier: 'Stanley Corporate', unitCost: 110, perceivedValue: 320, qty: 1, stock: 15, minStock: 15, leadTime: 18, status: 'ok', personalization: 'Logo Fly gravado', personalizationDays: 3, packages: ['In Love','GTA','Billionaire'], deliveryStage: 'Destino', deliveryWhen: 'Segundo dia em Dubai', deliveryWhere: 'Transfer / passeio', bases: ['Base Dubai'] },
+        { id: 'pk_protetor', kit: 'dubai', name: 'Protetor Solar', photo: '', category: 'Cuidado', supplier: 'Pharma DXB', unitCost: 14, perceivedValue: 60, qty: 1, stock: 44, minStock: 25, leadTime: 3, status: 'ok', personalization: 'FPS por perfil', personalizationDays: 0, packages: ['Explorer','Family','In Love','GTA'], deliveryStage: 'Destino', deliveryWhen: 'Antes do primeiro passeio externo', deliveryWhere: 'Kit destino', bases: ['Base Dubai'] },
+        { id: 'pk_album', kit: 'dubai', name: 'Álbum de Figurinhas Fly', photo: '', category: 'Mídia/NPS', supplier: 'Sticker Lab', unitCost: 35, perceivedValue: 180, qty: 1, stock: 32, minStock: 20, leadTime: 8, status: 'ok', personalization: 'Sticker brilhante do cliente/grupo', personalizationDays: 2, packages: ['Explorer','Family','In Love','GTA','Billionaire'], deliveryStage: 'Destino', deliveryWhen: 'Durante a viagem, no momento de maior emoção', deliveryWhere: 'Jantar ou ônibus de operação', bases: ['Base Dubai'] },
+        { id: 'pk_billionaire', kit: 'premium', name: 'Press Kit Billionaire Premium', photo: '', category: 'High Ticket', supplier: 'Concierge Premium', unitCost: 5150, perceivedValue: 18000, qty: 1, stock: 0, minStock: 0, leadTime: 21, status: 'ondemand', personalization: 'Tumi/Montblanc + escultura 3D + carta manuscrita', personalizationDays: 14, packages: ['Billionaire'], deliveryStage: 'Premium', deliveryWhen: 'Origem + quarto VIP em Dubai + retorno ao Brasil', deliveryWhere: 'Entrega concierge', bases: ['Sede Brasil','Base Dubai','Concierge Retorno'] }
+      ],
+      suppliers: [
+        { name: 'Couro & Cia', city: 'São Paulo', category: 'Couro / Bordado', items: ['Mochila Premium','Case cartão','Toalha bordada'], monthlyVolume: 47, monthlySpend: 8554, totalSpend: 67232, contact: 'Marcos Silva', whatsapp: '+55 11 99876-5432', email: 'marcos@couroecia.com.br', leadTime: 12, quality: '★★★★★', punctuality: '98%', status: 'Aprovado', contract: 'válido até 12/2026' },
+        { name: 'Dubai Local Gifts', city: 'Dubai', category: 'Souvenir local', items: ['Chaveiro Burj Khalifa','Camelinho'], monthlyVolume: 47, monthlySpend: 2021, totalSpend: 18880, contact: 'Ahmed Khan', whatsapp: '+971 50 123 4567', email: 'ops@dubaigifts.ae', leadTime: 5, quality: '★★★★☆', punctuality: '94%', status: 'Aprovado', contract: 'backup ativo' },
+        { name: '3D Toy Studio', city: 'Curitiba', category: 'Personalização', items: ['Funko exclusivo'], monthlyVolume: 30, monthlySpend: 2250, totalSpend: 15800, contact: 'Renata Alves', whatsapp: '+55 41 99111-2200', email: 'renata@3dtoy.com.br', leadTime: 14, quality: '★★★★★', punctuality: '91%', status: 'Aprovado', contract: 'sob demanda' }
+      ],
+      orders: [
+        { id: '#2026-047', supplier: 'Couro & Cia', item: '50 Mochilas Premium + 30 Cases', value: 8000, orderDate: '2026-05-03', dueDate: '2026-05-15', status: 'Em produção (60%)', owner: 'Jeferson', nextStep: 'Conferir bordado' },
+        { id: '#2026-048', supplier: 'QR Smart Bands', item: '120 Pulseiras QR Code', value: 1440, orderDate: '2026-05-04', dueDate: '2026-05-13', status: 'Aguardando envio', owner: 'Amanda', nextStep: 'Validar QR de teste' }
+      ],
+      personalization: [
+        { cliente: 'João Silva', embarque: '2026-05-12', pacote: 'Dubai Explorer', progress: 90, pending: 'foto da família', owner: 'Jeferson', notes: 'Cliente pediu chocolate sem amêndoas (alergia esposa Mariana)', checklist: ['Mochila bordada','Funko aprovado','Carta assinada Victor','Pulseira QR gerada','Cartão pré-pago carregado'] },
+        { cliente: 'Mariana Souza', embarque: '2026-05-15', pacote: 'Dubai Family', progress: 70, pending: 'aprovação do Funko', owner: 'Amanda', notes: 'Preferência por itens infantis para filhos', checklist: ['Mochila bordada','Carta pronta','Chocolate sem lactose'] }
+      ],
+      media: {
+        postsMonth: 197,
+        hashtagMentions: 1450,
+        tags: 89,
+        reach: '2.3M',
+        mediaValue: 84000,
+        nps: 9.4,
+        gallery: [],
+        topItems: ['Funko personalizado — 9.8', 'Carta CEO — 9.7', 'Álbum de figurinhas — 9.6'],
+        bottomItems: ['Camelinho de pelúcia — 7.2', 'Protetor solar — 7.4', 'Chocolate genérico — 7.6'],
+        comments: ['Nunca recebi um kit assim antes de viajar.', 'O Funko virou assunto na família inteira.', 'A carta assinada fez parecer experiência de luxo real.']
+      },
+      alerts: [
+        { type: 'critico', title: 'Pulseira QR abaixo do mínimo', desc: 'Estoque atual 4 / mínimo 20. Pedido precisa ser priorizado.', owner: 'Amanda', due: 'Hoje' },
+        { type: 'atencao', title: 'Souvenir Resina em atenção', desc: 'Estoque 8 / mínimo 10. Pedido já feito, acompanhar fornecedor.', owner: 'Jeferson', due: '12/05' },
+        { type: 'oportunidade', title: 'Stanley permite negociação', desc: 'Volume do mês abre margem pra negociar de R$ 110 para R$ 80.', owner: 'Victor', due: 'Semana' }
+      ]
+    };
+
+    function pkClone(v) { return JSON.parse(JSON.stringify(v)); }
+    function pkSplit(v) { return String(v || '').split(/[,;\n]+/).map(s => s.trim()).filter(Boolean); }
+    function pkKitLabel(k) {
+      return ({ brasil: '🇧🇷 Press Kit Brasil', dubai: '🇦🇪 Press Kit Dubai', premium: '💎 Press Kit Premium' })[k] || 'Press Kit';
+    }
+    function pkStageClass(v, kit) {
+      const s = String(v || kit || '').toLowerCase();
+      if (s.includes('dubai') || kit === 'dubai') return 'dubai';
+      if (s.includes('premium') || kit === 'premium') return 'premium';
+      return 'brasil';
+    }
+    function pkStatusText(s) {
+      return ({ ok: '🟢 OK', attention: '🟡 Atenção', critical: '🔴 Crítico', ondemand: 'Sob demanda' })[s] || s || 'OK';
+    }
+    function pkStatusPill(s) {
+      if (s === 'critical') return 'cancelado';
+      if (s === 'attention') return 'pendente';
+      return 'pago';
+    }
+    function pkItemTotal(x) {
+      return (Number(x.unitCost) || 0) * (Number(x.qty) || 1);
+    }
+    function pkKitTotal(P, kit) {
+      return (P.items || []).filter(x => x.kit === kit).reduce((sum, x) => sum + pkItemTotal(x), 0);
+    }
+    function pkAllTotal(P) {
+      return (P.items || []).reduce((sum, x) => sum + pkItemTotal(x), 0);
+    }
+    function createEmptyPressKit(item) {
+      const e = pkClone(PRESS_KIT_DEFAULTS);
+      e.meta = { producedMonth: 0, targetMonth: 0, costAvg: 0, perceivedValue: 0, nps: 0, leadTime: 0, personalizationRate: 0, monthSpend: 0, yearSpend: 0, deliveredYear: 0, errorCount: 0, postsPerKit: 0, mediaValuePerKit: 0, roi: 0 };
+      e.deliveries = [];
+      e.items = [];
+      e.suppliers = [];
+      e.orders = [];
+      e.personalization = [];
+      e.media = { postsMonth: 0, hashtagMentions: 0, tags: 0, reach: '0', mediaValue: 0, nps: 0, gallery: [], topItems: [], bottomItems: [], comments: [] };
+      e.alerts = [];
+      return e;
+    }
+    function createGoalPressKit(item) {
+      const g = pkClone(PRESS_KIT_DEFAULTS);
+      g.meta.producedMonth = 120;
+      g.meta.targetMonth = 120;
+      g.meta.costAvg = 690;
+      g.meta.perceivedValue = 3200;
+      g.meta.nps = 9.8;
+      g.meta.leadTime = 6;
+      g.meta.monthSpend = 82800;
+      g.meta.yearSpend = 993600;
+      g.meta.deliveredYear = 1440;
+      g.meta.postsPerKit = 6.5;
+      g.meta.mediaValuePerKit = 2600;
+      g.meta.roi = 420;
+      g.alerts = [
+        { type: 'oportunidade', title: 'Meta: reduzir custo médio para R$ 690', desc: 'Negociar Stanley, mochila e logística Dubai por volume.', owner: 'Victor', due: 'Q2 2026' },
+        { type: 'oportunidade', title: 'Meta: 6.5 posts por kit', desc: 'Adicionar ritual de unboxing guiado e QR de repost.', owner: 'Marketing', due: 'Q2 2026' }
+      ];
+      return g;
+    }
+    function loadPressKit(item) {
+      const mode = getDataMode();
+      const key = mode === 'demo' ? 'presskit' : ('presskit_' + mode);
+      if (!item[key]) {
+        item[key] = mode === 'operational' ? createEmptyPressKit(item) : (mode === 'goal' ? createGoalPressKit(item) : pkClone(PRESS_KIT_DEFAULTS));
+        try { saveData(); } catch (e) {}
+      }
+      item[key].meta = Object.assign({}, PRESS_KIT_DEFAULTS.meta, item[key].meta || {});
+      item[key].items = Array.isArray(item[key].items) ? item[key].items : [];
+      item[key].deliveries = Array.isArray(item[key].deliveries) ? item[key].deliveries : [];
+      item[key].suppliers = Array.isArray(item[key].suppliers) ? item[key].suppliers : [];
+      item[key].orders = Array.isArray(item[key].orders) ? item[key].orders : [];
+      item[key].personalization = Array.isArray(item[key].personalization) ? item[key].personalization : [];
+      item[key].media = Object.assign({}, PRESS_KIT_DEFAULTS.media, item[key].media || {});
+      item[key].alerts = Array.isArray(item[key].alerts) ? item[key].alerts : [];
+      return item[key];
+    }
+    function pkRenderOverview(P) {
+      const m = P.meta || {};
+      return `
+        <div class="dbx-panel-head">
+          <h2><span class="ico">🎁</span>Visão Geral · saúde da operação</h2>
+          <div class="dbx-actions"><button class="dbx-mini-btn" data-pk-add-item>+ Item do kit</button></div>
+        </div>
+        <div class="dbx-stats-grid">
+          <div class="dbx-stat highlight"><div class="lbl">Kits no mês</div><div class="val">${fmtNumber(m.producedMonth)} / ${fmtNumber(m.targetMonth)}</div></div>
+          <div class="dbx-stat"><div class="lbl">Custo médio</div><div class="val">${dbxFmtMoney(m.costAvg)}</div></div>
+          <div class="dbx-stat ok"><div class="lbl">Valor percebido</div><div class="val">${dbxFmtMoney(m.perceivedValue)}</div></div>
+          <div class="dbx-stat ok"><div class="lbl">NPS Press Kit</div><div class="val">${Number(m.nps || 0).toFixed(1)}/10</div></div>
+          <div class="dbx-stat"><div class="lbl">Lead time</div><div class="val">${fmtNumber(m.leadTime)} dias</div></div>
+          <div class="dbx-stat ok"><div class="lbl">Personalização</div><div class="val">${fmtNumber(m.personalizationRate)}%</div></div>
+        </div>
+        <div class="dbx-2col">
+          <div class="dbx-block">
+            <h3>Resumo executivo</h3>
+            <div class="dbx-list">
+              <div class="dbx-list-row"><span>Investido no mês</span><strong>${dbxFmtMoney(m.monthSpend)}</strong></div>
+              <div class="dbx-list-row"><span>Investido no ano</span><strong>${dbxFmtMoney(m.yearSpend)}</strong></div>
+              <div class="dbx-list-row"><span>Kits entregues no ano</span><strong>${fmtNumber(m.deliveredYear)}</strong></div>
+              <div class="dbx-list-row"><span>Kits com erro/reposição</span><strong>${fmtNumber(m.errorCount)}</strong></div>
+            </div>
+          </div>
+          <div class="dbx-block">
+            <h3>Indicador estratégico</h3>
+            <p class="dbx-desc">Cada kit gera em média <strong>${m.postsPerKit}</strong> posts orgânicos. Valor de mídia equivalente: <strong>${dbxFmtMoney(m.mediaValuePerKit)}/kit</strong>. ROI estimado do Press Kit: <strong>${fmtNumber(m.roi)}%</strong>.</p>
+          </div>
+        </div>
+        <div class="dbx-block">
+          <h3>Próximas entregas</h3>
+          <div class="pk-card-grid">
+            ${(P.deliveries || []).map(d => `
+              <div class="pk-card">
+                <span class="pk-stage ${pkStageClass(d.etapa)}">${escapeHtml(d.etapa || 'Entrega')}</span>
+                <p><strong>${escapeHtml(d.cliente || '')}</strong></p>
+                <small>${escapeHtml(d.pacote || '')} · embarque ${escapeHtml(fmtDate(d.embarque || ''))}</small>
+                <small>Status: ${escapeHtml(d.status || '')} · Resp: ${escapeHtml(d.responsavel || '')}</small>
+                <small>Onde: ${escapeHtml(d.onde || '')}</small>
+              </div>`).join('') || '<p class="dbx-empty">Nenhuma entrega cadastrada neste modo.</p>'}
+          </div>
+        </div>
+      `;
+    }
+    function pkRenderComposicao(P) {
+      const section = (kit) => {
+        const arr = (P.items || []).filter(x => x.kit === kit);
+        return `
+          <div class="dbx-block">
+            <div class="dbx-block-head">
+              <h3>${pkKitLabel(kit)} · ${arr.length} itens</h3>
+            </div>
+            <div class="pk-card-grid">
+              ${arr.map(x => {
+                const i = P.items.indexOf(x);
+                const stageCls = pkStageClass(x.deliveryStage, x.kit);
+                return `
+                  <div class="pk-card">
+                    <div class="pk-item-photo ${x.photo ? 'has-img' : ''}" style="${x.photo ? `background-image:url('${x.photo}')` : ''}">${x.photo ? '' : '📷'}</div>
+                    <span class="pk-stage ${stageCls}">${escapeHtml(x.deliveryStage || pkKitLabel(x.kit))}</span>
+                    <p><strong>${escapeHtml(x.name || '')}</strong></p>
+                    <small>${escapeHtml(x.category || '')} · ${escapeHtml(x.supplier || '')}</small>
+                    <div class="pk-item-meta">
+                      <div class="pk-mini"><span class="lbl">Custo</span><span class="val">${dbxFmtMoney(x.unitCost)}</span></div>
+                      <div class="pk-mini"><span class="lbl">Percebido</span><span class="val">${dbxFmtMoney(x.perceivedValue)}</span></div>
+                      <div class="pk-mini"><span class="lbl">Estoque</span><span class="val">${escapeHtml(String(x.stock ?? ''))}</span></div>
+                      <div class="pk-mini"><span class="lbl">Status</span><span class="val">${pkStatusText(x.status)}</span></div>
+                    </div>
+                    <small><strong>Quando:</strong> ${escapeHtml(x.deliveryWhen || '')}</small>
+                    <small><strong>Onde:</strong> ${escapeHtml(x.deliveryWhere || '')}</small>
+                    <small><strong>Personalização:</strong> ${escapeHtml(x.personalization || '')}</small>
+                    <div class="pk-bases">${(x.bases || []).map(b => `<span class="pk-base">${escapeHtml(b)}</span>`).join('')}</div>
+                    <small><strong>Pacotes:</strong> ${escapeHtml((x.packages || []).join(' · '))}</small>
+                    <div class="pk-item-actions">
+                      <input type="file" accept="image/*" hidden data-pk-photo="${i}">
+                      <button class="dbx-mini-btn" data-pk-photo-btn="${i}">🖼 Foto</button>
+                      <button class="dbx-mini-btn" data-pk-edit="${i}">✎ Editar</button>
+                      <button class="dbx-mini-btn danger" data-pk-del="${i}">✕</button>
+                    </div>
+                  </div>`;
+              }).join('') || '<p class="dbx-empty">Nenhum item cadastrado nesta etapa.</p>'}
+            </div>
+          </div>`;
+      };
+      return `
+        <div class="dbx-panel-head">
+          <h2><span class="ico">📦</span>Composição · ficha técnica dos kits</h2>
+          <div class="dbx-actions"><button class="dbx-btn" data-pk-add-item>+ Adicionar item</button></div>
+        </div>
+        <div class="pk-delivery-grid" style="margin-bottom:18px;">
+          <div class="pk-card"><strong>Origem</strong><p>Entregue antes do embarque, com documentação, itens funcionais e personalização emocional.</p></div>
+          <div class="pk-card"><strong>Destino</strong><p>Entregue em Dubai pela base local, reforçando cuidado e presença da operação.</p></div>
+          <div class="pk-card"><strong>Premium</strong><p>Fluxo especial para Billionaire, com concierge e entregas em múltiplos momentos.</p></div>
+        </div>
+        ${section('brasil')}
+        ${section('dubai')}
+        ${section('premium')}
+      `;
+    }
+    function pkRenderCustos(P) {
+      const rows = (kit) => (P.items || []).filter(x => x.kit === kit).map(x => `
+        <div class="dbx-tr">
+          <div>${escapeHtml(x.name || '')}</div>
+          <div>${dbxFmtMoney(x.unitCost)}</div>
+          <div>${Number(x.qty) || 1}</div>
+          <div>${dbxFmtMoney(pkItemTotal(x))}</div>
+          <div>${dbxFmtMoney(x.perceivedValue)}</div>
+        </div>`).join('');
+      const total = pkAllTotal(P);
+      const perceived = (P.items || []).reduce((s, x) => s + (Number(x.perceivedValue) || 0), 0);
+      const margin = total ? ((perceived - total) / total * 100) : 0;
+      return `
+        <div class="dbx-panel-head"><h2><span class="ico">💰</span>Custos · margem percebida</h2></div>
+        <div class="dbx-stats-grid">
+          <div class="dbx-stat"><div class="lbl">Brasil</div><div class="val">${dbxFmtMoney(pkKitTotal(P, 'brasil'))}</div></div>
+          <div class="dbx-stat"><div class="lbl">Dubai</div><div class="val">${dbxFmtMoney(pkKitTotal(P, 'dubai'))}</div></div>
+          <div class="dbx-stat highlight"><div class="lbl">Total por cliente</div><div class="val">${dbxFmtMoney(total)}</div></div>
+          <div class="dbx-stat ok"><div class="lbl">Margem percebida</div><div class="val">${margin.toFixed(0)}%</div></div>
+        </div>
+        <div class="dbx-block">
+          <h3>Custo detalhado por item</h3>
+          <div class="dbx-table pk-table">
+            <div class="dbx-tr head"><div>Item</div><div>Custo unit.</div><div>Qtd</div><div>Total</div><div>Valor percebido</div></div>
+            ${rows('brasil')}${rows('dubai')}${rows('premium')}
+          </div>
+        </div>
+        <div class="dbx-callout positive"><div class="dbx-callout-icon">💡</div><div><h4>Insight automático</h4><p>Negociar itens de maior volume, como Stanley e mochila, reduz o custo médio sem mexer no valor percebido do kit.</p></div></div>
+      `;
+    }
+    function pkRenderFornecedores(P) {
+      return `
+        <div class="dbx-panel-head"><h2><span class="ico">🏭</span>Fornecedores · produção e backup</h2></div>
+        <div class="pk-card-grid">
+          ${(P.suppliers || []).map(s => `
+            <div class="pk-card">
+              <strong>${escapeHtml(s.name || '')} · ${escapeHtml(s.city || '')}</strong>
+              <p>${escapeHtml(s.category || '')}</p>
+              <small>Itens: ${escapeHtml((s.items || []).join(' · '))}</small>
+              <small>Volume mensal: ${fmtNumber(s.monthlyVolume)} · Spend mensal: ${dbxFmtMoney(s.monthlySpend)}</small>
+              <small>Contato: ${escapeHtml(s.contact || '')} · ${escapeHtml(s.whatsapp || '')}</small>
+              <small>Email: ${escapeHtml(s.email || '')}</small>
+              <small>Lead time: ${fmtNumber(s.leadTime)} dias · Qualidade: ${escapeHtml(s.quality || '')} · Pontualidade: ${escapeHtml(s.punctuality || '')}</small>
+              <span class="dbx-pill pago">${escapeHtml(s.status || '')}</span>
+            </div>`).join('') || '<p class="dbx-empty">Nenhum fornecedor cadastrado.</p>'}
+        </div>
+      `;
+    }
+    function pkRenderEstoque(P) {
+      return `
+        <div class="dbx-panel-head"><h2><span class="ico">🏷</span>Estoque · bases e reposição</h2></div>
+        <div class="dbx-block">
+          <h3>Estoque em tempo real</h3>
+          <div class="dbx-table pk-table inventory">
+            <div class="dbx-tr head"><div>Item</div><div>Atual</div><div>Mínimo</div><div>Status</div><div>Bases</div></div>
+            ${(P.items || []).map(x => `
+              <div class="dbx-tr">
+                <div>${escapeHtml(x.name || '')}</div>
+                <div>${escapeHtml(String(x.stock ?? ''))}</div>
+                <div>${escapeHtml(String(x.minStock ?? ''))}</div>
+                <div><span class="dbx-pill ${pkStatusPill(x.status)}">${pkStatusText(x.status)}</span></div>
+                <div>${escapeHtml((x.bases || []).join(' · '))}</div>
+              </div>`).join('') || '<div class="dbx-tr"><div>Nenhum item</div><div></div><div></div><div></div><div></div></div>'}
+          </div>
+        </div>
+      `;
+    }
+    function pkRenderPedidos(P) {
+      return `
+        <div class="dbx-panel-head"><h2><span class="ico">📋</span>Pedidos · compras e produção</h2></div>
+        <div class="pk-card-grid">
+          ${(P.orders || []).map(o => `
+            <div class="pk-card">
+              <strong>PEDIDO ${escapeHtml(o.id || '')}</strong>
+              <p>${escapeHtml(o.supplier || '')}</p>
+              <small>${escapeHtml(o.item || '')}</small>
+              <small>Valor: ${dbxFmtMoney(o.value)} · Pedido: ${escapeHtml(fmtDate(o.orderDate || ''))}</small>
+              <small>Previsão: ${escapeHtml(fmtDate(o.dueDate || ''))} · Status: ${escapeHtml(o.status || '')}</small>
+              <small>Responsável: ${escapeHtml(o.owner || '')} · Próximo passo: ${escapeHtml(o.nextStep || '')}</small>
+            </div>`).join('') || '<p class="dbx-empty">Nenhum pedido ativo.</p>'}
+        </div>
+      `;
+    }
+    function pkRenderPersonalizacao(P) {
+      return `
+        <div class="dbx-panel-head"><h2><span class="ico">✨</span>Personalização · cliente por cliente</h2></div>
+        <div class="pk-card-grid">
+          ${(P.personalization || []).map(c => `
+            <div class="pk-card">
+              <strong>${escapeHtml(c.cliente || '')}</strong>
+              <p>${escapeHtml(c.pacote || '')} · embarque ${escapeHtml(fmtDate(c.embarque || ''))}</p>
+              <div class="dbx-progress"><div class="dbx-progress-fill" style="width:${Number(c.progress)||0}%"></div></div>
+              <small>Status geral: ${fmtNumber(c.progress)}% · Pendência: ${escapeHtml(c.pending || 'nenhuma')}</small>
+              <small>Responsável: ${escapeHtml(c.owner || '')}</small>
+              <small>Notas: ${escapeHtml(c.notes || '')}</small>
+              <div class="pk-bases">${(c.checklist || []).map(x => `<span class="pk-base">✅ ${escapeHtml(x)}</span>`).join('')}</div>
+            </div>`).join('') || '<p class="dbx-empty">Nenhuma personalização em fila.</p>'}
+        </div>
+      `;
+    }
+    function pkRenderMidia(P) {
+      const M = P.media || {};
+      return `
+        <div class="dbx-panel-head"><h2><span class="ico">📸</span>Mídia & NPS · marketing orgânico</h2></div>
+        <div class="dbx-stats-grid">
+          <div class="dbx-stat"><div class="lbl">Posts do mês</div><div class="val">${fmtNumber(M.postsMonth)}</div></div>
+          <div class="dbx-stat"><div class="lbl">Menções</div><div class="val">${fmtNumber(M.hashtagMentions)}</div></div>
+          <div class="dbx-stat"><div class="lbl">Tags @fly</div><div class="val">${fmtNumber(M.tags)}</div></div>
+          <div class="dbx-stat ok"><div class="lbl">Valor mídia</div><div class="val">${dbxFmtMoney(M.mediaValue)}</div></div>
+        </div>
+        <div class="dbx-2col">
+          <div class="dbx-block"><h3>Itens campeões</h3><div class="dbx-list">${(M.topItems || []).map(x => `<div class="dbx-list-row"><span>${escapeHtml(x)}</span><strong>Top</strong></div>`).join('') || '<p class="dbx-empty">Sem ranking.</p>'}</div></div>
+          <div class="dbx-block"><h3>Itens para revisar</h3><div class="dbx-list">${(M.bottomItems || []).map(x => `<div class="dbx-list-row"><span>${escapeHtml(x)}</span><strong>Rever</strong></div>`).join('') || '<p class="dbx-empty">Sem ranking.</p>'}</div></div>
+        </div>
+        <div class="dbx-block"><h3>Galeria de conteúdo</h3><div class="pk-gallery-grid">${(M.gallery || []).map(src => `<div class="pk-gallery-thumb" style="background-image:url('${src}')"></div>`).join('') || '<div class="pk-gallery-thumb">📷</div>'}</div></div>
+      `;
+    }
+    function pkRenderAlertas(P) {
+      return `
+        <div class="dbx-panel-head"><h2><span class="ico">⚠️</span>Alertas · tickets de atenção</h2></div>
+        <div class="pk-card-grid">
+          ${(P.alerts || []).map(a => `
+            <div class="pk-card pk-alert ${escapeHtml(a.type || '')}">
+              <span class="dbx-pill ${a.type === 'critico' ? 'cancelado' : a.type === 'oportunidade' ? 'pago' : 'pendente'}">${escapeHtml(a.type || 'alerta')}</span>
+              <p><strong>${escapeHtml(a.title || '')}</strong></p>
+              <small>${escapeHtml(a.desc || '')}</small>
+              <small>Responsável: ${escapeHtml(a.owner || '')} · Prazo: ${escapeHtml(a.due || '')}</small>
+            </div>`).join('') || '<p class="dbx-empty">Nenhum alerta ativo.</p>'}
+        </div>
+      `;
+    }
+    function pkOpenItemModal(P, pkItem, idx, refresh) {
+      const v = pkItem || { kit: 'brasil', qty: 1, status: 'ok', packages: [], bases: [] };
+      dbxOpenModal({
+        title: idx >= 0 ? 'Editar item do Press Kit' : '+ Item do Press Kit',
+        fields: [
+          { key: 'photo', label: 'Foto do item', type: 'photo' },
+          { key: 'name', label: 'Nome do item', type: 'text' },
+          { key: 'kit', label: 'Kit / etapa', type: 'select', options: [
+            { value: 'brasil', label: 'Press Kit Brasil (Origem)' },
+            { value: 'dubai', label: 'Press Kit Dubai (Destino)' },
+            { value: 'premium', label: 'Press Kit Premium (Billionaire)' }
+          ]},
+          { key: 'category', label: 'Categoria', type: 'text' },
+          { key: 'supplier', label: 'Fornecedor', type: 'text' },
+          { key: 'unitCost', label: 'Custo unitário (R$)', type: 'number', step: '0.01' },
+          { key: 'perceivedValue', label: 'Valor percebido (R$)', type: 'number', step: '0.01' },
+          { key: 'qty', label: 'Quantidade por kit', type: 'number', step: '1' },
+          { key: 'stock', label: 'Estoque atual', type: 'number', step: '1' },
+          { key: 'minStock', label: 'Estoque mínimo', type: 'number', step: '1' },
+          { key: 'leadTime', label: 'Lead time reposição (dias)', type: 'number', step: '1' },
+          { key: 'status', label: 'Status', type: 'select', options: [
+            { value: 'ok', label: 'OK' },
+            { value: 'attention', label: 'Atenção' },
+            { value: 'critical', label: 'Crítico' },
+            { value: 'ondemand', label: 'Sob demanda' }
+          ]},
+          { key: 'personalization', label: 'Personalização', type: 'textarea' },
+          { key: 'personalizationDays', label: 'Tempo de personalização (dias)', type: 'number', step: '1' },
+          { key: 'deliveryStage', label: 'Etapa de entrega', type: 'text' },
+          { key: 'deliveryWhen', label: 'Quando será entregue', type: 'textarea' },
+          { key: 'deliveryWhere', label: 'Onde será entregue', type: 'textarea' },
+          { key: 'basesText', label: 'Bases que entregam (separe por vírgula)', type: 'text' },
+          { key: 'packagesText', label: 'Pacotes que incluem (separe por vírgula)', type: 'text' }
+        ],
+        values: Object.assign({}, v, {
+          basesText: (v.bases || []).join(', '),
+          packagesText: (v.packages || []).join(', ')
+        }),
+        onSave: (out) => {
+          const next = Object.assign({}, v, out, {
+            id: v.id || ('pk_' + Date.now()),
+            bases: pkSplit(out.basesText),
+            packages: pkSplit(out.packagesText)
+          });
+          delete next.basesText;
+          delete next.packagesText;
+          if (idx >= 0) P.items[idx] = next;
+          else P.items.push(next);
+          saveData();
+          refresh('composicao');
+        }
+      });
+    }
+    function pkBindPanel(panelEl, P, item, refresh) {
+      panelEl.querySelectorAll('[data-pk-add-item]').forEach(btn => btn.addEventListener('click', () => pkOpenItemModal(P, null, -1, refresh)));
+      panelEl.querySelectorAll('[data-pk-edit]').forEach(btn => btn.addEventListener('click', () => {
+        const idx = Number(btn.dataset.pkEdit);
+        pkOpenItemModal(P, P.items[idx], idx, refresh);
+      }));
+      panelEl.querySelectorAll('[data-pk-del]').forEach(btn => btn.addEventListener('click', () => {
+        const idx = Number(btn.dataset.pkDel);
+        const name = P.items[idx]?.name || 'item';
+        if (!confirm('Remover "' + name + '" do Press Kit?')) return;
+        P.items.splice(idx, 1);
+        saveData();
+        refresh('composicao');
+      }));
+      panelEl.querySelectorAll('[data-pk-photo-btn]').forEach(btn => btn.addEventListener('click', () => {
+        panelEl.querySelector(`[data-pk-photo="${btn.dataset.pkPhotoBtn}"]`)?.click();
+      }));
+      panelEl.querySelectorAll('[data-pk-photo]').forEach(input => input.addEventListener('change', async () => {
+        const idx = Number(input.dataset.pkPhoto);
+        const file = input.files && input.files[0];
+        if (!file || !P.items[idx]) return;
+        P.items[idx].photo = await compressImage(file, 1000, 0.78);
+        saveData();
+        refresh('composicao');
+      }));
+    }
+    function pkRenderPanel(key, P, panelEl, item, refresh) {
+      if (key === 'visao') panelEl.innerHTML = pkRenderOverview(P);
+      else if (key === 'composicao') panelEl.innerHTML = pkRenderComposicao(P);
+      else if (key === 'custos') panelEl.innerHTML = pkRenderCustos(P);
+      else if (key === 'fornecedores') panelEl.innerHTML = pkRenderFornecedores(P);
+      else if (key === 'estoque') panelEl.innerHTML = pkRenderEstoque(P);
+      else if (key === 'pedidos') panelEl.innerHTML = pkRenderPedidos(P);
+      else if (key === 'personalizacao') panelEl.innerHTML = pkRenderPersonalizacao(P);
+      else if (key === 'midia') panelEl.innerHTML = pkRenderMidia(P);
+      else if (key === 'alertas') panelEl.innerHTML = pkRenderAlertas(P);
+      pkBindPanel(panelEl, P, item, refresh);
+    }
+    function renderPressKitItemView(item, topicData, idx) {
+      itemView.innerHTML = '';
+      const back = document.createElement('div');
+      back.className = 'hier-back-bar';
+      const topicName = (currentTopic && currentTopic.key) ? currentTopic.key : 'PRODUTOS';
+      back.innerHTML = `<button class="apple-btn" id="pk-back"><span class="apple-icon">←</span><span>Voltar para ${escapeHtml(topicName)}</span></button>`;
+      itemView.appendChild(back);
+      back.querySelector('#pk-back').addEventListener('click', () => {
+        switchTo('topic');
+        showTopic(currentTopic);
+      });
+
+      const P = loadPressKit(item);
+      const wrap = document.createElement('div');
+      wrap.className = 'dbx-module presskit-module';
+      const m = P.meta || {};
+      const modeName = ({ demo: 'DEMO', operational: 'NORMAL', goal: 'META' })[getDataMode()] || 'DEMO';
+      wrap.innerHTML = `
+        <div class="dbx-hero">
+          <div class="dbx-hero-bg" style="${item.image ? `background-image:url('${item.image}'); opacity:.28;` : ''}"></div>
+          <div class="dbx-hero-overlay"></div>
+          <button class="dbx-btn pk-edit-main hub-edit" id="pk-edit-main">✎ EDITAR ITEM</button>
+          <div class="dbx-hero-content">
+            <div class="dbx-eyebrow">PRESS KIT FLY · ${modeName}</div>
+            <h1>${escapeHtml(item.name || 'PRESS KIT')}</h1>
+            <div class="dbx-meta">
+              <span>Origem + Destino</span><span class="dot">·</span><span>${fmtNumber((P.items || []).length)} itens controlados</span>
+            </div>
+            <div class="dbx-hero-kpis">
+              <div class="dbx-kpi"><div class="lbl">Kits mês</div><div class="val">${fmtNumber(m.producedMonth)} / ${fmtNumber(m.targetMonth)}</div></div>
+              <div class="dbx-kpi"><div class="lbl">Custo médio</div><div class="val">${dbxFmtMoney(m.costAvg || pkAllTotal(P))}</div></div>
+              <div class="dbx-kpi"><div class="lbl">NPS</div><div class="val pos">${Number(m.nps || 0).toFixed(1)}</div></div>
+              <div class="dbx-kpi"><div class="lbl">ROI mídia</div><div class="val pos">${fmtNumber(m.roi)}%</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="dbx-tabs" id="pk-tabs">
+          <button class="dbx-tab active" data-tab="visao">🎁 Visão Geral</button>
+          <button class="dbx-tab" data-tab="composicao">📦 Composição</button>
+          <button class="dbx-tab" data-tab="custos">💰 Custos</button>
+          <button class="dbx-tab" data-tab="fornecedores">🏭 Fornecedores</button>
+          <button class="dbx-tab" data-tab="estoque">🏷 Estoque</button>
+          <button class="dbx-tab" data-tab="pedidos">📋 Pedidos</button>
+          <button class="dbx-tab" data-tab="personalizacao">✨ Personalização</button>
+          <button class="dbx-tab" data-tab="midia">📸 Mídia/NPS</button>
+          <button class="dbx-tab" data-tab="alertas">⚠️ Alertas</button>
+        </div>
+        <div class="dbx-panel" id="pk-panel"></div>
+      `;
+      itemView.appendChild(wrap);
+      wrap.querySelector('#pk-edit-main')?.addEventListener('click', () => openItemEditor(topicData, 'item', idx));
+
+      const panelEl = wrap.querySelector('#pk-panel');
+      const tabs = wrap.querySelectorAll('.dbx-tab');
+      function setTab(key) {
+        tabs.forEach(b => b.classList.toggle('active', b.dataset.tab === key));
+        pkRenderPanel(key, P, panelEl, item, setTab);
+      }
+      tabs.forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+      setTab('visao');
     }
 
     function renderDubaiExplorerItemView(item, topicData, idx) {
@@ -17809,6 +18582,16 @@
       if (kind === 'item') {
         const upper = (it.name || '').toUpperCase();
         const isLegacyDubai = (currentTopic && currentTopic.key === 'PRODUTOS' && upper === 'DUBAI EXPLORER');
+        const isPressKitProduct = currentTopic && currentTopic.key === 'PRODUTOS' && (upper.includes('PRESS KIT') || upper.includes('PRESSKIT'));
+        if (it.format === 'presskit' || isPressKitProduct) {
+          if (it.format !== 'presskit') {
+            it.format = 'presskit';
+            try { saveData(); } catch (e) {}
+          }
+          renderPressKitItemView(it, topicData, idx);
+          switchTo('item');
+          return;
+        }
         if (it.format === 'pacotes' || isLegacyDubai) {
           renderDubaiExplorerItemView(it, topicData, idx);
           switchTo('item');
@@ -18559,6 +19342,14 @@
                 <div class="format-desc">Mesmo painel do Dubai Explorer · 12 abas (Produto · Custos · Operação · Equipe · Clientes · Vendas · Marketing · Análise · Retenção · Upsell · Conteúdo · Alertas)</div>
               </div>
             </label>
+            <label class="format-opt ${it.format === 'presskit' ? 'active' : ''}">
+              <input type="radio" name="m_format" value="presskit" ${it.format === 'presskit' ? 'checked' : ''}>
+              <div class="format-card presskit">
+                <div class="format-ico">🎁</div>
+                <div class="format-name">Press Kit <span class="format-badge">OPS</span></div>
+                <div class="format-desc">Operação completa · fotos dos itens · origem/destino · bases de entrega · estoque · fornecedores · mídia/NPS</div>
+              </div>
+            </label>
           </div>
           <label>CATEGORIA</label>
           <input type="text" id="m_cat" value="${escapeHtml(it.categoria || '')}" />
@@ -18884,7 +19675,7 @@
         }
 
         const formatRadio = modal.querySelector('input[name="m_format"]:checked');
-        const chosenFormat = (formatRadio && formatRadio.value === 'pacotes') ? 'pacotes' : 'default';
+        const chosenFormat = ['default', 'pacotes', 'presskit'].includes(formatRadio?.value) ? formatRadio.value : 'default';
         const updated = {
           id: it.id,
           name: modal.querySelector('#m_name').value.trim(),
@@ -18894,6 +19685,12 @@
           format:    chosenFormat,
           // Preservar dubai data quando já existir (mantém edits que o user fez no painel Pacotes)
           dubai:     it.dubai,
+          dubai_operational: it.dubai_operational,
+          dubai_goal: it.dubai_goal,
+          // Preservar Press Kit em todos os modos quando muda nome/banner/formato
+          presskit: it.presskit,
+          presskit_operational: it.presskit_operational,
+          presskit_goal: it.presskit_goal,
           descricao: modal.querySelector('#m_desc').value,
           inclui: readList('inclui'),
           publico: modal.querySelector('#m_publico').value.trim(),
