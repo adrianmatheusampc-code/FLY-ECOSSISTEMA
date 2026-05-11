@@ -1668,6 +1668,7 @@
   body.present-mode .pin-change-btn,
   body.present-mode .pin-lock-btn,
   body.present-mode .view-mode-toggle,
+  body.present-mode .print-btn,
   body.present-mode .sync-status,
   body.present-mode .delete-btn,
   body.present-mode .hub-edit,
@@ -2296,6 +2297,7 @@
     }
     /* Esconde toda a chrome */
     #brandLogo, .back-btn, .admin-toggle, .pin-change-btn, .pin-lock-btn,
+    .utility-dock,
     .view-mode-toggle, .present-toggle, .print-btn, .sync-status,
     .topic-admin-bar, .delete-btn, .hub-edit, .edit-banner-btn,
     .dbx-card-actions, .dbx-add-card, .dbx-add-row, .dbx-mini-btn,
@@ -2448,6 +2450,67 @@
     background: rgba(245,184,66,0.18);
     color: var(--gold-bright);
     border-color: rgba(245,184,66,0.6);
+  }
+
+  /* ================================================ */
+  /* UTILITY DOCK · navegação global inferior          */
+  /* ================================================ */
+  .utility-dock {
+    position: fixed;
+    left: 50%;
+    bottom: max(env(safe-area-inset-bottom), 16px);
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    max-width: min(calc(100vw - 360px), 760px);
+    padding: 8px;
+    border: 1px solid rgba(245,184,66,0.22);
+    border-radius: 999px;
+    background: rgba(0,0,0,0.58);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 16px 42px rgba(0,0,0,.42), 0 0 28px rgba(245,184,66,.08);
+  }
+  .utility-dock .print-btn,
+  .utility-dock .present-toggle,
+  .utility-dock .data-mode-toggle,
+  .utility-dock .turmas-btn,
+  .utility-dock .view-mode-toggle,
+  .utility-dock .changelog-btn {
+    position: static;
+    inset: auto;
+    width: auto;
+    min-width: 0;
+    height: 36px;
+    padding: 0 13px;
+    flex: 0 0 auto;
+    font-size: 10px;
+    letter-spacing: 1.8px;
+    border-radius: 999px;
+    box-shadow: none;
+  }
+  .utility-dock .changelog-btn {
+    width: 36px;
+    padding: 0;
+  }
+  .utility-dock .view-mode-toggle {
+    border-color: rgba(245,184,66,0.48);
+    color: #fff;
+  }
+  body.present-mode .utility-dock {
+    width: auto;
+    max-width: none;
+    padding: 0;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  body.present-mode .utility-dock .present-toggle {
+    background: rgba(0,0,0,.35);
+    backdrop-filter: blur(8px);
   }
 
   /* ================================================ */
@@ -8575,6 +8638,12 @@
   body.force-desktop {
     min-width: 1280px;
   }
+  body.force-mobile .back-btn {
+    left: max(12px, calc(50% - 195px));
+  }
+  body.force-mobile .admin-toggle {
+    right: max(12px, calc(50% - 195px));
+  }
   /* Esconder o botão de toggle quando NÃO houver escolha manual e estivermos no auto-fit */
   /* (mantemos sempre visível para fácil acesso) */
 
@@ -8616,6 +8685,44 @@
       padding: 7px 12px;
       font-size: 9px;
       letter-spacing: 1.5px;
+    }
+    .utility-dock {
+      left: 50%;
+      right: auto;
+      bottom: max(env(safe-area-inset-bottom), 10px);
+      width: min(394px, calc(100vw - 20px));
+      transform: translateX(-50%);
+      max-width: none;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 7px;
+      border-radius: 18px;
+    }
+    .utility-dock .print-btn,
+    .utility-dock .present-toggle,
+    .utility-dock .data-mode-toggle,
+    .utility-dock .turmas-btn,
+    .utility-dock .view-mode-toggle,
+    .utility-dock .changelog-btn {
+      height: 32px;
+      padding: 0 10px;
+      font-size: 9px;
+      letter-spacing: 1.2px;
+    }
+    .utility-dock .changelog-btn {
+      width: 32px;
+      padding: 0;
+    }
+    .utility-dock .pt-lbl {
+      display: none;
+    }
+    .sync-status {
+      bottom: 88px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 9px;
+      font-size: 9px;
     }
 
     /* Home / universe stage */
@@ -9207,24 +9314,26 @@
   <button class="admin-toggle" id="adminToggle">ADMIN</button>
   <button class="pin-change-btn" id="pinChangeBtn" title="Trocar PIN de acesso">🔑</button>
   <button class="pin-lock-btn" id="pinLockBtn" title="Bloquear agora">🔒</button>
-  <button class="view-mode-toggle" id="viewModeToggle" title="Alternar Desktop/Mobile" data-mode="desktop">
-    <span class="vm-ico">🖥</span><span class="vm-lbl">DESKTOP</span>
-  </button>
-  <button class="present-toggle" id="presentToggle" title="Modo Apresentação (Cmd/Ctrl+P)">
-    <span>🎬</span><span class="pt-lbl">APRESENTAÇÃO</span>
-  </button>
-  <button class="print-btn" id="printBtn" title="Exportar como PDF (Cmd/Ctrl+Shift+P)">
-    <span>📄</span><span class="prt-lbl">PDF</span>
-  </button>
-  <button class="changelog-btn" id="changelogBtn" title="Histórico de alterações">
-    <span>📜</span>
-  </button>
-  <button class="turmas-btn" id="turmasBtn" title="Turmas Operacionais (war room)">
-    <span>🛫</span><span class="tb-lbl">TURMAS</span>
-  </button>
-  <button class="data-mode-toggle" id="dataModeToggle" title="Modo de visualização (Demo/Normal/Meta)" data-mode="demo">
-    <span class="dm-ico">👁</span><span class="dm-lbl">DEMO</span>
-  </button>
+  <div class="utility-dock" aria-label="Navegação rápida">
+    <button class="print-btn" id="printBtn" title="Exportar como PDF (Cmd/Ctrl+Shift+P)">
+      <span>📄</span><span class="prt-lbl">PDF</span>
+    </button>
+    <button class="present-toggle" id="presentToggle" title="Modo Apresentação (Cmd/Ctrl+P)">
+      <span>🎬</span><span class="pt-lbl">APRESENTAÇÃO</span>
+    </button>
+    <button class="changelog-btn" id="changelogBtn" title="Histórico de alterações">
+      <span>📜</span>
+    </button>
+    <button class="data-mode-toggle" id="dataModeToggle" title="Modo de visualização (Demo/Normal/Meta)" data-mode="demo">
+      <span class="dm-ico">👁</span><span class="dm-lbl">DEMO</span>
+    </button>
+    <button class="turmas-btn" id="turmasBtn" title="Turmas Operacionais (war room)">
+      <span>🛫</span><span class="tb-lbl">TURMAS</span>
+    </button>
+    <button class="view-mode-toggle" id="viewModeToggle" title="Alternar Desktop/Mobile" data-mode="desktop">
+      <span class="vm-ico">🖥</span><span class="vm-lbl">DESKTOP</span>
+    </button>
+  </div>
   <div class="sync-status" id="syncStatus" data-status="idle" title="Status de sincronização com banco de dados">
     <span class="sync-dot"></span>
     <span class="sync-msg">Conectando…</span>
