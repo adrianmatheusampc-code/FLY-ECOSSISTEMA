@@ -9307,7 +9307,7 @@
     // Cada chave tem 3 variantes (demo / _operational / _goal) sincronizadas separadamente
     const SYNCED_KEYS = [
       ..._BASE_SYNCED_KEYS,
-      ..._BASE_SYNCED_KEYS.filter(k => k !== 'fly_7anos_data_v1' && k !== 'fly_changelog_v1' && k !== 'fly_design_overrides_v1' && k !== 'fly_customcities_v1' && k !== 'fly_turmas_v1')
+      ..._BASE_SYNCED_KEYS.filter(k => k !== 'fly_7anos_data_v1' && k !== 'fly_changelog_v1' && k !== 'fly_design_overrides_v1' && k !== 'fly_basesfly_custom_cities_v1' && k !== 'fly_turmas_v1')
         .flatMap(k => [k + '_operational', k + '_goal'])
     ];
 
