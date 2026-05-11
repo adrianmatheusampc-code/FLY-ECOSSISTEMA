@@ -1,0 +1,586 @@
+:root {
+  color-scheme: dark;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: #020306;
+}
+
+.fly-timeline-landing-mount,
+.fly-timeline-landing-mount * {
+  box-sizing: border-box;
+}
+
+.fly-timeline-landing-mount {
+  min-width: 320px;
+  background: #020306;
+}
+
+.fly-war-space-timeline {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, rgba(13, 10, 8, 0.72) 0%, rgba(2, 3, 6, 0.2) 26%, #020306 100%),
+    #020306;
+}
+
+.fly-war-space-timeline[data-mode="cinema"] {
+  width: min(100vw, 160vh);
+  height: min(100dvh, 56.25vw);
+  margin: auto;
+  aspect-ratio: 16 / 9;
+}
+
+.fly-war-space-timeline canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.fly-war-space-timeline[data-view="detail"] canvas {
+  cursor: grab;
+}
+
+.fly-war-space-timeline[data-view="detail"] canvas:active {
+  cursor: grabbing;
+}
+
+.fly-hud {
+  position: absolute;
+  z-index: 3;
+  top: clamp(16px, 3vw, 36px);
+  left: clamp(16px, 4vw, 54px);
+  display: grid;
+  gap: 8px;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 420ms ease, transform 420ms ease;
+}
+
+.fly-war-space-timeline[data-view="detail"] .fly-hud {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.fly-hud__eyebrow {
+  width: fit-content;
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 190, 104, 0.28);
+  background: rgba(10, 12, 18, 0.42);
+  color: rgba(255, 221, 173, 0.9);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  backdrop-filter: blur(14px);
+}
+
+.fly-hud__title {
+  max-width: min(520px, calc(100vw - 32px));
+  color: rgba(240, 247, 255, 0.96);
+  font-size: clamp(24px, 4.5vw, 56px);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-shadow: 0 0 28px rgba(82, 162, 255, 0.2);
+}
+
+.fly-hud__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: rgba(210, 226, 255, 0.76);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.fly-hud__meta span {
+  padding: 5px 8px;
+  border: 1px solid rgba(91, 160, 255, 0.2);
+  background: rgba(4, 9, 16, 0.38);
+  backdrop-filter: blur(14px);
+}
+
+.fly-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  background: #020306;
+  color: rgba(232, 242, 255, 0.86);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  transition: opacity 500ms ease, visibility 500ms ease;
+}
+
+.fly-loading::after {
+  content: "";
+  width: 160px;
+  height: 1px;
+  margin-top: 36px;
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(255, 169, 80, 0.95), transparent);
+  animation: fly-loading-pulse 1.2s ease-in-out infinite;
+}
+
+.fly-loading.is-hidden {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.fly-detail {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 520ms ease, visibility 520ms ease;
+}
+
+.fly-war-space-timeline[data-view="detail"] .fly-detail {
+  opacity: 1;
+  visibility: visible;
+}
+
+.fly-detail__back {
+  position: absolute;
+  top: clamp(18px, 3vw, 36px);
+  left: clamp(18px, 3.6vw, 42px);
+  min-width: 116px;
+  height: 32px;
+  border: 1px solid rgba(255, 184, 55, 0.62);
+  border-radius: 999px;
+  background: rgba(3, 4, 7, 0.42);
+  color: rgba(255, 211, 119, 0.96);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  pointer-events: auto;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 0 22px rgba(255, 174, 38, 0.14);
+}
+
+.fly-detail__back:hover,
+.fly-detail__back:focus-visible,
+.fly-topic:hover,
+.fly-topic:focus-visible {
+  background: rgba(255, 184, 55, 0.1);
+  color: #fff8dc;
+  border-color: rgba(255, 215, 119, 0.9);
+  text-shadow: 0 0 16px rgba(255, 190, 70, 0.88);
+}
+
+.fly-detail__center {
+  position: absolute;
+  top: clamp(48px, 8vh, 74px);
+  left: 50%;
+  width: min(560px, 82vw);
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.fly-detail__kicker,
+.fly-detail__period {
+  color: rgba(255, 211, 116, 0.92);
+  font-size: clamp(10px, 1vw, 12px);
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.fly-detail__title {
+  margin: 10px 0 5px;
+  color: rgba(255, 255, 248, 0.96);
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: 950;
+  line-height: 0.92;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 14px rgba(255, 255, 255, 0.22),
+    0 0 30px rgba(255, 178, 46, 0.24);
+}
+
+.fly-detail__period {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.fly-detail__orbit {
+  position: absolute;
+  top: 52%;
+  left: 50%;
+  width: min(56vw, 590px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) scale(0.9);
+  border: 2px solid rgba(255, 188, 48, 0.86);
+  border-radius: 50%;
+  box-shadow:
+    0 0 34px rgba(255, 178, 46, 0.5),
+    inset 0 0 46px rgba(255, 178, 46, 0.14);
+  pointer-events: none;
+  transition: transform 720ms cubic-bezier(0.2, 0.85, 0.2, 1), opacity 520ms ease;
+}
+
+.fly-war-space-timeline[data-view="detail"] .fly-detail__orbit {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.fly-detail__orbit::before,
+.fly-detail__orbit::after {
+  content: "";
+  position: absolute;
+  inset: -18px;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 190, 55, 0.2);
+  box-shadow: 0 0 60px rgba(255, 170, 40, 0.28);
+}
+
+.fly-detail__orbit::after {
+  inset: 18%;
+  border-color: rgba(255, 190, 55, 0.12);
+  background: radial-gradient(circle, transparent 34%, rgba(255, 170, 35, 0.08) 100%);
+}
+
+.fly-topic {
+  position: absolute;
+  z-index: 2;
+  max-width: 220px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: clamp(10px, 1.2vw, 14px);
+  font-weight: 950;
+  line-height: 1.08;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  pointer-events: auto;
+  white-space: normal;
+  text-align: center;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease,
+    text-shadow 180ms ease;
+}
+
+.fly-topic::before {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 205, 93, 0.94);
+  border-radius: 50%;
+  background: rgba(2, 3, 6, 0.86);
+  box-shadow: 0 0 18px rgba(255, 184, 50, 0.72);
+}
+
+.fly-topic:hover::before {
+  background: rgba(255, 204, 92, 0.96);
+}
+
+.topic--structure {
+  top: 22%;
+  right: 93%;
+  padding: 6px 12px 6px 0;
+  transform: translateY(-50%);
+  text-align: right;
+}
+
+.topic--structure::before {
+  right: -23px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.topic--products {
+  top: 25%;
+  left: 93%;
+  padding: 6px 0 6px 12px;
+  transform: translateY(-50%);
+  text-align: left;
+}
+
+.topic--products::before,
+.topic--sustainability::before,
+.topic--marketing::before {
+  left: -23px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.topic--sustainability {
+  top: 50%;
+  left: 101%;
+  padding: 6px 0 6px 12px;
+  transform: translateY(-50%);
+  text-align: left;
+}
+
+.topic--marketing {
+  top: 78%;
+  left: 93%;
+  padding: 6px 0 6px 12px;
+  transform: translateY(-50%);
+  text-align: left;
+}
+
+.topic--projects {
+  top: 105%;
+  left: 50%;
+  padding: 6px 12px;
+  transform: translateX(-50%);
+}
+
+.topic--projects::before {
+  left: 50%;
+  top: -24px;
+  transform: translateX(-50%);
+}
+
+.topic--partners {
+  top: 78%;
+  right: 93%;
+  padding: 6px 12px 6px 0;
+  transform: translateY(-50%);
+  text-align: right;
+}
+
+.topic--partners::before,
+.topic--network::before {
+  right: -23px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.topic--network {
+  top: 50%;
+  right: 101%;
+  padding: 6px 12px 6px 0;
+  transform: translateY(-50%);
+  text-align: right;
+}
+
+@keyframes fly-loading-pulse {
+  0%,
+  100% {
+    transform: scaleX(0.4);
+    opacity: 0.35;
+  }
+
+  50% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 720px) {
+  .fly-hud {
+    top: 14px;
+    left: 14px;
+    right: 14px;
+  }
+
+  .fly-hud__title {
+    max-width: 320px;
+    font-size: clamp(22px, 9vw, 40px);
+  }
+
+  .fly-hud__meta {
+    max-width: 280px;
+  }
+
+  .fly-detail__center {
+    top: 11%;
+  }
+
+  .fly-detail__orbit {
+    top: 53%;
+    width: min(76vw, 390px);
+  }
+
+  .fly-topic {
+    max-width: 130px;
+    font-size: 9px;
+  }
+
+  .topic--products,
+  .topic--marketing {
+    left: 88%;
+  }
+
+  .topic--sustainability {
+    left: 91%;
+  }
+
+  .topic--structure,
+  .topic--partners {
+    right: 88%;
+  }
+
+  .topic--network {
+    right: 91%;
+  }
+}
+
+.fly-timeline-landing-mount {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+#gridView.has-3d-landing {
+  padding: 0;
+  gap: 0;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+}
+
+#gridView.has-3d-landing .grid-row,
+#gridView.has-3d-landing .grid-hint {
+  display: none;
+}
+
+#gridView.has-3d-landing .grid-title {
+  position: absolute;
+  z-index: 5;
+  top: clamp(78px, 12vh, 126px);
+  left: 50%;
+  display: block;
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition: opacity 320ms ease, transform 320ms ease;
+}
+
+#gridView.has-3d-landing .grid-title .grid-main-logo {
+  height: clamp(30px, 4.2vmin, 52px);
+  margin-bottom: clamp(10px, 1.6vh, 16px);
+}
+
+#gridView.has-3d-landing .grid-title .title {
+  font-size: clamp(42px, 7vmin, 84px);
+}
+
+#gridView.has-3d-landing .grid-title .sub {
+  font-size: clamp(10px, 1.1vmin, 13px);
+}
+
+#gridView.has-3d-landing #flyTimelineLandingMount.is-3d-detail ~ .grid-title {
+  opacity: 0;
+  transform: translate(-50%, -10px);
+}
+
+#gridView.has-3d-landing .fly-war-space-timeline {
+  width: 100%;
+  height: 100%;
+}
+
+#gridView.has-3d-landing .fly-hud {
+  display: none;
+}
+
+.fly-timeline-zoom-controls,
+.fly-timeline-admin-controls {
+  position: absolute;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 184, 55, 0.42);
+  border-radius: 999px;
+  background: rgba(2, 3, 6, 0.58);
+  padding: 6px;
+  box-shadow: 0 0 22px rgba(255, 174, 38, 0.12);
+  backdrop-filter: blur(16px);
+  transition: opacity 240ms ease, transform 240ms ease;
+}
+
+.fly-timeline-zoom-controls {
+  left: clamp(18px, 2vw, 34px);
+  bottom: clamp(64px, 7vh, 86px);
+}
+
+.fly-timeline-admin-controls {
+  left: clamp(18px, 2vw, 34px);
+  bottom: clamp(112px, 12vh, 140px);
+  display: none;
+}
+
+body.admin-mode #gridView.has-3d-landing .fly-timeline-admin-controls {
+  display: flex;
+}
+
+.fly-timeline-zoom-controls button,
+.fly-timeline-admin-controls button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 184, 55, 0.44);
+  border-radius: 50%;
+  background: rgba(255, 184, 55, 0.08);
+  color: rgba(255, 227, 170, 0.96);
+  font-weight: 900;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.fly-timeline-zoom-controls button:hover,
+.fly-timeline-admin-controls button:hover {
+  background: rgba(255, 184, 55, 0.18);
+  color: #fff8dc;
+  border-color: rgba(255, 215, 119, 0.86);
+}
+
+.fly-timeline-control-value,
+.fly-timeline-admin-controls > span:first-child {
+  min-width: 46px;
+  color: rgba(255, 232, 185, 0.88);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+#flyTimelineLandingMount.is-3d-detail .fly-timeline-zoom-controls,
+#flyTimelineLandingMount.is-3d-detail .fly-timeline-admin-controls {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+}
+
+body.present-mode #gridView.has-3d-landing {
+  padding: 0;
+}
+
+@media (max-width: 720px) {
+  #gridView.has-3d-landing .grid-title {
+    top: 72px;
+  }
+
+  #gridView.has-3d-landing .grid-title .title {
+    font-size: clamp(36px, 13vw, 64px);
+  }
+
+  .fly-timeline-zoom-controls,
+  .fly-timeline-admin-controls {
+    left: 14px;
+  }
+}
