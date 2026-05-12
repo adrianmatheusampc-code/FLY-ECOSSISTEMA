@@ -3392,3 +3392,354 @@ body.admin-mode .war-map-toolbar small {
   display: block !important;
   margin-top: clamp(10px, 1.2vh, 14px) !important;
 }
+
+/* Plano WAR frame fix: keep controls around the map, never on top of it */
+#gridView.has-3d-landing .grid-title .grid-main-logo,
+#brandLogo img,
+.grid-fly-logo,
+.center-fly-logo {
+  width: auto !important;
+  max-width: min(180px, 44vw) !important;
+  object-fit: contain !important;
+  aspect-ratio: auto !important;
+}
+
+.war-plan-overlay {
+  overflow: hidden !important;
+}
+
+.war-plan-shell {
+  --war-shell-pad-x: clamp(14px, 1.7vw, 24px);
+  --war-shell-pad-y: clamp(10px, 1.35dvh, 18px);
+  --war-dashboard-h: clamp(104px, 13dvh, 136px);
+  --war-map-safe-h: calc(100dvh - clamp(292px, 34dvh, 378px));
+  display: grid !important;
+  grid-template-rows: auto auto minmax(0, 1fr) var(--war-dashboard-h) !important;
+  gap: clamp(8px, 1.1dvh, 12px) !important;
+  padding: var(--war-shell-pad-y) var(--war-shell-pad-x) !important;
+  overflow: hidden !important;
+}
+
+.war-plan-shell::before {
+  z-index: 1 !important;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.20) 20%, transparent 48%, rgba(0, 0, 0, 0.34) 78%, rgba(0, 0, 0, 0.86)),
+    radial-gradient(circle at 50% 0%, rgba(255, 205, 74, 0.14), transparent 30%) !important;
+}
+
+.war-plan-head {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  z-index: 8 !important;
+  width: min(900px, calc(100vw - 220px)) !important;
+  min-width: min(100%, 560px) !important;
+  justify-self: center !important;
+  transform: none !important;
+  display: block !important;
+  padding: 0 !important;
+}
+
+.war-plan-kicker {
+  font-size: clamp(8px, 0.74vw, 10px) !important;
+}
+
+.war-plan-head h1 {
+  margin: 3px 0 4px !important;
+  font-size: clamp(48px, 6.1vw, 88px) !important;
+  line-height: 0.86 !important;
+}
+
+.war-plan-head p {
+  font-size: clamp(9px, 0.82vw, 12px) !important;
+  letter-spacing: 0.06em !important;
+}
+
+.war-plan-close {
+  position: absolute !important;
+  top: var(--war-shell-pad-y) !important;
+  right: var(--war-shell-pad-x) !important;
+  z-index: 20 !important;
+}
+
+.war-plan-actions {
+  position: absolute !important;
+  top: calc(var(--war-shell-pad-y) + 48px) !important;
+  right: var(--war-shell-pad-x) !important;
+  bottom: auto !important;
+  z-index: 18 !important;
+}
+
+.war-plan-kpis {
+  display: none !important;
+}
+
+.war-plan-layers {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 7 !important;
+  width: min(1160px, calc(100vw - var(--war-shell-pad-x) - var(--war-shell-pad-x))) !important;
+  justify-self: center !important;
+  transform: none !important;
+  display: flex !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  margin: 0 !important;
+  padding: 5px !important;
+  overflow-x: auto !important;
+  border-radius: 999px !important;
+  background: rgba(0, 0, 0, 0.42) !important;
+}
+
+.war-plan-layers button {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-height: 30px !important;
+  padding: 7px 12px !important;
+  border-radius: 999px !important;
+  font-size: clamp(8px, 0.7vw, 10px) !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+}
+
+.war-plan-grid {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 5 !important;
+  min-height: 0 !important;
+  display: block !important;
+}
+
+.war-map-card {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  gap: clamp(8px, 1dvh, 12px) !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+
+.war-map-toolbar {
+  display: none !important;
+}
+
+.war-timeline {
+  order: 1 !important;
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 6 !important;
+  width: min(880px, 100%) !important;
+  justify-self: center !important;
+  transform: none !important;
+  display: grid !important;
+  gap: 5px !important;
+  padding: 8px 12px !important;
+  border-radius: 18px !important;
+  background: linear-gradient(180deg, rgba(18, 18, 21, 0.72), rgba(0, 0, 0, 0.46)) !important;
+}
+
+.war-year-row,
+.war-month-row {
+  justify-content: center !important;
+  overflow-x: auto !important;
+}
+
+.war-year-row button {
+  font-size: clamp(14px, 1.2vw, 20px) !important;
+  padding: 4px 9px !important;
+}
+
+.war-month-row button {
+  font-size: clamp(8px, 0.68vw, 10px) !important;
+  padding: 4px 7px !important;
+}
+
+.war-map-stage {
+  order: 2 !important;
+  position: relative !important;
+  inset: auto !important;
+  z-index: 4 !important;
+  align-self: center !important;
+  justify-self: center !important;
+  width: auto !important;
+  height: min(100%, var(--war-map-safe-h)) !important;
+  min-height: 0 !important;
+  max-width: calc(100vw - var(--war-shell-pad-x) - var(--war-shell-pad-x)) !important;
+  max-height: 100% !important;
+  aspect-ratio: 1600 / 862 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.war-map-stage::before {
+  display: none !important;
+}
+
+.war-map-stage::after {
+  inset: -8% !important;
+  z-index: 3 !important;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 54%, rgba(0, 0, 0, 0.30) 78%, rgba(0, 0, 0, 0.76)) !important;
+}
+
+.war-map-inner {
+  position: absolute !important;
+  inset: 0 !important;
+  top: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  transform: scale(var(--war-map-zoom, 1)) !important;
+  transform-origin: center !important;
+}
+
+.war-world-map {
+  object-fit: contain !important;
+}
+
+.war-dashboard {
+  position: relative !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 8 !important;
+  width: min(1180px, calc(100vw - var(--war-shell-pad-x) - var(--war-shell-pad-x))) !important;
+  height: var(--war-dashboard-h) !important;
+  max-height: var(--war-dashboard-h) !important;
+  justify-self: center !important;
+  transform: none !important;
+  grid-template-columns: minmax(120px, 150px) minmax(0, 1fr) !important;
+  gap: 9px !important;
+  padding: 9px !important;
+  overflow: hidden !important;
+}
+
+.war-dashboard-tabs {
+  gap: 5px !important;
+  overflow: auto !important;
+}
+
+.war-dashboard-tabs button {
+  min-height: 24px !important;
+  padding: 5px 8px !important;
+  font-size: 8px !important;
+}
+
+.war-dashboard-body {
+  overflow: auto !important;
+  gap: 7px !important;
+}
+
+.war-dashboard-cards {
+  grid-template-columns: repeat(5, minmax(116px, 1fr)) !important;
+  gap: 7px !important;
+}
+
+.war-dashboard-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+}
+
+.war-dashboard-card {
+  min-height: 42px !important;
+  padding: 7px 9px !important;
+}
+
+.war-dashboard-card strong {
+  font-size: 16px !important;
+}
+
+.war-dashboard-row {
+  min-height: 34px !important;
+  padding: 6px 9px !important;
+}
+
+.war-side-panel {
+  top: clamp(96px, 12dvh, 132px) !important;
+  right: var(--war-shell-pad-x) !important;
+  max-height: calc(100dvh - clamp(128px, 17dvh, 170px)) !important;
+}
+
+@media (max-width: 980px) {
+  .war-plan-shell {
+    --war-dashboard-h: clamp(96px, 16dvh, 126px);
+    --war-map-safe-h: calc(100dvh - 360px);
+    grid-template-rows: auto auto minmax(0, 1fr) var(--war-dashboard-h) !important;
+  }
+
+  .war-plan-head {
+    width: calc(100vw - 120px) !important;
+    min-width: 0 !important;
+  }
+
+  .war-plan-actions {
+    display: none !important;
+  }
+
+  .war-plan-layers {
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+  }
+
+  .war-dashboard {
+    grid-template-columns: 1fr !important;
+  }
+
+  .war-dashboard-tabs {
+    display: flex !important;
+  }
+
+  .war-side-panel {
+    top: auto !important;
+    bottom: calc(var(--war-dashboard-h) + 18px) !important;
+    width: min(390px, calc(100vw - 24px)) !important;
+    max-height: 46dvh !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .war-plan-shell {
+    --war-map-safe-h: calc(100dvh - 318px);
+  }
+
+  .war-plan-head {
+    width: calc(100vw - 86px) !important;
+  }
+
+  .war-plan-head h1 {
+    font-size: clamp(38px, 13vw, 60px) !important;
+  }
+
+  .war-plan-head p,
+  .war-plan-kicker {
+    display: none !important;
+  }
+
+  .war-timeline {
+    width: 100% !important;
+    padding: 7px !important;
+  }
+
+  .war-plan-layers {
+    justify-content: flex-start !important;
+  }
+
+  .war-dashboard {
+    display: none !important;
+  }
+
+  .war-plan-shell {
+    grid-template-rows: auto auto minmax(0, 1fr) !important;
+  }
+}

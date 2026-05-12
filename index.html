@@ -11679,6 +11679,7 @@
       let activeYear = 2027;
       let activeMonth = 7;
       let mapZoom = 1;
+      let warOpenGuard = false;
 
       const overlay = document.createElement('div');
       overlay.id = 'warPlanOverlay';
@@ -12337,11 +12338,19 @@
       function openWarPlan() {
         activeTerritoryId = null;
         activeConnectionId = null;
+        warOpenGuard = true;
         overlay.classList.remove('hidden');
         overlay.setAttribute('aria-hidden', 'false');
         document.body.classList.add('war-plan-open');
         window.__flyTimelineLanding?.setActive?.(false);
         renderWarPlan();
+        window.setTimeout(() => {
+          warOpenGuard = false;
+          activeTerritoryId = null;
+          activeConnectionId = null;
+          renderMap();
+          renderSidePanel();
+        }, 220);
       }
 
       function closeWarPlan() {
@@ -12393,6 +12402,10 @@
         }
       });
       overlay.addEventListener('click', (event) => {
+        if (warOpenGuard) {
+          event.stopPropagation();
+          return;
+        }
         if (event.target.closest('[data-war-close-panel]')) {
           activeTerritoryId = null;
           activeConnectionId = null;
