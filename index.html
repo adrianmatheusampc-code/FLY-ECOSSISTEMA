@@ -11580,6 +11580,72 @@
         { id: 'phase-2030', name: 'Meta 10.000 Pacotes', year: 2030, period: 'Jan — Dez', objective: 'Bater 10.000 pacotes e consolidar Fly como marca dos Emirados.', territories: ['dubai', 'abu-dhabi', 'europa', 'eua'], mainProjects: ['Disney Abu Dhabi', 'Fly Network Global'], mainProducts: ['Disney Abu Dhabi', 'Billionaire', 'Dubai Family'], expectedRevenue: 16800000, progress: 4, status: 'planned' }
       ];
 
+      function currentWarDataMode() {
+        try {
+          if (typeof getDataMode === 'function') return getDataMode();
+        } catch (error) {}
+        try {
+          const raw = localStorage.getItem('fly_data_mode');
+          return ['demo', 'operational', 'goal'].includes(raw) ? raw : 'demo';
+        } catch (error) {
+          return 'demo';
+        }
+      }
+
+      function warModeLabel() {
+        return ({ demo: 'DEMO', operational: 'NORMAL', goal: 'META' })[currentWarDataMode()] || 'DEMO';
+      }
+
+      function cloneWarSeed(value) {
+        return JSON.parse(JSON.stringify(value));
+      }
+
+      function createGoalWarTerritories() {
+        return cloneWarSeed(WAR_TERRITORY_SEED).map((territory) => {
+          const t = normalizeWarTerritory(territory);
+          const destination = t.role === 'destination';
+          const strategic = ['brasil', 'rio', 'dubai', 'sao-paulo'].includes(t.id);
+          const multiplier = destination ? 2.35 : strategic ? 1.85 : 1.55;
+          t.status = destination || strategic ? 'dominated' : 'active';
+          t.leadersQuantity = Math.max(t.leadersQuantity || 0, destination ? 6 : 3);
+          t.basesQuantity = Math.max(t.basesQuantity || 0, destination ? 4 : t.role === 'acquisition' ? 1 : 0);
+          t.hasBase = t.basesQuantity > 0;
+          t.metrics = Object.fromEntries(Object.entries(t.metrics).map(([key, value]) => {
+            if (key === 'cac') return [key, value ? Math.round(value * 0.82) : value];
+            if (key === 'ltv') return [key, value ? Math.round(value * 1.35) : value];
+            return [key, Math.round(Number(value || 0) * multiplier)];
+          }));
+          return t;
+        });
+      }
+
+      function createGoalWarConnections() {
+        return cloneWarSeed(WAR_CONNECTION_SEED).map((connection) => {
+          const flow = normalizeWarConnection(connection);
+          const multiplier = flow.status === 'active' ? 1.9 : 1.55;
+          flow.status = 'active';
+          flow.volume = Math.round(flow.volume * multiplier);
+          flow.revenue = Math.round(flow.revenue * multiplier);
+          flow.profit = Math.round(flow.profit * multiplier);
+          flow.conversion = Number((flow.conversion * 1.18).toFixed(1));
+          return flow;
+        });
+      }
+
+      function warTerritoryFallback() {
+        const mode = currentWarDataMode();
+        if (mode === 'operational') return [];
+        if (mode === 'goal') return createGoalWarTerritories();
+        return WAR_TERRITORY_SEED;
+      }
+
+      function warConnectionFallback() {
+        const mode = currentWarDataMode();
+        if (mode === 'operational') return [];
+        if (mode === 'goal') return createGoalWarConnections();
+        return WAR_CONNECTION_SEED;
+      }
+
       function warStorageKey(key) {
         try {
           return flyModeKey(key);
@@ -11591,10 +11657,11 @@
       function readWarJSON(key, fallback) {
         try {
           const raw = localStorage.getItem(warStorageKey(key));
-          return raw ? JSON.parse(raw) : fallback;
+          const seed = typeof fallback === 'function' ? fallback() : fallback;
+          return raw ? JSON.parse(raw) : seed;
         } catch (error) {
           console.warn('Plano WAR: cache invalido em', key, error);
-          return fallback;
+          return typeof fallback === 'function' ? fallback() : fallback;
         }
       }
 
@@ -11603,6 +11670,7 @@
       }
 
       function normalizeWarTerritory(territory) {
+        territory = territory || {};
         const metrics = territory.metrics || {};
         return {
           id: territory.id || ('war-' + Date.now()),
@@ -11664,12 +11732,19 @@
         };
       }
 
-      let territories = readWarJSON(WAR_TERRITORIES_KEY, WAR_TERRITORY_SEED).map(normalizeWarTerritory);
-      let flows = readWarJSON(WAR_CONNECTIONS_KEY, WAR_CONNECTION_SEED).map(normalizeWarConnection);
+      let territories = readWarJSON(WAR_TERRITORIES_KEY, warTerritoryFallback).map(normalizeWarTerritory);
+      let flows = readWarJSON(WAR_CONNECTIONS_KEY, warConnectionFallback).map(normalizeWarConnection);
 
       function saveWarData() {
         writeWarJSON(WAR_TERRITORIES_KEY, territories);
         writeWarJSON(WAR_CONNECTIONS_KEY, flows);
+      }
+
+      function reloadWarData() {
+        territories = readWarJSON(WAR_TERRITORIES_KEY, warTerritoryFallback).map(normalizeWarTerritory);
+        flows = readWarJSON(WAR_CONNECTIONS_KEY, warConnectionFallback).map(normalizeWarConnection);
+        if (activeTerritoryId && !territoryById(activeTerritoryId)) activeTerritoryId = null;
+        if (activeConnectionId && !connectionById(activeConnectionId)) activeConnectionId = null;
       }
 
       let activeLayer = 'overview';
@@ -11680,6 +11755,7 @@
       let activeMonth = 7;
       let mapZoom = 1;
       let warOpenGuard = false;
+      let warAddMode = false;
 
       const overlay = document.createElement('div');
       overlay.id = 'warPlanOverlay';
@@ -11695,12 +11771,26 @@
               <p>Mapa global de expansão, aquisição, destinos e domínio da Fly.</p>
             </div>
             <div class="war-plan-actions">
-              <button type="button" data-war-zoom="out">−</button>
-              <span id="warZoomLabel">100%</span>
-              <button type="button" data-war-zoom="in">+</button>
+              <button class="war-mode-toggle" type="button" data-war-mode-toggle title="Alternar Demo / Normal / Meta" onclick="event.stopPropagation();window.__flyWarCycleMode&&window.__flyWarCycleMode()">
+                <span>Modo</span><strong id="warModeLabel">DEMO</strong>
+              </button>
+              <div class="war-zoom-actions">
+                <button type="button" data-war-zoom="out">−</button>
+                <span id="warZoomLabel">100%</span>
+                <button type="button" data-war-zoom="in">+</button>
+              </div>
             </div>
           </header>
           <div class="war-plan-kpis" id="warPlanKpis"></div>
+          <div class="war-edit-bar">
+            <button class="war-edit-primary" type="button" data-war-add-toggle onclick="event.stopPropagation();window.__flyWarToggleAddMode&&window.__flyWarToggleAddMode()">
+              <span>+</span><strong>Adicionar ponto</strong><small>Clique no mapa para posicionar</small>
+            </button>
+            <button class="war-edit-danger" type="button" data-war-delete-selected disabled onclick="event.stopPropagation();window.__flyWarDeleteSelected&&window.__flyWarDeleteSelected()">
+              <span>×</span><strong>Excluir ponto</strong><small>Selecione uma cidade</small>
+            </button>
+            <div class="war-mode-readout" id="warModeReadout"></div>
+          </div>
           <div class="war-plan-layers" id="warPlanLayers"></div>
           <main class="war-plan-grid">
             <section class="war-map-card">
@@ -11734,6 +11824,8 @@
       const monthRow = overlay.querySelector('#warMonthRow');
       const timeLabel = overlay.querySelector('#warTimeLabel');
       const zoomLabel = overlay.querySelector('#warZoomLabel');
+      const modeLabel = overlay.querySelector('#warModeLabel');
+      const modeReadout = overlay.querySelector('#warModeReadout');
       const dashboardTabsEl = overlay.querySelector('#warDashboardTabs');
       const dashboardBodyEl = overlay.querySelector('#warDashboardBody');
       const editorOverlay = overlay.querySelector('#warEditorOverlay');
@@ -11747,6 +11839,7 @@
       }
 
       function getWarMapPoint(territory) {
+        if (!territory) return [WAR_MAP_WIDTH / 2, WAR_MAP_HEIGHT / 2];
         const [lat, lon] = territory.coordinates || [0, 0];
         const [dx, dy] = territory.mapOffset || [0, 0];
         return [
@@ -11841,6 +11934,39 @@
             <strong>${escapeHtml(value)}</strong>
           </div>
         `).join('');
+      }
+
+      function renderWarControls() {
+        const mode = currentWarDataMode();
+        const modeName = warModeLabel();
+        overlay.dataset.warDataMode = mode;
+        if (modeLabel) modeLabel.textContent = modeName;
+        if (modeReadout) {
+          modeReadout.innerHTML = `
+            <span>${escapeHtml(modeName)}</span>
+            <strong>${mode === 'demo' ? 'Simulação preenchida' : mode === 'operational' ? 'Operação real' : 'Plano-alvo 2032'}</strong>
+          `;
+        }
+        const isAdmin = document.body.classList.contains('admin-mode');
+        const addBtn = overlay.querySelector('[data-war-add-toggle]');
+        if (addBtn) {
+          addBtn.classList.toggle('active', warAddMode);
+          addBtn.classList.toggle('is-disabled', !isAdmin);
+          const title = addBtn.querySelector('strong');
+          const hint = addBtn.querySelector('small');
+          if (title) title.textContent = warAddMode ? 'Modo adicionar ON' : 'Adicionar ponto';
+          if (hint) hint.textContent = isAdmin
+            ? (warAddMode ? 'Agora clique no mapa' : 'Clique para ativar')
+            : 'Ative ADMIN para editar';
+        }
+        const deleteBtn = overlay.querySelector('[data-war-delete-selected]');
+        const canDelete = Boolean(activeTerritoryId && territoryById(activeTerritoryId));
+        if (deleteBtn) {
+          deleteBtn.disabled = !isAdmin || !canDelete;
+          deleteBtn.classList.toggle('is-disabled', !isAdmin || !canDelete);
+          const hint = deleteBtn.querySelector('small');
+          if (hint) hint.textContent = !isAdmin ? 'Ative ADMIN para editar' : canDelete ? territoryById(activeTerritoryId).name : 'Selecione uma cidade';
+        }
       }
 
       function renderLayers() {
@@ -12006,6 +12132,9 @@
           </div>
           <button class="war-open-internal" type="button" data-war-open-internal="${t.id}">
             Abrir painel interno
+          </button>
+          <button class="war-delete-territory" type="button" data-war-delete-territory="${t.id}" onclick="event.stopPropagation();window.__flyWarDeleteTerritory&&window.__flyWarDeleteTerritory('${escapeHtml(t.id)}')">
+            Excluir ponto do mapa
           </button>
         `;
       }
@@ -12254,6 +12383,22 @@
         editorOverlay.innerHTML = '';
       }
 
+      function removeWarTerritory(territoryId) {
+        const territory = territoryById(territoryId);
+        if (!territory) return;
+        if (!document.body.classList.contains('admin-mode')) {
+          alert('Ative ADMIN para excluir pontos do Plano WAR.');
+          return;
+        }
+        if (!confirm(`Excluir "${territory.name}" do Plano WAR?\n\nAs conexões ligadas a esse ponto também serão removidas.`)) return;
+        territories = territories.filter(item => item.id !== territoryId);
+        flows = flows.filter(flow => flow.fromTerritoryId !== territoryId && flow.toTerritoryId !== territoryId);
+        activeTerritoryId = null;
+        activeConnectionId = null;
+        saveWarData();
+        renderWarPlan();
+      }
+
       window.__flyWarSelectTerritory = (territoryId) => {
         if (overlay.classList.contains('hidden')) return;
         activeTerritoryId = territoryId;
@@ -12327,6 +12472,7 @@
       }
 
       function renderWarPlan() {
+        renderWarControls();
         renderKpis();
         renderLayers();
         renderTimeline();
@@ -12338,6 +12484,7 @@
       function openWarPlan() {
         activeTerritoryId = null;
         activeConnectionId = null;
+        reloadWarData();
         warOpenGuard = true;
         overlay.classList.remove('hidden');
         overlay.setAttribute('aria-hidden', 'false');
@@ -12359,6 +12506,7 @@
         document.body.classList.remove('war-plan-open');
         activeTerritoryId = null;
         activeConnectionId = null;
+        warAddMode = false;
         closeWarEditor();
         if (currentView === 'grid') window.__flyTimelineLanding?.setActive?.(true);
       }
@@ -12384,12 +12532,76 @@
         showTopic(topic);
       }
 
+      function cycleWarMode() {
+        const cur = currentWarDataMode();
+        const next = cur === 'demo' ? 'operational' : cur === 'operational' ? 'goal' : 'demo';
+        if (typeof setDataMode === 'function') setDataMode(next);
+        else {
+          localStorage.setItem('fly_data_mode', next);
+          window.dispatchEvent(new CustomEvent('fly:data-mode-change', { detail: { mode: next } }));
+        }
+      }
+
+      function toggleWarAddMode() {
+        if (!document.body.classList.contains('admin-mode')) {
+          warAddMode = false;
+          renderWarControls();
+          alert('Ative ADMIN para adicionar pontos no Plano WAR.');
+          return;
+        }
+        warAddMode = !warAddMode;
+        activeTerritoryId = null;
+        activeConnectionId = null;
+        renderWarPlan();
+      }
+
+      window.__flyWarCycleMode = () => {
+        if (overlay.classList.contains('hidden')) return;
+        cycleWarMode();
+      };
+      window.__flyWarToggleAddMode = () => {
+        if (overlay.classList.contains('hidden')) return;
+        toggleWarAddMode();
+      };
+      window.__flyWarDeleteSelected = () => {
+        if (overlay.classList.contains('hidden') || !activeTerritoryId) return;
+        removeWarTerritory(activeTerritoryId);
+      };
+      window.__flyWarDeleteTerritory = (territoryId) => {
+        if (overlay.classList.contains('hidden')) return;
+        removeWarTerritory(territoryId);
+      };
+
       trigger.addEventListener('click', (event) => {
         event.stopPropagation();
         openWarPlan();
       });
 
       closeBtn.addEventListener('click', closeWarPlan);
+      overlay.querySelector('[data-war-mode-toggle]')?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        cycleWarMode();
+      });
+      overlay.querySelector('[data-war-add-toggle]')?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        toggleWarAddMode();
+      });
+      overlay.querySelector('[data-war-delete-selected]')?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (activeTerritoryId) removeWarTerritory(activeTerritoryId);
+      });
+      try {
+        new MutationObserver(() => {
+          if (!overlay.classList.contains('hidden')) renderWarControls();
+        }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      } catch (error) {}
+      window.addEventListener('fly:data-mode-change', () => {
+        if (overlay.classList.contains('hidden')) return;
+        reloadWarData();
+        activeTerritoryId = null;
+        activeConnectionId = null;
+        renderWarPlan();
+      });
       editorOverlay.addEventListener('click', (event) => {
         if (event.target === editorOverlay || event.target.closest('[data-war-editor-close]')) {
           closeWarEditor();
@@ -12403,14 +12615,36 @@
       });
       overlay.addEventListener('click', (event) => {
         if (warOpenGuard) {
-          event.stopPropagation();
-          return;
+          const guardedMapClick = event.target.closest('.war-map-inner') || event.target.closest('[data-war-territory]') || event.target.closest('[data-war-connection]');
+          if (guardedMapClick) {
+            event.stopPropagation();
+            return;
+          }
+          warOpenGuard = false;
         }
         if (event.target.closest('[data-war-close-panel]')) {
           activeTerritoryId = null;
           activeConnectionId = null;
           renderMap();
           renderSidePanel();
+          renderWarControls();
+          return;
+        }
+        if (event.target.closest('[data-war-mode-toggle]')) {
+          cycleWarMode();
+          return;
+        }
+        if (event.target.closest('[data-war-add-toggle]')) {
+          toggleWarAddMode();
+          return;
+        }
+        const deleteTerritory = event.target.closest('[data-war-delete-territory]')?.dataset.warDeleteTerritory;
+        if (deleteTerritory) {
+          removeWarTerritory(deleteTerritory);
+          return;
+        }
+        if (event.target.closest('[data-war-delete-selected]')) {
+          if (activeTerritoryId) removeWarTerritory(activeTerritoryId);
           return;
         }
         const layer = event.target.closest('[data-war-layer]')?.dataset.warLayer;
@@ -12423,6 +12657,7 @@
         if (territory) {
           activeTerritoryId = territory;
           activeConnectionId = null;
+          warAddMode = false;
           renderWarPlan();
           return;
         }
@@ -12463,7 +12698,7 @@
           return;
         }
         const mapClick = event.target.closest('.war-map-inner');
-        if (mapClick && document.body.classList.contains('admin-mode') && !event.target.closest('.war-pin') && !event.target.closest('[data-war-connection]')) {
+        if (mapClick && warAddMode && document.body.classList.contains('admin-mode') && !event.target.closest('.war-pin') && !event.target.closest('[data-war-connection]')) {
           openWarEditor(getClickMapCoordinates(event));
           return;
         }
@@ -15818,6 +16053,9 @@
       if (!['demo', 'operational', 'goal'].includes(m)) return;
       localStorage.setItem(FLY_DATA_MODE_KEY, m);
       applyDataModeUI();
+      try {
+        window.dispatchEvent(new CustomEvent('fly:data-mode-change', { detail: { mode: m } }));
+      } catch (e) {}
       // Re-render hard: o modo afeta dados em todas as views (item/topic/etc)
       if (typeof currentView !== 'undefined') {
         if (currentView === 'item' && currentItemRef) {
