@@ -439,6 +439,793 @@
   }
 }
 
+/* Plano WAR premium HUD override */
+body.war-plan-open {
+  background: #000;
+}
+
+.war-plan-overlay {
+  padding: 0 !important;
+  overflow: hidden !important;
+  background:
+    radial-gradient(circle at 52% 6%, rgba(255, 207, 89, 0.15), transparent 20%),
+    radial-gradient(circle at 85% 48%, rgba(81, 174, 255, 0.12), transparent 24%),
+    radial-gradient(circle at 12% 64%, rgba(255, 207, 89, 0.08), transparent 25%),
+    #000 !important;
+}
+
+.war-plan-shell {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.war-plan-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.25) 22%, transparent 46%, rgba(0, 0, 0, 0.62) 78%, rgba(0, 0, 0, 0.96)),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.52), transparent 22%, transparent 78%, rgba(0, 0, 0, 0.5));
+}
+
+.war-plan-head {
+  position: absolute !important;
+  top: clamp(18px, 2.4vw, 32px) !important;
+  left: 50% !important;
+  z-index: 20 !important;
+  width: min(860px, 88vw) !important;
+  transform: translateX(-50%) !important;
+  display: block !important;
+  padding: 0 !important;
+  text-align: center !important;
+  pointer-events: none;
+}
+
+.war-plan-kicker {
+  display: block !important;
+  color: rgba(134, 207, 255, 0.78) !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.24em !important;
+  text-transform: uppercase !important;
+}
+
+.war-plan-head h1 {
+  margin: 5px 0 6px !important;
+  font-size: clamp(48px, 7.5vw, 104px) !important;
+  line-height: 0.82 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0 !important;
+  color: #ffd54f !important;
+  text-shadow:
+    0 0 18px rgba(255, 224, 126, 0.38),
+    0 0 48px rgba(255, 175, 35, 0.24),
+    0 16px 46px rgba(0, 0, 0, 0.72) !important;
+}
+
+.war-plan-head p {
+  display: block !important;
+  max-width: none !important;
+  margin: 0 auto !important;
+  color: rgba(238, 246, 255, 0.74) !important;
+  font-size: clamp(11px, 1.05vw, 15px) !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.war-plan-close {
+  position: absolute !important;
+  top: 22px !important;
+  right: 24px !important;
+  z-index: 35 !important;
+  height: 36px !important;
+  border: 1px solid rgba(255, 216, 102, 0.44) !important;
+  border-radius: 999px !important;
+  background: rgba(0, 0, 0, 0.42) !important;
+  color: rgba(255, 232, 170, 0.92) !important;
+  box-shadow: inset 0 0 20px rgba(255, 208, 80, 0.05), 0 14px 34px rgba(0, 0, 0, 0.34) !important;
+}
+
+.war-plan-actions {
+  position: absolute !important;
+  right: 24px !important;
+  bottom: 210px !important;
+  z-index: 25 !important;
+  margin: 0 !important;
+  border-color: rgba(255, 216, 102, 0.28) !important;
+  background: rgba(4, 8, 14, 0.56) !important;
+  backdrop-filter: blur(18px);
+}
+
+.war-plan-kpis {
+  display: none !important;
+}
+
+.war-plan-grid {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 5 !important;
+  display: block !important;
+}
+
+.war-map-card {
+  position: absolute !important;
+  inset: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.war-map-stage {
+  position: absolute !important;
+  inset: 0 !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  background: #000 !important;
+}
+
+.war-map-stage::before {
+  display: none !important;
+}
+
+.war-map-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.28) 72%, rgba(0, 0, 0, 0.72)),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 16%, transparent 70%, rgba(0, 0, 0, 0.94));
+}
+
+.war-map-inner {
+  top: 50% !important;
+  left: 50% !important;
+  inset: auto !important;
+  width: min(116vw, calc(104dvh * 1.856)) !important;
+  height: min(104dvh, calc(116vw / 1.856)) !important;
+  transform: translate(-50%, -48%) scale(var(--war-map-zoom, 1)) !important;
+  transform-origin: center !important;
+}
+
+.war-world-map {
+  opacity: 1 !important;
+  filter:
+    drop-shadow(0 0 8px rgba(255, 255, 255, 0.22))
+    drop-shadow(0 0 26px rgba(255, 204, 80, 0.10)) !important;
+}
+
+.war-world-svg {
+  z-index: 7 !important;
+}
+
+.war-pins {
+  z-index: 9 !important;
+  pointer-events: none;
+}
+
+.war-pin {
+  pointer-events: auto;
+}
+
+.war-gridline {
+  display: none !important;
+}
+
+.war-flow {
+  pointer-events: stroke;
+  cursor: pointer;
+  stroke-width: 3px !important;
+  opacity: 0.74 !important;
+  filter: drop-shadow(0 0 10px rgba(255, 207, 89, 0.42)) !important;
+}
+
+.war-flow.active {
+  opacity: 1 !important;
+  stroke-width: 4px !important;
+  filter: drop-shadow(0 0 14px rgba(255, 246, 184, 0.8)) !important;
+}
+
+.war-dubai-sun {
+  opacity: 0.82 !important;
+}
+
+.war-pin-core {
+  border-color: rgba(255, 255, 255, 0.82) !important;
+  box-shadow:
+    0 0 0 7px rgba(255, 201, 72, 0.12),
+    0 0 22px rgba(255, 201, 72, 0.78) !important;
+}
+
+.war-pin.role-destination .war-pin-core {
+  background: #e9f7ff !important;
+  box-shadow:
+    0 0 0 10px rgba(112, 201, 255, 0.14),
+    0 0 26px rgba(177, 231, 255, 0.95) !important;
+}
+
+.war-pin.role-base .war-pin-core {
+  background: #86f1b4 !important;
+  box-shadow:
+    0 0 0 9px rgba(111, 231, 160, 0.13),
+    0 0 24px rgba(111, 231, 160, 0.82) !important;
+}
+
+.war-pin.status-dominated .war-pin-core {
+  background: #fff2b5 !important;
+  border-color: #fff !important;
+}
+
+.war-pin-label {
+  border: 1px solid rgba(255, 216, 102, 0.26) !important;
+  border-radius: 999px !important;
+  background: rgba(0, 0, 0, 0.62) !important;
+  color: rgba(255, 240, 188, 0.94) !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(10px);
+}
+
+.war-pin:not(.active):not(:hover):not(:focus-visible) .war-pin-label {
+  opacity: 0 !important;
+}
+
+.war-map-toolbar {
+  position: absolute !important;
+  top: 150px !important;
+  right: 24px !important;
+  z-index: 18 !important;
+  display: flex !important;
+  gap: 12px !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 9px 12px !important;
+  border: 1px solid rgba(122, 204, 255, 0.2) !important;
+  border-radius: 999px !important;
+  background: rgba(0, 7, 14, 0.48) !important;
+  box-shadow: inset 0 0 22px rgba(80, 180, 255, 0.05), 0 12px 32px rgba(0, 0, 0, 0.34) !important;
+  backdrop-filter: blur(18px);
+}
+
+.war-map-toolbar span {
+  color: #dff4ff !important;
+  font-size: 11px !important;
+  letter-spacing: 0.12em !important;
+}
+
+.war-map-toolbar small {
+  display: none;
+  color: rgba(143, 221, 255, 0.76) !important;
+  font-size: 9px !important;
+}
+
+body.admin-mode .war-map-toolbar small {
+  display: block;
+}
+
+.war-timeline {
+  position: absolute !important;
+  top: clamp(126px, 16dvh, 164px) !important;
+  bottom: auto !important;
+  left: 50% !important;
+  z-index: 22 !important;
+  width: min(760px, 90vw) !important;
+  transform: translateX(-50%) !important;
+  display: grid !important;
+  gap: 8px !important;
+  padding: 10px 12px !important;
+  border: 1px solid rgba(255, 216, 102, 0.24) !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, rgba(14, 15, 18, 0.68), rgba(0, 0, 0, 0.38)) !important;
+  box-shadow:
+    inset 0 0 28px rgba(255, 211, 91, 0.05),
+    0 18px 46px rgba(0, 0, 0, 0.42) !important;
+  backdrop-filter: blur(20px);
+}
+
+.war-year-row,
+.war-month-row {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.war-month-row {
+  gap: 5px !important;
+}
+
+.war-year-row button,
+.war-month-row button {
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: rgba(255, 228, 148, 0.72) !important;
+  padding: 5px 10px !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+}
+
+.war-year-row button {
+  font-size: clamp(15px, 1.35vw, 21px) !important;
+}
+
+.war-month-row button {
+  color: rgba(222, 239, 255, 0.55) !important;
+  font-size: 10px !important;
+  padding: 4px 7px !important;
+}
+
+.war-year-row button.active,
+.war-month-row button.active {
+  border-color: rgba(255, 216, 102, 0.62) !important;
+  background: rgba(255, 207, 89, 0.14) !important;
+  color: #fff5cc !important;
+  box-shadow: 0 0 18px rgba(255, 207, 89, 0.18) !important;
+}
+
+.war-plan-layers {
+  position: absolute !important;
+  left: 22px !important;
+  top: 50% !important;
+  bottom: auto !important;
+  z-index: 24 !important;
+  width: 196px !important;
+  transform: translateY(-50%) !important;
+  display: grid !important;
+  justify-content: stretch !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 10px !important;
+  border: 1px solid rgba(255, 216, 102, 0.18) !important;
+  border-radius: 18px !important;
+  background: rgba(0, 0, 0, 0.34) !important;
+  box-shadow: inset 0 0 24px rgba(255, 209, 89, 0.04), 0 18px 44px rgba(0, 0, 0, 0.36) !important;
+  backdrop-filter: blur(18px);
+}
+
+.war-plan-layers button {
+  width: 100% !important;
+  border: 1px solid rgba(255, 216, 102, 0.12) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: rgba(238, 246, 255, 0.72) !important;
+  padding: 10px 11px !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  text-align: left !important;
+  text-shadow: none !important;
+  white-space: normal !important;
+}
+
+.war-plan-layers button.active,
+.war-plan-layers button:hover,
+.war-plan-layers button:focus-visible {
+  border-color: rgba(255, 216, 102, 0.62) !important;
+  background: linear-gradient(135deg, rgba(255, 207, 89, 0.20), rgba(255, 255, 255, 0.05)) !important;
+  color: #fff3c2 !important;
+  box-shadow: 0 0 18px rgba(255, 207, 89, 0.15) !important;
+}
+
+.war-dashboard {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 30;
+  width: min(1180px, calc(100vw - 52px));
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: 178px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 216, 102, 0.20);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(13, 16, 23, 0.82), rgba(0, 0, 0, 0.66)),
+    rgba(0, 0, 0, 0.58);
+  box-shadow:
+    inset 0 0 34px rgba(255, 209, 89, 0.04),
+    0 -18px 60px rgba(0, 0, 0, 0.52);
+  backdrop-filter: blur(22px);
+}
+
+.war-dashboard-tabs {
+  display: grid;
+  gap: 6px;
+}
+
+.war-dashboard-tabs button {
+  border: 1px solid rgba(122, 204, 255, 0.12);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(226, 239, 255, 0.66);
+  padding: 8px 9px;
+  font-size: 9px;
+  font-weight: 900;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.war-dashboard-tabs button.active,
+.war-dashboard-tabs button:hover,
+.war-dashboard-tabs button:focus-visible {
+  border-color: rgba(122, 204, 255, 0.42);
+  background: linear-gradient(135deg, rgba(122, 204, 255, 0.16), rgba(255, 216, 102, 0.07));
+  color: #e8f7ff;
+  outline: none;
+}
+
+.war-dashboard-body {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.war-dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.war-dashboard-card,
+.war-dashboard-row {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.war-dashboard-card {
+  min-height: 54px;
+  display: grid;
+  align-content: center;
+  padding: 9px 10px;
+}
+
+.war-dashboard-card span,
+.war-dashboard-row span {
+  color: rgba(216, 232, 250, 0.58);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.war-dashboard-card strong,
+.war-dashboard-row strong {
+  color: #ffe6a4;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.war-dashboard-card.tone-blue strong {
+  color: #b8e8ff;
+}
+
+.war-dashboard-card.tone-green strong {
+  color: #a8f4bf;
+}
+
+.war-dashboard-card.tone-amber strong {
+  color: #ffd37a;
+}
+
+.war-dashboard-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.war-dashboard-row {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+}
+
+.war-dashboard-row strong {
+  min-width: 0;
+  color: rgba(241, 247, 255, 0.88);
+  font-size: 11px;
+  text-align: right;
+}
+
+.war-side-panel {
+  position: absolute !important;
+  top: 118px !important;
+  right: 22px !important;
+  z-index: 34 !important;
+  width: min(408px, 31vw) !important;
+  max-height: calc(100dvh - 168px) !important;
+  overflow: auto !important;
+  padding: 18px !important;
+  border: 1px solid rgba(255, 216, 102, 0.24) !important;
+  border-radius: 20px !important;
+  background:
+    linear-gradient(180deg, rgba(14, 17, 24, 0.88), rgba(0, 0, 0, 0.72)),
+    rgba(0, 0, 0, 0.62) !important;
+  box-shadow:
+    inset 0 0 34px rgba(255, 207, 89, 0.05),
+    0 20px 70px rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(22px);
+}
+
+.war-side-panel--hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateX(26px) !important;
+}
+
+.war-side-panel h2 {
+  color: #fff0bd !important;
+  font-size: clamp(30px, 2.8vw, 48px) !important;
+  letter-spacing: 0 !important;
+}
+
+.war-side-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.war-side-metrics div,
+.war-tags span,
+.war-ai {
+  border-color: rgba(255, 216, 102, 0.12) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+}
+
+.war-editor-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(10px);
+}
+
+.war-editor-overlay.hidden {
+  display: none !important;
+}
+
+.war-editor-modal {
+  width: min(980px, calc(100vw - 32px));
+  max-height: min(760px, calc(100dvh - 36px));
+  overflow: auto;
+  border: 1px solid rgba(255, 216, 102, 0.28);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(13, 17, 25, 0.96), rgba(0, 0, 0, 0.92)),
+    #030506;
+  box-shadow: 0 24px 100px rgba(0, 0, 0, 0.7);
+  padding: 18px;
+}
+
+.war-editor-head,
+.war-editor-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+
+.war-editor-head span,
+.war-editor-foot span {
+  color: rgba(128, 209, 255, 0.74);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.war-editor-head h2 {
+  margin: 4px 0 0;
+  color: #ffe8a7;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 950;
+}
+
+.war-editor-head button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 216, 102, 0.42);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  color: #ffe8a7;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.war-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0 12px;
+}
+
+.war-editor-modal label {
+  display: grid;
+  gap: 6px;
+  color: rgba(222, 236, 250, 0.62);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.war-editor-modal input,
+.war-editor-modal select,
+.war-editor-modal textarea {
+  width: 100%;
+  border: 1px solid rgba(255, 216, 102, 0.16);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.38);
+  color: rgba(245, 249, 255, 0.94);
+  font: inherit;
+  font-size: 12px;
+  padding: 10px 11px;
+  outline: none;
+}
+
+.war-editor-modal textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.war-editor-wide {
+  margin-top: 10px;
+}
+
+.war-editor-foot {
+  margin-top: 14px;
+}
+
+.war-editor-foot button {
+  border: 1px solid rgba(255, 216, 102, 0.54);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 216, 102, 0.28), rgba(255, 255, 255, 0.06));
+  color: #fff3c4;
+  padding: 11px 18px;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+@media (max-width: 980px) {
+  .war-plan-layers {
+    top: auto !important;
+    left: 14px !important;
+    right: 14px !important;
+    bottom: 190px !important;
+    width: auto !important;
+    transform: none !important;
+    display: flex !important;
+    overflow-x: auto;
+  }
+
+  .war-plan-layers button {
+    flex: 0 0 auto;
+    width: auto !important;
+    white-space: nowrap !important;
+  }
+
+  .war-dashboard {
+    width: calc(100vw - 24px);
+    grid-template-columns: 1fr;
+    max-height: 178px;
+    overflow: auto;
+  }
+
+  .war-dashboard-tabs {
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .war-dashboard-tabs button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .war-dashboard-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .war-dashboard-list {
+    grid-template-columns: 1fr;
+  }
+
+  .war-side-panel {
+    top: auto !important;
+    right: 12px !important;
+    bottom: 210px !important;
+    width: min(390px, calc(100vw - 24px)) !important;
+    max-height: 44dvh !important;
+  }
+
+  .war-editor-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .war-plan-head {
+    top: 18px !important;
+  }
+
+  .war-plan-kicker,
+  .war-plan-head p {
+    display: none !important;
+  }
+
+  .war-plan-head h1 {
+    font-size: clamp(42px, 15vw, 68px) !important;
+  }
+
+  .war-timeline {
+    top: 86px !important;
+    width: calc(100vw - 24px) !important;
+    border-radius: 18px !important;
+  }
+
+  .war-year-row,
+  .war-month-row {
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+  }
+
+  .war-map-toolbar,
+  .war-plan-actions {
+    display: none !important;
+  }
+
+  .war-map-inner {
+    width: 180vw !important;
+    height: calc(180vw / 1.856) !important;
+  }
+
+  .war-dashboard {
+    bottom: 10px;
+    padding: 9px;
+    max-height: 172px;
+  }
+
+  .war-plan-layers {
+    bottom: 188px !important;
+  }
+
+  .war-editor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .fly-timeline-landing-mount {
   position: absolute;
   inset: 0;
@@ -473,7 +1260,79 @@
 
 #gridView.has-3d-landing .grid-title .grid-main-logo {
   height: clamp(30px, 4.2vmin, 52px);
-  margin-bottom: clamp(10px, 1.6vh, 16px);
+  margin-bottom: clamp(8px, 1.2vh, 12px);
+}
+
+#gridView.has-3d-landing .war-plan-trigger {
+  pointer-events: auto;
+}
+
+.war-plan-trigger {
+  position: relative;
+  display: inline-grid;
+  gap: 2px;
+  min-width: min(380px, 76vw);
+  margin: 0 auto clamp(10px, 1.5vh, 16px);
+  padding: clamp(10px, 1.5vh, 14px) clamp(18px, 2.8vw, 32px);
+  border: 1px solid rgba(255, 196, 80, 0.72);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 188, 55, 0.16), transparent),
+    rgba(6, 8, 12, 0.46);
+  color: #ffe6a8;
+  text-align: center;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow:
+    0 0 24px rgba(255, 184, 55, 0.22),
+    inset 0 0 22px rgba(255, 184, 55, 0.08);
+  backdrop-filter: blur(16px);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.war-plan-trigger::before,
+.war-plan-trigger::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: clamp(30px, 6vw, 84px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 200, 96, 0.84));
+}
+
+.war-plan-trigger::before {
+  right: calc(100% + 12px);
+}
+
+.war-plan-trigger::after {
+  left: calc(100% + 12px);
+  transform: rotate(180deg);
+}
+
+.war-plan-trigger:hover,
+.war-plan-trigger:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(255, 229, 150, 0.95);
+  box-shadow:
+    0 0 34px rgba(255, 184, 55, 0.34),
+    inset 0 0 28px rgba(255, 184, 55, 0.12);
+  outline: none;
+}
+
+.war-plan-trigger__scan {
+  color: rgba(148, 213, 255, 0.86);
+  font-size: clamp(8px, 0.9vmin, 11px);
+  font-weight: 900;
+}
+
+.war-plan-trigger__title {
+  color: #ffd36f;
+  font-size: clamp(22px, 4vmin, 44px);
+  font-weight: 950;
+  line-height: 0.96;
+  text-shadow:
+    0 0 12px rgba(255, 236, 185, 0.32),
+    0 0 28px rgba(255, 176, 46, 0.4);
 }
 
 #gridView.has-3d-landing .grid-title .title {
@@ -566,6 +1425,956 @@ body.admin-mode #gridView.has-3d-landing .fly-timeline-admin-controls {
   transform: translateY(8px);
 }
 
+body.war-plan-open {
+  overflow: hidden;
+}
+
+.war-plan-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: auto;
+  padding: clamp(14px, 2vw, 26px);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(53, 118, 180, 0.16), transparent 34%),
+    radial-gradient(circle at 80% 18%, rgba(255, 190, 72, 0.12), transparent 26%),
+    linear-gradient(180deg, rgba(2, 3, 6, 0.96), #020306 74%);
+  color: rgba(248, 251, 255, 0.94);
+}
+
+.war-plan-overlay.hidden {
+  display: none !important;
+}
+
+.war-plan-shell {
+  position: relative;
+  min-height: calc(100dvh - clamp(28px, 4vw, 52px));
+  max-width: 1640px;
+  margin: 0 auto;
+  border: 1px solid rgba(255, 190, 72, 0.28);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(9, 12, 18, 0.88), rgba(2, 3, 6, 0.96)),
+    #020306;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 26px 80px rgba(0, 0, 0, 0.52);
+  padding: clamp(18px, 2.4vw, 34px);
+}
+
+.war-plan-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  height: 34px;
+  border: 1px solid rgba(255, 190, 72, 0.52);
+  border-radius: 999px;
+  background: rgba(2, 3, 6, 0.68);
+  color: rgba(255, 226, 176, 0.96);
+  font-size: 10px;
+  font-weight: 900;
+  padding: 0 16px;
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+}
+
+.war-plan-close:hover,
+.war-plan-close:focus-visible,
+.war-plan-layers button:hover,
+.war-plan-layers button:focus-visible,
+.war-plan-actions button:hover,
+.war-plan-actions button:focus-visible,
+.war-year-row button:hover,
+.war-year-row button:focus-visible,
+.war-month-row button:hover,
+.war-month-row button:focus-visible,
+.war-open-internal:hover,
+.war-open-internal:focus-visible {
+  border-color: rgba(255, 229, 150, 0.92);
+  color: #fff8de;
+  background: rgba(255, 190, 72, 0.12);
+  outline: none;
+}
+
+.war-plan-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding-right: 96px;
+  align-items: flex-start;
+}
+
+.war-plan-kicker {
+  color: rgba(124, 203, 255, 0.86);
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.war-plan-head h1 {
+  margin: 8px 0 8px;
+  color: #ffd271;
+  font-size: clamp(42px, 7vw, 118px);
+  line-height: 0.86;
+  font-weight: 950;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 18px rgba(255, 231, 175, 0.26),
+    0 0 54px rgba(255, 176, 46, 0.34);
+}
+
+.war-plan-head p {
+  max-width: 780px;
+  margin: 0;
+  color: rgba(246, 248, 255, 0.82);
+  font-size: clamp(13px, 1.4vw, 19px);
+  line-height: 1.45;
+}
+
+.war-plan-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  border: 1px solid rgba(255, 190, 72, 0.28);
+  border-radius: 999px;
+  padding: 6px;
+  background: rgba(2, 3, 6, 0.54);
+}
+
+.war-plan-actions button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 190, 72, 0.42);
+  border-radius: 50%;
+  background: rgba(255, 190, 72, 0.08);
+  color: #ffe8b8;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.war-plan-actions span {
+  min-width: 46px;
+  text-align: center;
+  color: rgba(255, 232, 188, 0.9);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.war-plan-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin: clamp(18px, 2vw, 28px) 0 12px;
+}
+
+.war-kpi {
+  min-height: 74px;
+  border: 1px solid rgba(255, 190, 72, 0.2);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 190, 72, 0.08), rgba(255, 190, 72, 0.02)),
+    rgba(7, 10, 16, 0.7);
+  padding: 12px;
+  display: grid;
+  align-content: space-between;
+}
+
+.war-kpi span {
+  color: rgba(218, 230, 246, 0.66);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.war-kpi strong {
+  color: #ffe3a4;
+  font-size: clamp(18px, 2vw, 28px);
+  font-weight: 950;
+}
+
+.war-plan-layers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.war-plan-layers button,
+.war-year-row button,
+.war-month-row button {
+  border: 1px solid rgba(255, 190, 72, 0.24);
+  border-radius: 999px;
+  background: rgba(8, 11, 17, 0.74);
+  color: rgba(234, 242, 255, 0.74);
+  font-size: 10px;
+  font-weight: 900;
+  padding: 9px 12px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.war-plan-layers button.active,
+.war-year-row button.active,
+.war-month-row button.active {
+  border-color: rgba(255, 213, 116, 0.9);
+  background: linear-gradient(180deg, rgba(255, 190, 72, 0.24), rgba(255, 190, 72, 0.08));
+  color: #fff5d2;
+  box-shadow: 0 0 22px rgba(255, 184, 55, 0.18);
+}
+
+.war-plan-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 390px);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.war-map-card,
+.war-side-panel {
+  border: 1px solid rgba(255, 190, 72, 0.18);
+  border-radius: 8px;
+  background: rgba(4, 7, 12, 0.72);
+  box-shadow: inset 0 0 36px rgba(255, 190, 72, 0.03);
+}
+
+.war-map-card {
+  min-width: 0;
+  padding: 12px;
+}
+
+.war-map-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.war-map-toolbar span {
+  display: block;
+  color: #ffe4aa;
+  font-size: 13px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.war-map-toolbar small {
+  color: rgba(211, 225, 246, 0.58);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.war-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 12px;
+  color: rgba(229, 238, 252, 0.66);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+  border-radius: 50%;
+  vertical-align: -1px;
+  background: #d8a33f;
+  box-shadow: 0 0 10px rgba(255, 190, 72, 0.7);
+}
+
+.legend-dot.status-dominated {
+  background: #ffdb78;
+}
+
+.legend-dot.role-base {
+  background: #6ee8a4;
+  box-shadow: 0 0 10px rgba(110, 232, 164, 0.7);
+}
+
+.war-map-stage {
+  position: relative;
+  min-height: 520px;
+  overflow: hidden;
+  border: 1px solid rgba(117, 168, 220, 0.14);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 62% 42%, rgba(255, 190, 72, 0.12), transparent 22%),
+    radial-gradient(circle at 50% 50%, rgba(58, 130, 205, 0.16), transparent 46%),
+    linear-gradient(180deg, rgba(3, 7, 13, 0.94), rgba(0, 1, 3, 0.98));
+}
+
+.war-map-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle, #000 42%, transparent 78%);
+  pointer-events: none;
+}
+
+.war-map-inner {
+  position: absolute;
+  inset: 0;
+  transform: scale(var(--war-map-zoom, 1));
+  transform-origin: center;
+  transition: transform 220ms ease;
+}
+
+.war-world-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.war-continent {
+  fill: rgba(255, 190, 72, 0.03);
+  stroke: rgba(255, 204, 114, 0.4);
+  stroke-width: 2;
+  filter: url("#warSoftGlow");
+}
+
+.war-gridline {
+  stroke: rgba(117, 168, 220, 0.16);
+  stroke-width: 1;
+  stroke-dasharray: 7 10;
+}
+
+.war-dubai-sun {
+  mix-blend-mode: screen;
+  animation: war-sun-pulse 2.6s ease-in-out infinite;
+}
+
+.war-flow {
+  fill: none;
+  stroke: #ffc45e;
+  stroke-width: 2.3;
+  stroke-linecap: round;
+  stroke-dasharray: 8 12;
+  opacity: 0.82;
+  filter: drop-shadow(0 0 8px rgba(255, 196, 94, 0.5));
+  animation: war-flow-run 1.9s linear infinite;
+}
+
+.war-flow--clients,
+.war-flow--packages {
+  stroke: #77d7ff;
+  filter: drop-shadow(0 0 8px rgba(119, 215, 255, 0.46));
+}
+
+.war-flow--planned {
+  opacity: 0.45;
+}
+
+.war-pins {
+  position: absolute;
+  inset: 0;
+}
+
+.war-pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  z-index: 2;
+  transition: opacity 180ms ease, transform 180ms ease, filter 180ms ease;
+}
+
+.war-pin.is-future {
+  opacity: 0.5;
+}
+
+.war-pin.is-dimmed {
+  opacity: 0.24;
+  filter: grayscale(0.6);
+}
+
+.war-pin.active,
+.war-pin:hover,
+.war-pin:focus-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.1);
+  outline: none;
+}
+
+.war-pin-core {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 238, 174, 0.9);
+  border-radius: 50%;
+  background: rgba(255, 190, 72, 0.95);
+  box-shadow:
+    0 0 0 7px rgba(255, 190, 72, 0.12),
+    0 0 24px rgba(255, 190, 72, 0.72);
+}
+
+.war-pin.status-mapped .war-pin-core {
+  background: rgba(2, 3, 6, 0.9);
+  border-color: rgba(255, 190, 72, 0.42);
+  box-shadow: 0 0 16px rgba(255, 190, 72, 0.24);
+}
+
+.war-pin.status-planned .war-pin-core {
+  background: rgba(255, 190, 72, 0.44);
+}
+
+.war-pin.status-activating .war-pin-core {
+  animation: war-pin-pulse 1.8s ease-in-out infinite;
+}
+
+.war-pin.status-dominated .war-pin-core {
+  width: 28px;
+  height: 28px;
+  background: #ffd670;
+  box-shadow:
+    0 0 0 9px rgba(255, 214, 112, 0.12),
+    0 0 42px rgba(255, 214, 112, 0.94);
+}
+
+.war-pin.status-dominated::after {
+  content: "FLY";
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1px solid rgba(255, 222, 138, 0.8);
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: rgba(2, 3, 6, 0.82);
+  color: #ffe8a8;
+  font-size: 8px;
+  font-weight: 950;
+}
+
+.war-pin.role-destination .war-pin-core {
+  border-color: rgba(166, 226, 255, 0.96);
+}
+
+.war-pin.role-base .war-pin-core {
+  background: #6ee8a4;
+  border-color: rgba(207, 255, 224, 0.98);
+  box-shadow:
+    0 0 0 7px rgba(110, 232, 164, 0.14),
+    0 0 24px rgba(110, 232, 164, 0.68);
+}
+
+.war-pin-label {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  min-width: max-content;
+  transform: translateX(-50%);
+  padding: 4px 7px;
+  border: 1px solid rgba(255, 190, 72, 0.24);
+  border-radius: 999px;
+  background: rgba(2, 3, 6, 0.68);
+  color: rgba(240, 247, 255, 0.86);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  backdrop-filter: blur(12px);
+}
+
+.war-pin.active .war-pin-label,
+.war-pin:hover .war-pin-label,
+.war-pin:focus-visible .war-pin-label {
+  color: #fff7dc;
+  border-color: rgba(255, 217, 128, 0.76);
+}
+
+.war-timeline {
+  padding-top: 12px;
+}
+
+.war-year-row,
+.war-month-row {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.war-month-row button {
+  min-width: 54px;
+  padding: 8px 10px;
+}
+
+.war-side-panel {
+  min-width: 0;
+  padding: 16px;
+  align-self: stretch;
+}
+
+.war-side-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  color: rgba(220, 232, 250, 0.62);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.war-status-pill {
+  border: 1px solid rgba(255, 190, 72, 0.34);
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: #ffe8b2;
+  background: rgba(255, 190, 72, 0.08);
+}
+
+.war-status-pill.status-dominated {
+  color: #020306;
+  background: #ffd670;
+  border-color: #ffd670;
+}
+
+.war-side-panel h2 {
+  margin: 16px 0 8px;
+  color: #fff4d2;
+  font-size: clamp(26px, 3vw, 42px);
+  line-height: 0.96;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.war-side-panel p {
+  margin: 0;
+  color: rgba(227, 237, 250, 0.74);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.war-side-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.war-side-metrics div {
+  border: 1px solid rgba(117, 168, 220, 0.16);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(2, 3, 6, 0.46);
+}
+
+.war-side-metrics span,
+.war-side-section h3,
+.war-ai strong {
+  display: block;
+  color: rgba(144, 209, 255, 0.78);
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.war-side-metrics strong {
+  display: block;
+  margin-top: 4px;
+  color: #ffe0a1;
+  font-size: 19px;
+  font-weight: 950;
+}
+
+.war-side-section {
+  border-top: 1px solid rgba(255, 190, 72, 0.12);
+  padding-top: 13px;
+  margin-top: 13px;
+}
+
+.war-side-section h3 {
+  margin: 0 0 8px;
+}
+
+.war-side-section ul {
+  margin: 0;
+  padding-left: 17px;
+  color: rgba(231, 239, 250, 0.76);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.war-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.war-tags span {
+  border: 1px solid rgba(255, 190, 72, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 190, 72, 0.06);
+  color: rgba(246, 248, 255, 0.78);
+  font-size: 10px;
+  font-weight: 850;
+  padding: 6px 8px;
+}
+
+.war-ai {
+  margin-top: 14px;
+  border: 1px solid rgba(124, 203, 255, 0.24);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(71, 154, 232, 0.12), rgba(255, 190, 72, 0.04)),
+    rgba(2, 3, 6, 0.62);
+  padding: 12px;
+}
+
+.war-ai p {
+  margin-top: 6px;
+}
+
+.war-open-internal {
+  width: 100%;
+  margin-top: 14px;
+  height: 42px;
+  border: 1px solid rgba(255, 213, 116, 0.62);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 190, 72, 0.18), rgba(255, 190, 72, 0.07));
+  color: #fff3cc;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* Plano WAR full-screen map mode */
+.war-plan-overlay {
+  overflow: hidden;
+  padding: 0;
+  background: #000;
+}
+
+.war-plan-shell {
+  width: 100vw;
+  max-width: none;
+  min-height: 100dvh;
+  margin: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: #000;
+  padding: 0;
+  box-shadow: none;
+}
+
+.war-plan-close {
+  z-index: 30;
+  top: 22px;
+  right: 22px;
+}
+
+.war-plan-head {
+  position: absolute;
+  z-index: 18;
+  top: 22px;
+  left: 28px;
+  width: min(430px, 36vw);
+  display: block;
+  padding: 0;
+  pointer-events: none;
+}
+
+.war-plan-head h1 {
+  margin: 5px 0 5px;
+  font-size: clamp(38px, 5vw, 78px);
+  line-height: 0.82;
+}
+
+.war-plan-head p {
+  max-width: 360px;
+  font-size: clamp(11px, 1vw, 14px);
+}
+
+.war-plan-actions {
+  position: absolute;
+  z-index: 22;
+  right: 112px;
+  bottom: 22px;
+  margin: 0;
+}
+
+.war-plan-kpis {
+  position: absolute;
+  z-index: 17;
+  top: 110px;
+  left: 28px;
+  display: flex;
+  flex-direction: column;
+  width: 180px;
+  max-height: calc(100dvh - 250px);
+  gap: 7px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.war-kpi {
+  min-height: 52px;
+  border-color: rgba(255, 190, 72, 0.26);
+  background: rgba(2, 3, 6, 0.58);
+  padding: 9px 10px;
+  backdrop-filter: blur(14px);
+}
+
+.war-kpi span {
+  font-size: 8px;
+}
+
+.war-kpi strong {
+  font-size: 18px;
+}
+
+.war-plan-layers {
+  position: absolute;
+  z-index: 19;
+  top: 22px;
+  left: 50%;
+  width: min(720px, calc(100vw - 560px));
+  transform: translateX(-50%);
+  justify-content: center;
+  margin: 0;
+  pointer-events: auto;
+}
+
+.war-plan-layers button {
+  background: rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(14px);
+}
+
+.war-plan-grid {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.war-map-card {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.war-map-toolbar {
+  position: absolute;
+  z-index: 18;
+  right: 26px;
+  top: 86px;
+  width: min(360px, 28vw);
+  justify-content: flex-end;
+  text-align: right;
+  pointer-events: none;
+}
+
+.war-map-legend {
+  justify-content: flex-end;
+}
+
+.war-map-stage {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: #000;
+}
+
+.war-map-stage::before {
+  z-index: 3;
+  opacity: 0.32;
+  mask-image: linear-gradient(#000, #000);
+}
+
+.war-map-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 66% 37%, rgba(255, 195, 82, 0.14), transparent 17%),
+    radial-gradient(circle at 38% 58%, rgba(86, 178, 255, 0.12), transparent 22%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.46), transparent 18%, transparent 75%, rgba(0, 0, 0, 0.74));
+}
+
+.war-map-inner {
+  inset: 50% auto auto 50%;
+  width: max(100vw, calc(100dvh * 1.856));
+  height: max(100dvh, calc(100vw / 1.856));
+  aspect-ratio: 1600 / 862;
+  transform: translate(-50%, -50%) scale(var(--war-map-zoom, 1));
+}
+
+.war-world-map,
+.war-world-svg,
+.war-pins {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.war-world-map {
+  z-index: 1;
+  object-fit: fill;
+  opacity: 0.98;
+  filter:
+    drop-shadow(0 0 10px rgba(255, 255, 255, 0.18))
+    drop-shadow(0 0 26px rgba(255, 190, 72, 0.1));
+}
+
+.war-world-svg {
+  z-index: 5;
+}
+
+.war-pins {
+  z-index: 8;
+}
+
+.war-continent {
+  display: none;
+}
+
+.war-gridline {
+  opacity: 0.32;
+  stroke: rgba(118, 191, 255, 0.14);
+}
+
+.war-dubai-sun {
+  opacity: 0.86;
+}
+
+.war-flow {
+  stroke-width: 3.2;
+  opacity: 0.9;
+}
+
+.war-pin-core {
+  width: 16px;
+  height: 16px;
+}
+
+.war-pin.status-dominated .war-pin-core {
+  width: 26px;
+  height: 26px;
+}
+
+.war-pin-label {
+  background: rgba(0, 0, 0, 0.78);
+}
+
+.war-side-panel {
+  position: absolute;
+  z-index: 24;
+  top: 132px;
+  right: 22px;
+  width: min(360px, 31vw);
+  max-height: calc(100dvh - 238px);
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.66);
+  border-color: rgba(255, 190, 72, 0.28);
+  backdrop-filter: blur(18px);
+  transform: translateX(calc(100% - 46px));
+  transition: transform 220ms ease;
+}
+
+.war-side-panel:hover,
+.war-side-panel:focus-within {
+  transform: translateX(0);
+}
+
+.war-side-panel::before {
+  content: "INFO";
+  position: sticky;
+  top: 0;
+  float: left;
+  writing-mode: vertical-rl;
+  margin: -16px 12px 0 -16px;
+  padding: 12px 8px;
+  min-height: 88px;
+  display: grid;
+  place-items: center;
+  border-right: 1px solid rgba(255, 190, 72, 0.22);
+  background: rgba(255, 190, 72, 0.1);
+  color: #ffe2a0;
+  font-size: 9px;
+  font-weight: 950;
+}
+
+.war-timeline {
+  position: absolute;
+  z-index: 20;
+  left: 50%;
+  bottom: 18px;
+  width: min(920px, calc(100vw - 330px));
+  transform: translateX(-50%);
+  padding: 10px 12px 2px;
+  border: 1px solid rgba(255, 190, 72, 0.26);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(18px);
+}
+
+.war-year-row,
+.war-month-row {
+  justify-content: center;
+}
+
+.war-year-row button,
+.war-month-row button {
+  background: rgba(0, 0, 0, 0.58);
+}
+
+@keyframes war-flow-run {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+
+@keyframes war-pin-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 6px rgba(255, 190, 72, 0.1),
+      0 0 18px rgba(255, 190, 72, 0.58);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 12px rgba(255, 190, 72, 0.04),
+      0 0 34px rgba(255, 214, 112, 0.92);
+  }
+}
+
+@keyframes war-sun-pulse {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
 body.present-mode #gridView.has-3d-landing {
   padding: 0;
 }
@@ -579,8 +2388,1007 @@ body.present-mode #gridView.has-3d-landing {
     font-size: clamp(36px, 13vw, 64px);
   }
 
+  .war-plan-trigger {
+    min-width: min(300px, 82vw);
+    padding: 9px 14px;
+  }
+
+  .war-plan-trigger::before,
+  .war-plan-trigger::after {
+    display: none;
+  }
+
+  .war-plan-trigger__title {
+    font-size: clamp(20px, 7vw, 34px);
+  }
+
   .fly-timeline-zoom-controls,
   .fly-timeline-admin-controls {
     left: 14px;
   }
+
+  .war-plan-overlay {
+    padding: 8px;
+  }
+
+  .war-plan-shell {
+    min-height: calc(100dvh - 16px);
+    padding: 14px;
+  }
+
+  .war-plan-head {
+    display: block;
+    padding-right: 76px;
+  }
+
+  .war-plan-head h1 {
+    font-size: clamp(42px, 17vw, 76px);
+  }
+
+  .war-plan-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .war-plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .war-map-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .war-map-legend {
+    justify-content: flex-start;
+  }
+
+  .war-map-stage {
+    min-height: 430px;
+  }
+
+  .war-pin-label {
+    display: none;
+  }
+
+  .war-pin.active .war-pin-label,
+  .war-pin:hover .war-pin-label,
+  .war-pin:focus-visible .war-pin-label {
+    display: block;
+  }
+}
+
+@media (max-width: 720px) {
+  .war-plan-overlay {
+    padding: 0;
+  }
+
+  .war-plan-shell {
+    min-height: 100dvh;
+    padding: 0;
+  }
+
+  .war-plan-head {
+    top: 14px;
+    left: 14px;
+    width: min(270px, 62vw);
+    padding: 0;
+  }
+
+  .war-plan-head h1 {
+    font-size: clamp(34px, 13vw, 58px);
+  }
+
+  .war-plan-head p {
+    display: none;
+  }
+
+  .war-plan-close {
+    top: 14px;
+    right: 14px;
+  }
+
+  .war-plan-layers {
+    top: auto;
+    left: 10px;
+    right: 10px;
+    bottom: 116px;
+    width: auto;
+    transform: none;
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .war-plan-layers button {
+    white-space: nowrap;
+  }
+
+  .war-plan-kpis {
+    display: none;
+  }
+
+  .war-plan-grid {
+    display: block;
+  }
+
+  .war-map-toolbar {
+    top: 76px;
+    left: 14px;
+    right: auto;
+    width: min(280px, 72vw);
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .war-map-legend {
+    display: none;
+  }
+
+  .war-map-stage {
+    min-height: 0;
+  }
+
+  .war-side-panel {
+    top: auto;
+    right: 10px;
+    bottom: 176px;
+    width: min(330px, calc(100vw - 20px));
+    max-height: 36dvh;
+    transform: translateX(calc(100% - 42px));
+  }
+
+  .war-timeline {
+    left: 10px;
+    right: 10px;
+    bottom: 12px;
+    width: auto;
+    transform: none;
+  }
+
+  .war-plan-actions {
+    right: 12px;
+    bottom: 132px;
+  }
+}
+
+/* Plano WAR final: clean map, top years, bottom sections, click-to-open drawer */
+.war-plan-head {
+  top: 24px;
+  left: 50%;
+  width: min(720px, 92vw);
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.war-plan-kicker,
+.war-plan-head p,
+.war-map-toolbar,
+.war-plan-kpis {
+  display: none !important;
+}
+
+.war-plan-head h1 {
+  color: #ffd400;
+  font-size: clamp(56px, 8vw, 96px);
+  line-height: 0.8;
+  margin: 0;
+  text-shadow: 0 0 26px rgba(255, 196, 0, 0.42);
+}
+
+.war-plan-close {
+  top: 26px;
+  right: 28px;
+  border-color: rgba(255, 212, 0, 0.62);
+  color: #ffd400;
+}
+
+.war-plan-actions {
+  right: 28px;
+  bottom: 28px;
+  opacity: 0.72;
+}
+
+.war-timeline {
+  top: 106px;
+  bottom: auto;
+  left: 50%;
+  width: auto;
+  min-width: min(460px, 82vw);
+  transform: translateX(-50%);
+  border-color: rgba(255, 212, 0, 0.72);
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 7px 10px;
+}
+
+.war-year-row {
+  gap: 10px;
+  padding: 0;
+}
+
+.war-year-row button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #ffd400;
+  padding: 0;
+  font-size: clamp(18px, 2.2vw, 28px);
+  line-height: 1;
+  font-weight: 950;
+  text-shadow: 0 0 10px rgba(255, 212, 0, 0.24);
+}
+
+.war-year-row button.active,
+.war-year-row button:hover,
+.war-year-row button:focus-visible {
+  background: transparent;
+  box-shadow: none;
+  color: #fff2a8;
+}
+
+.war-month-row {
+  display: none;
+}
+
+.war-plan-layers {
+  top: auto;
+  bottom: 58px;
+  left: 50%;
+  width: min(1260px, 88vw);
+  transform: translateX(-50%);
+  justify-content: center;
+  gap: clamp(14px, 1.9vw, 28px);
+}
+
+.war-plan-layers button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #ffd400;
+  padding: 0;
+  font-size: clamp(16px, 1.7vw, 25px);
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-shadow: 0 0 12px rgba(255, 212, 0, 0.18);
+}
+
+.war-plan-layers button.active,
+.war-plan-layers button:hover,
+.war-plan-layers button:focus-visible {
+  background: transparent;
+  box-shadow: none;
+  color: #fff4a4;
+}
+
+.war-map-stage {
+  inset: 0;
+}
+
+.war-map-stage::before {
+  display: none;
+}
+
+.war-map-stage::after {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.78), transparent 16%, transparent 74%, rgba(0, 0, 0, 0.86));
+}
+
+.war-map-inner {
+  top: 50%;
+  left: 50%;
+  width: min(100vw, calc(100dvh * 1.856));
+  height: min(100dvh, calc(100vw / 1.856));
+  transform: translate(-50%, -50%) scale(var(--war-map-zoom, 1));
+}
+
+.war-world-map {
+  opacity: 1;
+  filter: drop-shadow(0 0 7px rgba(255, 255, 255, 0.18));
+}
+
+.war-gridline {
+  display: none;
+}
+
+.war-flow {
+  opacity: 0.46;
+  stroke-width: 2.2;
+}
+
+.war-dubai-sun {
+  opacity: 0.54;
+}
+
+.war-pin:not(.active):not(:hover):not(:focus-visible) .war-pin-label {
+  opacity: 0;
+  transform: translate(-50%, -3px);
+}
+
+.war-pin-label {
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.war-side-panel {
+  top: 132px;
+  right: 24px;
+  width: min(390px, 32vw);
+  max-height: calc(100dvh - 184px);
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
+}
+
+.war-side-panel::before {
+  display: none;
+}
+
+.war-side-panel--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(24px);
+}
+
+.war-side-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 212, 0, 0.54);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.68);
+  color: #ffd400;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.war-side-close:hover,
+.war-side-close:focus-visible {
+  border-color: rgba(255, 244, 164, 0.95);
+  color: #fff4a4;
+  outline: none;
+}
+
+@media (max-width: 720px) {
+  .war-plan-head {
+    top: 18px;
+    left: 50%;
+    width: min(360px, 82vw);
+    transform: translateX(-50%);
+  }
+
+  .war-plan-head h1 {
+    font-size: clamp(38px, 14vw, 62px);
+  }
+
+  .war-timeline {
+    top: 78px;
+    min-width: min(320px, 88vw);
+  }
+
+  .war-year-row button {
+    font-size: clamp(14px, 4.3vw, 19px);
+  }
+
+  .war-plan-layers {
+    bottom: 22px;
+    left: 14px;
+    right: 14px;
+    width: auto;
+    transform: none;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .war-plan-layers button {
+    font-size: 15px;
+  }
+
+  .war-plan-actions {
+    display: none;
+  }
+
+  .war-side-panel {
+    top: auto;
+    right: 12px;
+    bottom: 82px;
+    width: min(360px, calc(100vw - 24px));
+    max-height: 52dvh;
+  }
+}
+
+/* Plano WAR premium final pass: mapa dominante + HUD moderno */
+.war-plan-overlay {
+  padding: 0 !important;
+  overflow: hidden !important;
+  background:
+    radial-gradient(circle at 52% 6%, rgba(255, 207, 89, 0.15), transparent 20%),
+    radial-gradient(circle at 85% 48%, rgba(81, 174, 255, 0.12), transparent 24%),
+    #000 !important;
+}
+
+.war-plan-shell {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.war-plan-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.25) 22%, transparent 46%, rgba(0, 0, 0, 0.62) 78%, rgba(0, 0, 0, 0.96)),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.52), transparent 22%, transparent 78%, rgba(0, 0, 0, 0.5));
+}
+
+.war-plan-head {
+  position: absolute !important;
+  top: clamp(18px, 2.4vw, 32px) !important;
+  left: 50% !important;
+  z-index: 20 !important;
+  width: min(860px, 88vw) !important;
+  transform: translateX(-50%) !important;
+  display: block !important;
+  padding: 0 !important;
+  text-align: center !important;
+  pointer-events: none;
+}
+
+.war-plan-kicker {
+  display: block !important;
+  color: rgba(134, 207, 255, 0.78) !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.24em !important;
+  text-transform: uppercase !important;
+}
+
+.war-plan-head h1 {
+  margin: 5px 0 6px !important;
+  color: #ffd54f !important;
+  font-size: clamp(48px, 7.5vw, 104px) !important;
+  line-height: 0.82 !important;
+  letter-spacing: 0 !important;
+  text-shadow:
+    0 0 18px rgba(255, 224, 126, 0.38),
+    0 0 48px rgba(255, 175, 35, 0.24),
+    0 16px 46px rgba(0, 0, 0, 0.72) !important;
+}
+
+.war-plan-head p {
+  display: block !important;
+  max-width: none !important;
+  margin: 0 auto !important;
+  color: rgba(238, 246, 255, 0.74) !important;
+  font-size: clamp(11px, 1.05vw, 15px) !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.war-plan-close {
+  position: absolute !important;
+  top: 22px !important;
+  right: 24px !important;
+  z-index: 35 !important;
+  height: 36px !important;
+  border: 1px solid rgba(255, 216, 102, 0.44) !important;
+  border-radius: 999px !important;
+  background: rgba(0, 0, 0, 0.42) !important;
+  color: rgba(255, 232, 170, 0.92) !important;
+  box-shadow: inset 0 0 20px rgba(255, 208, 80, 0.05), 0 14px 34px rgba(0, 0, 0, 0.34) !important;
+}
+
+.war-plan-actions {
+  position: absolute !important;
+  right: 24px !important;
+  bottom: 210px !important;
+  z-index: 25 !important;
+  margin: 0 !important;
+  border-color: rgba(255, 216, 102, 0.28) !important;
+  background: rgba(4, 8, 14, 0.56) !important;
+  backdrop-filter: blur(18px);
+}
+
+.war-plan-kpis {
+  display: none !important;
+}
+
+.war-plan-grid,
+.war-map-card,
+.war-map-stage {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+}
+
+.war-map-card,
+.war-map-stage {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  background: #000 !important;
+  box-shadow: none !important;
+}
+
+.war-map-stage::before {
+  display: none !important;
+}
+
+.war-map-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.28) 72%, rgba(0, 0, 0, 0.72)),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 16%, transparent 70%, rgba(0, 0, 0, 0.94)) !important;
+}
+
+.war-map-inner {
+  position: absolute !important;
+  inset: auto !important;
+  top: 50% !important;
+  left: 50% !important;
+  width: min(116vw, calc(104dvh * 1.856)) !important;
+  height: min(104dvh, calc(116vw / 1.856)) !important;
+  transform: translate(-50%, -48%) scale(var(--war-map-zoom, 1)) !important;
+  transform-origin: center !important;
+}
+
+.war-world-map,
+.war-world-svg,
+.war-pins {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.war-world-map {
+  object-fit: fill !important;
+  opacity: 1 !important;
+  filter:
+    drop-shadow(0 0 8px rgba(255, 255, 255, 0.22))
+    drop-shadow(0 0 26px rgba(255, 204, 80, 0.10)) !important;
+}
+
+.war-world-svg {
+  z-index: 7 !important;
+}
+
+.war-pins {
+  z-index: 9 !important;
+  pointer-events: none !important;
+}
+
+.war-pin {
+  pointer-events: auto !important;
+}
+
+.war-gridline {
+  display: none !important;
+}
+
+.war-flow {
+  pointer-events: stroke !important;
+  cursor: pointer !important;
+  stroke-width: 3px !important;
+  opacity: 0.74 !important;
+  filter: drop-shadow(0 0 10px rgba(255, 207, 89, 0.42)) !important;
+}
+
+.war-flow.active {
+  opacity: 1 !important;
+  stroke-width: 4px !important;
+  filter: drop-shadow(0 0 14px rgba(255, 246, 184, 0.8)) !important;
+}
+
+.war-dubai-sun {
+  opacity: 0.82 !important;
+}
+
+.war-pin:not(.active):not(:hover):not(:focus-visible) .war-pin-label {
+  opacity: 0 !important;
+}
+
+.war-pin-label {
+  border: 1px solid rgba(255, 216, 102, 0.26) !important;
+  border-radius: 999px !important;
+  background: rgba(0, 0, 0, 0.62) !important;
+  color: rgba(255, 240, 188, 0.94) !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(10px);
+}
+
+.war-map-toolbar {
+  position: absolute !important;
+  top: 150px !important;
+  right: 24px !important;
+  z-index: 18 !important;
+  display: flex !important;
+  gap: 12px !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 9px 12px !important;
+  border: 1px solid rgba(122, 204, 255, 0.2) !important;
+  border-radius: 999px !important;
+  background: rgba(0, 7, 14, 0.48) !important;
+  backdrop-filter: blur(18px);
+}
+
+.war-map-toolbar small {
+  display: none;
+}
+
+body.admin-mode .war-map-toolbar small {
+  display: block;
+}
+
+.war-timeline {
+  position: absolute !important;
+  top: clamp(126px, 16dvh, 164px) !important;
+  bottom: auto !important;
+  left: 50% !important;
+  z-index: 22 !important;
+  width: min(760px, 90vw) !important;
+  min-width: 0 !important;
+  transform: translateX(-50%) !important;
+  display: grid !important;
+  gap: 8px !important;
+  padding: 10px 12px !important;
+  border: 1px solid rgba(255, 216, 102, 0.24) !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, rgba(14, 15, 18, 0.68), rgba(0, 0, 0, 0.38)) !important;
+  backdrop-filter: blur(20px);
+}
+
+.war-year-row,
+.war-month-row {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  padding: 0 !important;
+}
+
+.war-month-row {
+  gap: 5px !important;
+}
+
+.war-year-row button,
+.war-month-row button {
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: rgba(255, 228, 148, 0.72) !important;
+  padding: 5px 10px !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+}
+
+.war-year-row button {
+  font-size: clamp(15px, 1.35vw, 21px) !important;
+}
+
+.war-month-row button {
+  color: rgba(222, 239, 255, 0.55) !important;
+  font-size: 10px !important;
+  padding: 4px 7px !important;
+}
+
+.war-year-row button.active,
+.war-month-row button.active {
+  border-color: rgba(255, 216, 102, 0.62) !important;
+  background: rgba(255, 207, 89, 0.14) !important;
+  color: #fff5cc !important;
+  box-shadow: 0 0 18px rgba(255, 207, 89, 0.18) !important;
+}
+
+.war-plan-layers {
+  position: absolute !important;
+  left: 22px !important;
+  top: 50% !important;
+  bottom: auto !important;
+  z-index: 24 !important;
+  width: 196px !important;
+  transform: translateY(-50%) !important;
+  display: grid !important;
+  justify-content: stretch !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 10px !important;
+  border: 1px solid rgba(255, 216, 102, 0.18) !important;
+  border-radius: 18px !important;
+  background: rgba(0, 0, 0, 0.34) !important;
+  backdrop-filter: blur(18px);
+}
+
+.war-plan-layers button {
+  width: 100% !important;
+  border: 1px solid rgba(255, 216, 102, 0.12) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: rgba(238, 246, 255, 0.72) !important;
+  padding: 10px 11px !important;
+  font-size: 10px !important;
+  text-align: left !important;
+  text-shadow: none !important;
+  white-space: normal !important;
+}
+
+.war-plan-layers button.active,
+.war-plan-layers button:hover,
+.war-plan-layers button:focus-visible {
+  border-color: rgba(255, 216, 102, 0.62) !important;
+  background: linear-gradient(135deg, rgba(255, 207, 89, 0.20), rgba(255, 255, 255, 0.05)) !important;
+  color: #fff3c2 !important;
+}
+
+.war-dashboard {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 18px !important;
+  z-index: 30 !important;
+  width: min(1180px, calc(100vw - 52px)) !important;
+  transform: translateX(-50%) !important;
+  display: grid !important;
+  grid-template-columns: 178px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  padding: 12px !important;
+  border: 1px solid rgba(255, 216, 102, 0.20) !important;
+  border-radius: 20px !important;
+  background: linear-gradient(180deg, rgba(13, 16, 23, 0.82), rgba(0, 0, 0, 0.66)) !important;
+  box-shadow: inset 0 0 34px rgba(255, 209, 89, 0.04), 0 -18px 60px rgba(0, 0, 0, 0.52) !important;
+  backdrop-filter: blur(22px);
+}
+
+.war-dashboard-tabs {
+  display: grid !important;
+  gap: 6px !important;
+}
+
+.war-dashboard-tabs button {
+  border: 1px solid rgba(122, 204, 255, 0.12) !important;
+  border-radius: 11px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: rgba(226, 239, 255, 0.66) !important;
+  padding: 8px 9px !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  text-align: left !important;
+  text-transform: uppercase !important;
+  cursor: pointer;
+}
+
+.war-dashboard-tabs button.active,
+.war-dashboard-tabs button:hover,
+.war-dashboard-tabs button:focus-visible {
+  border-color: rgba(122, 204, 255, 0.42) !important;
+  background: linear-gradient(135deg, rgba(122, 204, 255, 0.16), rgba(255, 216, 102, 0.07)) !important;
+  color: #e8f7ff !important;
+}
+
+.war-dashboard-body {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 10px !important;
+  align-content: start !important;
+}
+
+.war-dashboard-cards {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.war-dashboard-list {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.war-dashboard-card,
+.war-dashboard-row {
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+}
+
+.war-dashboard-card {
+  min-height: 54px !important;
+  display: grid !important;
+  align-content: center !important;
+  padding: 9px 10px !important;
+}
+
+.war-dashboard-row {
+  display: flex !important;
+  min-height: 42px !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  padding: 8px 10px !important;
+}
+
+.war-dashboard-card strong {
+  color: #ffe6a4 !important;
+  font-size: 18px !important;
+}
+
+.war-side-panel {
+  position: absolute !important;
+  top: 118px !important;
+  right: 22px !important;
+  z-index: 34 !important;
+  width: min(408px, 31vw) !important;
+  max-height: calc(100dvh - 168px) !important;
+  overflow: auto !important;
+  padding: 18px !important;
+  border: 1px solid rgba(255, 216, 102, 0.24) !important;
+  border-radius: 20px !important;
+  background: linear-gradient(180deg, rgba(14, 17, 24, 0.88), rgba(0, 0, 0, 0.72)) !important;
+  box-shadow: inset 0 0 34px rgba(255, 207, 89, 0.05), 0 20px 70px rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(22px);
+}
+
+.war-side-panel--hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateX(26px) !important;
+}
+
+.war-editor-overlay {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 60 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 20px !important;
+  background: rgba(0, 0, 0, 0.62) !important;
+  backdrop-filter: blur(10px);
+}
+
+.war-editor-overlay.hidden {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .war-plan-layers {
+    top: auto !important;
+    left: 14px !important;
+    right: 14px !important;
+    bottom: 190px !important;
+    width: auto !important;
+    transform: none !important;
+    display: flex !important;
+    overflow-x: auto !important;
+  }
+
+  .war-plan-layers button {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    white-space: nowrap !important;
+  }
+
+  .war-dashboard {
+    width: calc(100vw - 24px) !important;
+    grid-template-columns: 1fr !important;
+    max-height: 178px !important;
+    overflow: auto !important;
+  }
+
+  .war-dashboard-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+  }
+
+  .war-dashboard-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .war-dashboard-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  .war-side-panel {
+    top: auto !important;
+    right: 12px !important;
+    bottom: 210px !important;
+    width: min(390px, calc(100vw - 24px)) !important;
+    max-height: 44dvh !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .war-plan-kicker,
+  .war-plan-head p,
+  .war-map-toolbar,
+  .war-plan-actions {
+    display: none !important;
+  }
+
+  .war-plan-head h1 {
+    font-size: clamp(42px, 15vw, 68px) !important;
+  }
+
+  .war-timeline {
+    top: 86px !important;
+    width: calc(100vw - 24px) !important;
+    border-radius: 18px !important;
+  }
+
+  .war-year-row,
+  .war-month-row {
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+  }
+
+  .war-map-inner {
+    width: 180vw !important;
+    height: calc(180vw / 1.856) !important;
+  }
+}
+
+/* Landing spacing fix: Plano WAR above title, earth timeline below */
+#gridView.has-3d-landing .grid-title {
+  top: clamp(54px, 7.4vh, 86px) !important;
+  width: min(760px, 92vw);
+}
+
+#gridView.has-3d-landing .grid-title .grid-main-logo {
+  height: clamp(28px, 3.6vmin, 44px) !important;
+  margin-bottom: clamp(10px, 1.4vh, 16px) !important;
+}
+
+#gridView.has-3d-landing .war-plan-trigger {
+  min-width: min(340px, 68vw) !important;
+  margin-bottom: clamp(20px, 3vh, 34px) !important;
+  padding: clamp(8px, 1.05vh, 11px) clamp(18px, 2vw, 28px) !important;
+}
+
+#gridView.has-3d-landing .war-plan-trigger__scan {
+  font-size: clamp(7px, 0.74vmin, 9px) !important;
+}
+
+#gridView.has-3d-landing .war-plan-trigger__title {
+  font-size: clamp(18px, 3.1vmin, 34px) !important;
+}
+
+#gridView.has-3d-landing .grid-title .title {
+  display: block !important;
+  margin-top: 0 !important;
+  font-size: clamp(48px, 7.6vmin, 88px) !important;
+  line-height: 0.84 !important;
+}
+
+#gridView.has-3d-landing .grid-title .sub {
+  display: block !important;
+  margin-top: clamp(10px, 1.2vh, 14px) !important;
 }

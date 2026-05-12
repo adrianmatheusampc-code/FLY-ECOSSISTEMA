@@ -377,7 +377,7 @@ export class FlyWarSpaceTimeline {
       { id: '2031', label: '2031', variant: 'standard', radius }
     ];
     const startX = -spacing * ((timelineItems.length - 1) / 2);
-    const baseY = this.isMobile ? -1.78 : -1.84;
+    const baseY = this.isMobile ? -2.18 : -2.32;
     const positions = timelineItems.map((_, index) => {
       const depth = index % 2 === 0 ? 0.14 : -0.28;
       return new THREE.Vector3(startX + index * spacing, baseY + (index % 2) * 0.08, depth);
@@ -944,7 +944,7 @@ async function loadEarthAssets(renderer) {
 }
 
 async function loadTextureFromCandidates(loader, candidates, config) {
-  for (const url of candidates) {
+  for (const url of expandAssetCandidates(candidates)) {
     try {
       if (!(await assetExists(url))) continue;
       const texture = await loader.loadAsync(url);
@@ -963,7 +963,7 @@ async function loadTextureFromCandidates(loader, candidates, config) {
 }
 
 async function loadModelFromCandidates(loader, candidates) {
-  for (const url of candidates) {
+  for (const url of expandAssetCandidates(candidates)) {
     try {
       if (!(await assetExists(url))) continue;
       const gltf = await loader.loadAsync(url);
@@ -976,8 +976,22 @@ async function loadModelFromCandidates(loader, candidates) {
   return null;
 }
 
+function expandAssetCandidates(candidates) {
+  const expanded = [];
+  candidates.forEach((url) => {
+    if (typeof url !== 'string') return;
+    if (url.startsWith('/')) {
+      expanded.push(url.slice(1));
+      expanded.push(`.${url}`);
+    }
+    expanded.push(url);
+  });
+  return [...new Set(expanded)];
+}
+
 async function assetExists(url) {
   if (typeof fetch !== 'function') return true;
+  if (typeof window !== 'undefined' && window.location?.protocol === 'file:') return true;
 
   try {
     const response = await fetch(url, { method: 'HEAD', cache: 'no-store' });
