@@ -2,6 +2,10 @@
   "name": "fly-ecossistema",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "build:timeline": "esbuild src/fly-timeline-landing-entry.js --bundle --format=iife --target=es2020 --minify --outfile=assets/fly-timeline-landing.bundle.js && node scripts/clean-generated-bundle.mjs",
+    "build:vercel": "npm run build:timeline && rm -rf dist && mkdir -p dist && cp index.html dist/index.html && cp -R assets dist/assets && cp -R public dist/public"
+  },
   "engines": {
     "node": ">=18"
   },

@@ -1,4 +1,5 @@
 .DS_Store
 .preview/
 node_modules/
+dist/
 *.log
