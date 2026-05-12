@@ -9486,6 +9486,297 @@
       font-size: 16px !important;
     }
   }
+
+  /* ============================================================ */
+  /* FINAL MOBILE POLISH — evita botões/card/dock se atropelando  */
+  /* ============================================================ */
+  @media (max-width: 700px) {
+    html,
+    body {
+      width: 100%;
+      min-width: 0;
+      overflow-x: hidden;
+    }
+
+    body.force-desktop {
+      min-width: 0;
+    }
+
+    body.force-mobile {
+      max-width: none;
+      width: 100%;
+      border: 0;
+      box-shadow: none;
+    }
+
+    .view {
+      width: 100%;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    .grid-view {
+      justify-content: flex-start;
+      padding: max(74px, calc(env(safe-area-inset-top) + 64px)) 12px max(112px, calc(env(safe-area-inset-bottom) + 108px));
+      gap: 18px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #gridView.has-3d-landing {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    #gridView.has-3d-landing .grid-title {
+      top: max(72px, calc(env(safe-area-inset-top) + 54px)) !important;
+      width: calc(100vw - 24px) !important;
+    }
+
+    #gridView.has-3d-landing .grid-title .grid-main-logo {
+      height: 30px !important;
+      max-width: 130px !important;
+      object-fit: contain !important;
+    }
+
+    #gridView.has-3d-landing .war-plan-trigger {
+      min-width: 0 !important;
+      width: min(300px, calc(100vw - 48px)) !important;
+      margin-bottom: 22px !important;
+    }
+
+    #gridView.has-3d-landing .grid-title .title {
+      font-size: 54px !important;
+      letter-spacing: 4px !important;
+      line-height: 0.9 !important;
+    }
+
+    #gridView.has-3d-landing .grid-title .sub {
+      font-size: 10px !important;
+      letter-spacing: 2px !important;
+    }
+
+    #brandLogo {
+      max-width: calc(100vw - 126px);
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    #brandLogo img {
+      width: auto !important;
+      height: 22px !important;
+      max-width: 86px !important;
+      object-fit: contain !important;
+    }
+
+    #brandLogo .eco-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .back-btn,
+    .admin-toggle,
+    .pin-change-btn,
+    .pin-lock-btn {
+      min-height: 34px;
+      max-width: calc(50vw - 18px);
+      white-space: nowrap;
+    }
+
+    .utility-dock {
+      left: 10px;
+      right: 10px;
+      bottom: max(10px, env(safe-area-inset-bottom));
+      width: auto;
+      max-width: none;
+      transform: none;
+      justify-content: flex-start;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      border-radius: 18px;
+    }
+
+    .utility-dock::-webkit-scrollbar {
+      display: none;
+    }
+
+    .utility-dock .print-btn,
+    .utility-dock .present-toggle,
+    .utility-dock .data-mode-toggle,
+    .utility-dock .turmas-btn,
+    .utility-dock .view-mode-toggle,
+    .utility-dock .changelog-btn {
+      flex: 0 0 auto;
+      height: 32px;
+      padding: 0 10px;
+      font-size: 9px;
+      letter-spacing: 1px;
+    }
+
+    .sync-status {
+      left: 12px;
+      bottom: max(60px, calc(env(safe-area-inset-bottom) + 58px));
+      transform: none;
+      max-width: calc(100vw - 24px);
+    }
+
+    #gridView.has-3d-landing .fly-timeline-zoom-controls {
+      left: 50% !important;
+      bottom: max(82px, calc(env(safe-area-inset-bottom) + 80px)) !important;
+      transform: translateX(-50%) !important;
+      max-width: calc(100vw - 24px);
+    }
+
+    #gridView.has-3d-landing .fly-timeline-admin-controls {
+      left: 50% !important;
+      bottom: max(134px, calc(env(safe-area-inset-bottom) + 132px)) !important;
+      transform: translateX(-50%) !important;
+      max-width: calc(100vw - 24px);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    #gridView.has-3d-landing .fly-timeline-admin-controls::-webkit-scrollbar {
+      display: none;
+    }
+
+    body:has(#gridView.has-3d-landing) .sync-status {
+      left: 50%;
+      bottom: max(138px, calc(env(safe-area-inset-bottom) + 136px));
+      transform: translateX(-50%);
+    }
+
+    .topic-view,
+    .item-view {
+      width: 100%;
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: max(76px, calc(env(safe-area-inset-top) + 64px)) 12px max(112px, calc(env(safe-area-inset-bottom) + 108px)) !important;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .item-view:has(.hier-module),
+    .item-view:has(.bases-module),
+    .item-view:has(.dbx-module) {
+      padding: max(76px, calc(env(safe-area-inset-top) + 64px)) 0 max(112px, calc(env(safe-area-inset-bottom) + 108px)) !important;
+    }
+
+    .topic-banner,
+    .pacotes-section,
+    .hub,
+    .dbx-module,
+    .bases-module,
+    .hier-module {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .topic-banner {
+      min-height: 0;
+      padding: 18px 14px;
+      gap: 12px;
+      border-radius: 16px;
+    }
+
+    .topic-banner h1 {
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      font-size: 26px !important;
+      letter-spacing: 2px !important;
+      line-height: 1;
+    }
+
+    .items-grid,
+    .pacotes-grid {
+      grid-template-columns: repeat(auto-fit, minmax(142px, 1fr)) !important;
+      gap: 10px !important;
+    }
+
+    .item-card,
+    .pacote-card {
+      min-width: 0;
+      border-radius: 12px;
+    }
+
+    .item-card .name,
+    .pacote-card .name {
+      overflow-wrap: anywhere;
+      letter-spacing: 1px !important;
+    }
+
+    .topic-toolbar,
+    .topic-admin-bar,
+    .modal-tabs,
+    .dbx-tabs,
+    .hier-tabs,
+    .bases-timeline-controls,
+    .year-switcher {
+      flex-wrap: nowrap !important;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .topic-toolbar::-webkit-scrollbar,
+    .topic-admin-bar::-webkit-scrollbar,
+    .modal-tabs::-webkit-scrollbar,
+    .dbx-tabs::-webkit-scrollbar,
+    .hier-tabs::-webkit-scrollbar,
+    .bases-timeline-controls::-webkit-scrollbar,
+    .year-switcher::-webkit-scrollbar {
+      display: none;
+    }
+
+    .hub-banner {
+      height: 210px;
+      border-radius: 16px;
+    }
+
+    .hub-tabs,
+    .dbx-panel-head,
+    .dbx-block-head,
+    .modal-actions {
+      flex-wrap: wrap;
+    }
+
+    .modal-overlay {
+      padding: 10px;
+    }
+
+    .modal {
+      width: calc(100vw - 20px);
+      max-width: calc(100vw - 20px);
+      max-height: calc(100dvh - 22px);
+    }
+  }
+
+  @media (max-width: 390px) {
+    #gridView.has-3d-landing .grid-title .title {
+      font-size: 44px !important;
+    }
+
+    .items-grid,
+    .pacotes-grid {
+      grid-template-columns: 1fr !important;
+    }
+
+    .utility-dock .pt-lbl,
+    .utility-dock .tb-lbl,
+    .utility-dock .vm-lbl,
+    .utility-dock .dm-lbl,
+    .utility-dock .prt-lbl {
+      display: none;
+    }
+  }
 </style>
 </head>
 <body>
