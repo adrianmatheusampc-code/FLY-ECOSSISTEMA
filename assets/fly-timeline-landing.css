@@ -1104,6 +1104,38 @@ body.admin-mode .war-map-toolbar small {
 }
 
 /* ============================================================
+   FLY MODE SWITCH · DEMO / NORMAL / META (compartilhado)
+   ============================================================ */
+.fly-mode-switch {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 216, 102, 0.35);
+  background: rgba(0, 0, 0, 0.55);
+  gap: 2px;
+}
+.fly-mode-switch button {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+}
+.fly-mode-switch button:hover { color: #fff3c4; }
+.fly-mode-switch button.active {
+  background: linear-gradient(135deg, rgba(255,216,102,.42), rgba(255,216,102,.16));
+  color: #fff8d8;
+  box-shadow: 0 0 12px rgba(255, 216, 102, 0.3);
+}
+.dash-head-mode { align-self: center; margin-right: 14px; }
+
+/* ============================================================
    DASHBOARD SUPREMO · cockpit operacional
    ============================================================ */
 .dash-trigger {
@@ -1321,6 +1353,89 @@ body.james-active .dash-trigger { display: none; }
 }
 .dash-next-item strong { color: #fff; }
 .dash-next-item span { color: rgba(255,255,255,.75); }
+
+/* Linha de cabeçalho de seção (título + mode switch + botão de ação) */
+.dash-section-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.dash-h {
+  font-size: clamp(20px, 2.4vw, 28px);
+  letter-spacing: 4px;
+  font-weight: 900;
+  color: #ffd770;
+  margin-right: auto;
+}
+
+/* Tabela de vendas */
+.dash-sales-table { display: flex; flex-direction: column; gap: 4px; }
+.dash-sales-head, .dash-sales-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1.2fr 0.9fr 1fr 1fr 0.9fr;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+.dash-sales-head {
+  background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.5);
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  font-weight: 700;
+}
+.dash-sales-row {
+  background: rgba(0,0,0,.3);
+  border: 1px solid rgba(255,255,255,.06);
+  color: rgba(255,255,255,.85);
+}
+.dash-sales-row strong { display: block; color: #fff; font-size: 12px; font-weight: 700; }
+.dash-sales-row small { display: block; color: rgba(255,255,255,.4); font-size: 10px; }
+.dash-sales-row .amt { color: #ffd770; font-weight: 800; }
+.dash-sales-row .status {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  text-align: center;
+}
+.status.status-sinal_pago     { background: rgba(255,216,102,.18); color: #ffd770; border: 1px solid rgba(255,216,102,.4); }
+.status.status-contrato_enviado { background: rgba(120,200,255,.15); color: #cce8ff; border: 1px solid rgba(120,200,255,.45); }
+.status.status-docs_pendentes { background: rgba(255,170,80,.15); color: #ffd1a3; border: 1px solid rgba(255,170,80,.4); }
+.status.status-confirmado     { background: rgba(80,200,140,.16); color: #b6f5d3; border: 1px solid rgba(80,200,140,.45); }
+.status.status-cancelado      { background: rgba(255,80,60,.12); color: #ffaa92; border: 1px solid rgba(255,80,60,.4); }
+
+/* Fly Cup */
+.flycup-mods {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+.flycup-mod {
+  background: rgba(0,0,0,.4);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.flycup-mod > header strong { font-size: 14px; color: #ffd770; letter-spacing: 1.4px; }
+.flycup-mod-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+.flycup-mod-stats span {
+  font-size: 11px;
+  color: rgba(255,255,255,.55);
+}
+.flycup-mod-stats b { color: #fff; font-weight: 800; }
 
 /* ============================================================
    COFRE AEY · caixa privado dos sócios (área oculta)
@@ -1766,6 +1881,82 @@ body.james-active .james-trigger { display: none; }
   margin-top: 14px;
 }
 .james-stage__hint strong { color: #ffd770; }
+
+.james-stage__settings {
+  position: fixed;
+  right: 26px;
+  bottom: 96px;
+  z-index: 1025;
+  width: min(380px, 92vw);
+  background: linear-gradient(180deg, rgba(18,12,4,.97), rgba(4,3,2,.99));
+  border: 1px solid rgba(255, 216, 102, .45);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 18px 64px rgba(0,0,0,.6), 0 0 30px rgba(255,216,102,.15);
+}
+.james-stage__settings.hidden { display: none; }
+.james-stage__settings h3 {
+  font-size: 13px;
+  letter-spacing: 2.4px;
+  color: #ffd770;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.james-stage__settings p {
+  font-size: 12px;
+  color: rgba(255,255,255,.65);
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+.james-stage__settings label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 10px;
+  letter-spacing: 1.6px;
+  color: rgba(255,255,255,.55);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.james-stage__settings input {
+  padding: 9px 11px;
+  background: rgba(0,0,0,.55);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 12px;
+}
+.james-stage__settings-actions {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+.james-stage__settings-actions button {
+  flex: 1;
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,216,102,.6);
+  background: linear-gradient(135deg, rgba(255,216,102,.32), rgba(255,216,102,.08));
+  color: #fff8d8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-family: inherit;
+}
+.james-stage__settings-actions button.ghost {
+  background: transparent;
+  border-color: rgba(255,255,255,.15);
+  color: rgba(255,255,255,.6);
+}
+.james-stage__settings small {
+  display: block;
+  font-size: 10px;
+  color: rgba(255,255,255,.4);
+  line-height: 1.5;
+}
 
 .war-editor-layers {
   border: 1px solid rgba(255, 216, 102, 0.34);

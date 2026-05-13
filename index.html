@@ -21767,7 +21767,19 @@
       </div>
       <div class="james-stage__controls">
         <button type="button" class="james-stage__btn" id="jamesPushBtn">🎙 Falar</button>
+        <button type="button" class="james-stage__btn ghost" id="jamesSettingsBtn" title="Configurar IA (Nível 2)">⚙ IA</button>
         <button type="button" class="james-stage__btn ghost" id="jamesCloseBtn">Fechar</button>
+      </div>
+      <div class="james-stage__settings hidden" id="jamesSettings">
+        <h3>🧠 Conectar IA externa (Nível 2)</h3>
+        <p>Sem API key, JAMES usa lookup local (Nível 1) + execução direta (Nível 3 — Cofre/Vendas). Com key, JAMES interpreta linguagem natural com OpenAI ou Anthropic.</p>
+        <label>OpenAI API Key <input type="password" id="jamesOpenaiKey" placeholder="sk-..."></label>
+        <label>Anthropic API Key <input type="password" id="jamesAnthropicKey" placeholder="sk-ant-..."></label>
+        <div class="james-stage__settings-actions">
+          <button type="button" id="jamesSaveKeys">Salvar</button>
+          <button type="button" class="ghost" id="jamesCloseSettings">Fechar</button>
+        </div>
+        <small>Keys ficam só no seu navegador (localStorage). Não saem do seu dispositivo.</small>
       </div>
       <small class="james-stage__hint">Diga <strong>"James"</strong> a qualquer momento para chamá-lo.</small>
     </div>
@@ -21983,23 +21995,35 @@
     const shell   = document.getElementById('cofreAeyShell');
     if (!overlay || !shell) return;
 
-    const PIN_KEY     = 'aey_cofre_pin';
+    const PIN_KEY     = 'aey_cofre_pin'; // PIN é global, não depende do modo
     const PARTNERS    = ['Victor', 'Emanuel', 'Alen/Adrian', 'Juninho'];
     const WALLETS_KEY = 'aey_cofre_wallets_v1';
     const MOVES_KEY   = 'aey_cofre_movements_v1';
     const AUDIT_KEY   = 'aey_cofre_audit_v1';
     const JFC_KEY     = 'aey_cofre_jarvis_v1';
 
+    // Resolução mode-aware (compartilha helper global flyModeKey quando disponível)
+    function modeKey(base) {
+      return (typeof window.flyModeKey === 'function') ? window.flyModeKey(base) : base;
+    }
+    function getMode() {
+      return localStorage.getItem('fly_data_mode') || 'demo';
+    }
+    function setMode(m) {
+      localStorage.setItem('fly_data_mode', m);
+      try { window.dispatchEvent(new CustomEvent('fly:data-mode-change', { detail: { mode: m } })); } catch {}
+    }
+
     function read(key, fb) { try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fb; } catch { return fb; } }
     function write(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
-    function readWallets()  { return read(WALLETS_KEY, []); }
-    function readMoves()    { return read(MOVES_KEY, []); }
-    function readAudit()    { return read(AUDIT_KEY, []); }
-    function readJarvis()   { return read(JFC_KEY, []); }
+    function readWallets()  { return read(modeKey(WALLETS_KEY), []); }
+    function readMoves()    { return read(modeKey(MOVES_KEY), []); }
+    function readAudit()    { return read(modeKey(AUDIT_KEY), []); }
+    function readJarvis()   { return read(modeKey(JFC_KEY), []); }
     function logAudit(action, payload) {
       const arr = readAudit();
       arr.push({ id: 'log-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), action, payload, ts: Date.now() });
-      write(AUDIT_KEY, arr);
+      write(modeKey(AUDIT_KEY), arr);
     }
     function fmtMoney(n) { return 'R$ ' + (Number(n) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2, minimumFractionDigits: 2 }); }
     function fmt(n) { return Number(n || 0).toLocaleString('pt-BR'); }
@@ -22105,6 +22129,8 @@
 
     /* --------- Layout principal autenticado --------- */
     function renderLayout(active, contentHTML) {
+      const m = getMode();
+      const modeLabels = { demo: 'DEMO', operational: 'NORMAL', goal: 'META' };
       shell.innerHTML = `
         <header class="cofre-head">
           <div>
@@ -22113,6 +22139,11 @@
             <small>Caixa privado dos sócios</small>
           </div>
           <div class="cofre-head__actions">
+            <div class="fly-mode-switch" role="tablist" aria-label="Modo de dados">
+              <button type="button" data-mode="demo" class="${m==='demo'?'active':''}">DEMO</button>
+              <button type="button" data-mode="operational" class="${m==='operational'?'active':''}">NORMAL</button>
+              <button type="button" data-mode="goal" class="${m==='goal'?'active':''}">META</button>
+            </div>
             <button type="button" id="cofreLogoutBtn" class="ghost">Bloquear</button>
             <button type="button" id="cofreCloseBtn">Fechar</button>
           </div>
@@ -22128,6 +22159,18 @@
         <main class="cofre-body">${contentHTML}</main>`;
       document.getElementById('cofreCloseBtn').addEventListener('click', closeCofre);
       document.getElementById('cofreLogoutBtn').addEventListener('click', () => renderLock('unlock'));
+      shell.querySelectorAll('.fly-mode-switch [data-mode]').forEach(b => {
+        b.addEventListener('click', () => {
+          setMode(b.dataset.mode);
+          // re-renderiza a mesma aba
+          if (active === 'dashboard') renderDashboard();
+          else if (active === 'partners') renderPartners();
+          else if (active === 'wallets')  renderWallets();
+          else if (active === 'moves')    renderMoves();
+          else if (active === 'jarvis')   renderJarvis();
+          else if (active === 'audit')    renderAudit();
+        });
+      });
       shell.querySelectorAll('[data-cofre-tab]').forEach(b => {
         b.addEventListener('click', () => {
           const tab = b.dataset.cofreTab;
@@ -22299,7 +22342,7 @@
           if (!confirm('Remover essa conta/cartão? As movimentações continuam, mas o saldo dela some.')) return;
           const id = b.dataset.cofreDelWallet;
           const arr = readWallets().filter(w => w.id !== id);
-          write(WALLETS_KEY, arr);
+          write(modeKey(WALLETS_KEY), arr);
           logAudit('wallet_delete', { id });
           renderWallets();
         });
@@ -22357,7 +22400,7 @@
         };
         const arr = readWallets();
         arr.push(w);
-        write(WALLETS_KEY, arr);
+        write(modeKey(WALLETS_KEY), arr);
         logAudit('wallet_create', { id: w.id, name: w.name });
         modal.remove();
         renderWallets();
@@ -22401,7 +22444,7 @@
           const old = JSON.parse(JSON.stringify(arr[idx]));
           arr[idx].status = 'reversed';
           arr[idx].updated_at = Date.now();
-          write(MOVES_KEY, arr);
+          write(modeKey(MOVES_KEY), arr);
           logAudit('move_reverse', { id, before: old.status, after: 'reversed' });
           renderMoves();
         });
@@ -22609,14 +22652,14 @@
             </div>`;
           document.getElementById('cofreJarvisConfirm').addEventListener('click', () => {
             p.status = 'confirmed';
-            const arr = readMoves(); arr.push(p); write(MOVES_KEY, arr);
-            const jhist = readJarvis(); jhist.push({ raw: cmd, parsed: p, confirmation_status: 'confirmed', created_at: Date.now() }); write(JFC_KEY, jhist);
+            const arr = readMoves(); arr.push(p); write(modeKey(MOVES_KEY), arr);
+            const jhist = readJarvis(); jhist.push({ raw: cmd, parsed: p, confirmation_status: 'confirmed', created_at: Date.now() }); write(modeKey(JFC_KEY), jhist);
             logAudit('jarvis_create_move', { id: p.id });
             out.innerHTML = `<div class="cofre-jarvis-reply ok">✓ Registrado. Caixa do ${p.partner||'sistema'} atualizado. Caixa geral AEY atualizado.</div>`;
             form.cmd.value = '';
           });
           document.getElementById('cofreJarvisDiscard').addEventListener('click', () => {
-            const jhist = readJarvis(); jhist.push({ raw: cmd, parsed: p, confirmation_status: 'discarded', created_at: Date.now() }); write(JFC_KEY, jhist);
+            const jhist = readJarvis(); jhist.push({ raw: cmd, parsed: p, confirmation_status: 'discarded', created_at: Date.now() }); write(modeKey(JFC_KEY), jhist);
             out.innerHTML = '<div class="cofre-jarvis-reply">Descartado.</div>';
           });
         }
@@ -22654,6 +22697,24 @@
       document.body.classList.remove('cofre-open');
     }
     window.__flyCofreOpen = openCofre;
+    // API pública para JAMES executar comandos financeiros (Nível 3)
+    window.__flyCofreAPI = {
+      mode: getMode,
+      setMode,
+      partners: () => PARTNERS.slice(),
+      partnerBalance,
+      totalCaixaFly,
+      totalCaixaPersonal,
+      invoiceOpenTotal: () => readWallets().filter(w => w.type === 'credit_card').reduce((s,w) => s + invoiceOpen(w.id), 0),
+      recordMovement(payload) {
+        const p = Object.assign({ id: uid('m'), status: 'confirmed', created_at: Date.now(), created_by: 'james' }, payload);
+        const arr = readMoves(); arr.push(p); write(modeKey(MOVES_KEY), arr);
+        logAudit('james_create_move', { id: p.id, type: p.movement_type, amount: p.amount });
+        return p;
+      },
+      interpret: jarvisInterpret,
+      parse: parseFinanceCommand
+    };
 
     /* --------- Acesso oculto: hold no logo da Fly ---------
        (segura por 1.6s o brandLogo ou o título PLANO WAR/COMMAND) */
@@ -22686,6 +22747,481 @@
         openCofre();
       }
     });
+  })();
+  </script>
+
+  <script>
+  /* =====================================================================
+     CENTRAL DE VENDAS · Fly Sales (mode-aware)
+     ===================================================================== */
+  (function flySalesBoot() {
+    'use strict';
+    const SALES_KEY     = 'fly_sales_v1';
+    const CUSTOMERS_KEY = 'fly_customers_v1';
+
+    function modeKey(b) { return (typeof window.flyModeKey === 'function') ? window.flyModeKey(b) : b; }
+    function read(key, fb) { try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fb; } catch { return fb; } }
+    function write(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+    function uid(p) { return p + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6); }
+    function escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function fmtMoney(n) { return 'R$ ' + (Number(n)||0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
+
+    function readSales()     { return read(modeKey(SALES_KEY), []); }
+    function readCustomers() { return read(modeKey(CUSTOMERS_KEY), []); }
+    function writeSales(arr)     { write(modeKey(SALES_KEY), arr); }
+    function writeCustomers(arr) { write(modeKey(CUSTOMERS_KEY), arr); }
+
+    function recordSale(sale) {
+      const arr = readSales(); arr.push(sale); writeSales(arr);
+      // auto-cria cliente no CRM
+      const customers = readCustomers();
+      if (!customers.find(c => (c.phone && c.phone === sale.phone) || (c.name && c.name.toLowerCase() === (sale.name||'').toLowerCase()))) {
+        customers.push({
+          id: uid('c'),
+          name: sale.name,
+          phone: sale.phone || '',
+          instagram: sale.instagram || '',
+          origin: sale.origin || '',
+          stage: 'sinal_pago',
+          docStatus: sale.docStatus || '',
+          notes: '',
+          created_at: Date.now()
+        });
+        writeCustomers(customers);
+      }
+      return sale;
+    }
+
+    function statsForQuery(q) {
+      const sales = readSales();
+      const now = new Date();
+      const startToday = new Date(); startToday.setHours(0,0,0,0);
+      const startWeek = new Date(); startWeek.setDate(now.getDate() - 7);
+      const startMonth = new Date(); startMonth.setDate(1); startMonth.setHours(0,0,0,0);
+      let label = 'no total', start = null;
+      if (/hoje/.test(q))   { label = 'hoje'; start = startToday; }
+      else if (/semana/.test(q)) { label = 'na semana'; start = startWeek; }
+      else if (/mes|mês/.test(q) || /esse mês/.test(q)) { label = 'no mês'; start = startMonth; }
+      const filtered = start ? sales.filter(s => new Date(s.created_at || 0) >= start) : sales;
+      const total = filtered.reduce((s, x) => s + (Number(x.amount)||0), 0);
+      return { count: filtered.length, total, text: `Você teve ${filtered.length} vendas ${label}, somando ${fmtMoney(total)}.` };
+    }
+
+    // API global pro Dashboard / JAMES
+    window.__flySalesAPI = {
+      list: readSales,
+      customers: readCustomers,
+      record: recordSale,
+      stats: statsForQuery,
+      openForm: () => document.getElementById('flySalesAddBtn')?.click(),
+      mode: () => localStorage.getItem('fly_data_mode') || 'demo'
+    };
+  })();
+
+  /* =====================================================================
+     CENTRAL FLY CUP · modalidades, polos, eventos (mode-aware)
+     ===================================================================== */
+  (function flyCupBoot() {
+    'use strict';
+    const MODS_KEY   = 'fly_flycup_modalidades_v1';
+    const POLOS_KEY  = 'fly_flycup_polos_v1';
+    const EVENTS_KEY = 'fly_flycup_eventos_v1';
+    const DEFAULT_MODS = [
+      { id: 'futebol', name: 'Futebol' },
+      { id: 'futevolei', name: 'Futevôlei' },
+      { id: 'tenis', name: 'Tênis' },
+      { id: 'kart', name: 'Kart' },
+      { id: 'surf', name: 'Surf' },
+      { id: 'basquete', name: 'Basquete' },
+      { id: 'skate', name: 'Skate' },
+      { id: 'paintball', name: 'Paintball' },
+      { id: 'airsoft', name: 'Airsoft' },
+      { id: 'outros', name: 'Outros' }
+    ];
+    function modeKey(b) { return (typeof window.flyModeKey === 'function') ? window.flyModeKey(b) : b; }
+    function read(key, fb) { try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fb; } catch { return fb; } }
+    function write(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+    function readMods()   { const r = read(modeKey(MODS_KEY), null); return Array.isArray(r) ? r : DEFAULT_MODS.slice(); }
+    function readPolos()  { return read(modeKey(POLOS_KEY), []); }
+    function readEvents() { return read(modeKey(EVENTS_KEY), []); }
+    function writeMods(a)   { write(modeKey(MODS_KEY), a); }
+    function writePolos(a)  { write(modeKey(POLOS_KEY), a); }
+    function writeEvents(a) { write(modeKey(EVENTS_KEY), a); }
+
+    window.__flyCupAPI = {
+      modalidades: readMods,
+      polos: readPolos,
+      eventos: readEvents,
+      addPolo: (p) => { const a = readPolos(); a.push(p); writePolos(a); return p; },
+      addEvento: (e) => { const a = readEvents(); a.push(e); writeEvents(a); return e; },
+      mode: () => localStorage.getItem('fly_data_mode') || 'demo'
+    };
+  })();
+
+  /* =====================================================================
+     DASHBOARD SUPREMO · extensão das tabs Sales + Fly Cup
+     ===================================================================== */
+  (function flyDashboardExtension() {
+    'use strict';
+    const body = document.getElementById('dashboardSupremoBody');
+    if (!body) return;
+
+    // Espera o dashboard original setar window.__flyDashboardOpen
+    function fmtMoney(n) { return 'R$ ' + (Number(n)||0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
+    function fmt(n) { return Number(n||0).toLocaleString('pt-BR'); }
+    function escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function uid(p) { return p + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6); }
+
+    // intercept clicks nas tabs vendas/flycup
+    document.addEventListener('click', e => {
+      const navBtn = e.target.closest('[data-dash-section]');
+      if (!navBtn) return;
+      const sec = navBtn.dataset.dashSection;
+      const overlay = document.getElementById('dashboardSupremoOverlay');
+      if (overlay.classList.contains('hidden')) return;
+      setTimeout(() => {
+        if (sec === 'sales') renderSales();
+        else if (sec === 'flycup') renderFlyCup();
+      }, 10);
+    });
+
+    function renderModePill() {
+      const m = localStorage.getItem('fly_data_mode') || 'demo';
+      return `
+        <div class="fly-mode-switch" role="tablist" aria-label="Modo de dados">
+          <button type="button" data-mode="demo" class="${m==='demo'?'active':''}">DEMO</button>
+          <button type="button" data-mode="operational" class="${m==='operational'?'active':''}">NORMAL</button>
+          <button type="button" data-mode="goal" class="${m==='goal'?'active':''}">META</button>
+        </div>`;
+    }
+    function bindModePill(reRender) {
+      body.querySelectorAll('.fly-mode-switch [data-mode]').forEach(b => {
+        b.addEventListener('click', () => {
+          localStorage.setItem('fly_data_mode', b.dataset.mode);
+          try { window.dispatchEvent(new CustomEvent('fly:data-mode-change', { detail: { mode: b.dataset.mode } })); } catch {}
+          reRender();
+        });
+      });
+    }
+
+    function renderSales() {
+      const sales = (window.__flySalesAPI?.list?.() || []).slice().sort((a,b) => (b.created_at||0)-(a.created_at||0));
+      const total = sales.reduce((s,x) => s + (Number(x.amount)||0), 0);
+      const lucro = sales.reduce((s,x) => s + (Number(x.profit)||0), 0);
+      const commissions = sales.reduce((s,x) => s + (Number(x.commission)||0), 0);
+
+      body.innerHTML = `
+        <div class="dash-section-row">
+          <h2 class="dash-h">💸 Central de Vendas</h2>
+          ${renderModePill()}
+          <button class="cofre-add-btn" type="button" id="flySalesAddBtn">+ Nova venda</button>
+        </div>
+        <div class="dash-kpi-grid">
+          <article class="dash-kpi"><span class="dash-kpi__label">Vendas</span><strong>${fmt(sales.length)}</strong><small>no modo</small></article>
+          <article class="dash-kpi is-gold"><span class="dash-kpi__label">Receita</span><strong>${fmtMoney(total)}</strong><small>bruta</small></article>
+          <article class="dash-kpi"><span class="dash-kpi__label">Lucro</span><strong>${fmtMoney(lucro)}</strong><small>estimado</small></article>
+          <article class="dash-kpi"><span class="dash-kpi__label">Comissões</span><strong>${fmtMoney(commissions)}</strong><small>a pagar</small></article>
+        </div>
+        <section class="dash-section">
+          <header><h2>Últimas vendas</h2></header>
+          <div class="dash-sales-table">
+            <div class="dash-sales-head">
+              <span>Cliente</span><span>Produto</span><span>Valor</span><span>Origem</span><span>Documentação</span><span>Status</span>
+            </div>
+            ${sales.length ? sales.slice(0, 30).map(s => `
+              <div class="dash-sales-row">
+                <span><strong>${escHtml(s.name)}</strong><small>${escHtml(s.phone||'')}</small></span>
+                <span>${escHtml(s.product||'')}</span>
+                <span class="amt">${fmtMoney(s.amount)}</span>
+                <span>${escHtml(s.origin||'')}</span>
+                <span>${({has_passport:'✓ Passaporte', needs_passport:'⚠ Sem passaporte', renewing:'↻ Renovando', visa_pending:'⏳ Visto', docs_ok:'✓ OK', docs_missing:'⚠ Faltam'})[s.docStatus] || '—'}</span>
+                <span class="status status-${s.status||'open'}">${escHtml(s.status||'aberta')}</span>
+              </div>`).join('') : '<p class="dash-empty">Sem vendas ainda. Clique em "Nova venda" para começar — o cliente já vai pro CRM automaticamente.</p>'}
+          </div>
+        </section>`;
+      bindModePill(renderSales);
+      document.getElementById('flySalesAddBtn').addEventListener('click', openSaleForm);
+    }
+
+    function openSaleForm() {
+      const overlay = document.createElement('div');
+      overlay.className = 'cofre-modal-overlay';
+      overlay.innerHTML = `
+        <form class="cofre-modal" id="flySaleForm">
+          <h3>Nova venda</h3>
+          <label>Nome do cliente <input name="name" required></label>
+          <label>Telefone <input name="phone"></label>
+          <label>Instagram <input name="instagram"></label>
+          <label>Origem
+            <select name="origin">
+              <option value="instagram">Instagram</option>
+              <option value="indicacao">Indicação</option>
+              <option value="flycup">Fly Cup</option>
+              <option value="artista">Artista</option>
+              <option value="trafego">Tráfego pago</option>
+              <option value="evento">Evento</option>
+              <option value="afiliado">Afiliado</option>
+              <option value="outro">Outro</option>
+            </select>
+          </label>
+          <label>Produto
+            <select name="product">
+              <option>Dubai Explorer</option><option>Dubai GTA</option><option>Dubai In Love</option>
+              <option>Billionaire</option><option>Fly Network</option><option>FlyExpert</option>
+              <option>Family</option><option>Outro</option>
+            </select>
+          </label>
+          <label>Valor (R$) <input name="amount" type="number" step="0.01" required></label>
+          <label>Lucro estimado (R$) <input name="profit" type="number" step="0.01"></label>
+          <label>Comissão (R$) <input name="commission" type="number" step="0.01"></label>
+          <label>Forma de pagamento
+            <select name="paymentMethod">
+              <option>PIX</option><option>Cartão crédito</option><option>Boleto</option><option>Transferência</option><option>Dinheiro</option>
+            </select>
+          </label>
+          <label>Data da viagem <input name="travelDate" type="date"></label>
+          <label>Responsável pela venda <input name="seller"></label>
+          <label>Status documentação
+            <select name="docStatus">
+              <option value="">— a checar —</option>
+              <option value="has_passport">Já tem passaporte</option>
+              <option value="needs_passport">Precisa fazer passaporte</option>
+              <option value="renewing">Renovando passaporte</option>
+              <option value="visa_pending">Visto pendente</option>
+              <option value="docs_ok">Documentação 100% ok</option>
+              <option value="docs_missing">Faltam documentos</option>
+            </select>
+          </label>
+          <label>Status da venda
+            <select name="status">
+              <option value="sinal_pago">Sinal pago</option>
+              <option value="contrato_enviado">Contrato enviado</option>
+              <option value="docs_pendentes">Documentação pendente</option>
+              <option value="confirmado">Confirmado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </label>
+          <label class="cofre-wide">Observações <textarea name="notes"></textarea></label>
+          <div class="cofre-modal-actions">
+            <button type="submit">Registrar venda</button>
+            <button type="button" class="ghost" id="flySaleCancel">Cancelar</button>
+          </div>
+        </form>`;
+      document.body.appendChild(overlay);
+      document.getElementById('flySaleCancel').addEventListener('click', () => overlay.remove());
+      document.getElementById('flySaleForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const sale = {
+          id: uid('s'),
+          name:    fd.get('name'),
+          phone:   fd.get('phone') || '',
+          instagram: fd.get('instagram') || '',
+          origin:  fd.get('origin') || '',
+          product: fd.get('product') || '',
+          amount:  Number(fd.get('amount')) || 0,
+          profit:  Number(fd.get('profit')) || 0,
+          commission: Number(fd.get('commission')) || 0,
+          paymentMethod: fd.get('paymentMethod') || '',
+          travelDate: fd.get('travelDate') || '',
+          seller:  fd.get('seller') || '',
+          docStatus: fd.get('docStatus') || '',
+          status:  fd.get('status') || 'sinal_pago',
+          notes:   fd.get('notes') || '',
+          created_at: Date.now()
+        };
+        window.__flySalesAPI.record(sale);
+        overlay.remove();
+        renderSales();
+      });
+    }
+
+    function renderFlyCup() {
+      const mods = window.__flyCupAPI?.modalidades?.() || [];
+      const polos = window.__flyCupAPI?.polos?.() || [];
+      const evs = window.__flyCupAPI?.eventos?.() || [];
+
+      body.innerHTML = `
+        <div class="dash-section-row">
+          <h2 class="dash-h">🏆 Central Fly Cup</h2>
+          ${renderModePill()}
+          <button class="cofre-add-btn" type="button" id="flyCupAddPolo">+ Novo polo / CT</button>
+          <button class="cofre-add-btn" type="button" id="flyCupAddEvento">+ Novo evento</button>
+        </div>
+        <div class="dash-kpi-grid">
+          <article class="dash-kpi"><span class="dash-kpi__label">Modalidades</span><strong>${fmt(mods.length)}</strong><small>ativas</small></article>
+          <article class="dash-kpi"><span class="dash-kpi__label">Polos / CTs</span><strong>${fmt(polos.length)}</strong><small>cadastrados</small></article>
+          <article class="dash-kpi"><span class="dash-kpi__label">Eventos</span><strong>${fmt(evs.length)}</strong><small>marcados</small></article>
+          <article class="dash-kpi is-gold"><span class="dash-kpi__label">Receita Cup</span><strong>${fmtMoney(evs.reduce((s,e) => s + (Number(e.receita)||0), 0))}</strong><small>total</small></article>
+        </div>
+        <section class="dash-section">
+          <header><h2>Modalidades</h2></header>
+          <div class="flycup-mods">
+            ${mods.map(m => {
+              const mp = polos.filter(p => p.modalidade === m.id);
+              const me = evs.filter(e => e.modalidade === m.id);
+              return `
+                <article class="flycup-mod">
+                  <header><strong>${escHtml(m.name)}</strong></header>
+                  <div class="flycup-mod-stats">
+                    <span><b>${mp.length}</b> polos</span>
+                    <span><b>${me.length}</b> eventos</span>
+                    <span><b>${fmtMoney(me.reduce((s,e) => s + (Number(e.receita)||0), 0))}</b> receita</span>
+                  </div>
+                </article>`;
+            }).join('')}
+          </div>
+        </section>
+        <div class="dash-2col">
+          <section class="dash-section">
+            <header><h2>Polos / CTs</h2></header>
+            ${polos.length ? polos.map(p => `
+              <div class="dash-next-item">
+                <strong>${escHtml(p.nome)}</strong>
+                <span>${escHtml((mods.find(m => m.id === p.modalidade)?.name) || p.modalidade)} · ${escHtml(p.cidade||'')}${p.responsavel ? ' · '+escHtml(p.responsavel) : ''}</span>
+              </div>`).join('') : '<p class="dash-empty">Nenhum polo cadastrado ainda.</p>'}
+          </section>
+          <section class="dash-section">
+            <header><h2>Eventos / Campeonatos</h2></header>
+            ${evs.length ? evs.slice().sort((a,b) => (a.data||'').localeCompare(b.data||'')).map(e => `
+              <div class="dash-next-item">
+                <strong>${escHtml(e.nome)}</strong>
+                <span>${escHtml((mods.find(m => m.id === e.modalidade)?.name) || e.modalidade)} · ${escHtml(e.data||'')} · receita ${fmtMoney(e.receita||0)}</span>
+              </div>`).join('') : '<p class="dash-empty">Nenhum evento marcado.</p>'}
+          </section>
+        </div>`;
+      bindModePill(renderFlyCup);
+      document.getElementById('flyCupAddPolo').addEventListener('click', openPoloForm);
+      document.getElementById('flyCupAddEvento').addEventListener('click', openEventoForm);
+    }
+
+    function openPoloForm() {
+      const mods = window.__flyCupAPI?.modalidades?.() || [];
+      const overlay = document.createElement('div');
+      overlay.className = 'cofre-modal-overlay';
+      overlay.innerHTML = `
+        <form class="cofre-modal" id="poloForm">
+          <h3>Novo polo / CT</h3>
+          <label>Modalidade <select name="modalidade">${mods.map(m => `<option value="${m.id}">${escHtml(m.name)}</option>`).join('')}</select></label>
+          <label>Nome do polo / CT <input name="nome" required></label>
+          <label>Cidade <input name="cidade"></label>
+          <label>Responsável <input name="responsavel"></label>
+          <label>Atletas <input name="atletas" type="number" min="0" value="0"></label>
+          <label>Patrocinador local <input name="patrocinador"></label>
+          <label class="cofre-wide">Observações <textarea name="notes"></textarea></label>
+          <div class="cofre-modal-actions">
+            <button type="submit">Salvar</button>
+            <button type="button" class="ghost" id="poloCancel">Cancelar</button>
+          </div>
+        </form>`;
+      document.body.appendChild(overlay);
+      document.getElementById('poloCancel').addEventListener('click', () => overlay.remove());
+      document.getElementById('poloForm').addEventListener('submit', ev => {
+        ev.preventDefault();
+        const fd = new FormData(ev.target);
+        window.__flyCupAPI.addPolo({
+          id: uid('p'),
+          modalidade: fd.get('modalidade'),
+          nome: fd.get('nome'),
+          cidade: fd.get('cidade') || '',
+          responsavel: fd.get('responsavel') || '',
+          atletas: Number(fd.get('atletas')) || 0,
+          patrocinador: fd.get('patrocinador') || '',
+          notes: fd.get('notes') || '',
+          created_at: Date.now()
+        });
+        overlay.remove();
+        renderFlyCup();
+      });
+    }
+
+    function openEventoForm() {
+      const mods = window.__flyCupAPI?.modalidades?.() || [];
+      const overlay = document.createElement('div');
+      overlay.className = 'cofre-modal-overlay';
+      overlay.innerHTML = `
+        <form class="cofre-modal" id="evForm">
+          <h3>Novo evento / campeonato</h3>
+          <label>Modalidade <select name="modalidade">${mods.map(m => `<option value="${m.id}">${escHtml(m.name)}</option>`).join('')}</select></label>
+          <label>Nome do evento <input name="nome" required></label>
+          <label>Data <input name="data" type="date"></label>
+          <label>Local <input name="local"></label>
+          <label>Vagas / participantes <input name="vagas" type="number" min="0" value="0"></label>
+          <label>Receita esperada (R$) <input name="receita" type="number" step="0.01" value="0"></label>
+          <label>Custo previsto (R$) <input name="custo" type="number" step="0.01" value="0"></label>
+          <label>Patrocinador <input name="patrocinador"></label>
+          <label>Conversão Dubai (esperada) <input name="conversao_dubai" type="number" min="0" value="0"></label>
+          <label class="cofre-wide">Observações <textarea name="notes"></textarea></label>
+          <div class="cofre-modal-actions">
+            <button type="submit">Salvar evento</button>
+            <button type="button" class="ghost" id="evCancel">Cancelar</button>
+          </div>
+        </form>`;
+      document.body.appendChild(overlay);
+      document.getElementById('evCancel').addEventListener('click', () => overlay.remove());
+      document.getElementById('evForm').addEventListener('submit', ev => {
+        ev.preventDefault();
+        const fd = new FormData(ev.target);
+        window.__flyCupAPI.addEvento({
+          id: uid('e'),
+          modalidade: fd.get('modalidade'),
+          nome: fd.get('nome'),
+          data: fd.get('data') || '',
+          local: fd.get('local') || '',
+          vagas: Number(fd.get('vagas')) || 0,
+          receita: Number(fd.get('receita')) || 0,
+          custo: Number(fd.get('custo')) || 0,
+          patrocinador: fd.get('patrocinador') || '',
+          conversao_dubai: Number(fd.get('conversao_dubai')) || 0,
+          notes: fd.get('notes') || '',
+          created_at: Date.now()
+        });
+        overlay.remove();
+        renderFlyCup();
+      });
+    }
+  })();
+
+  /* =====================================================================
+     DASHBOARD SUPREMO · mode pill na aba "Hoje na Fly"
+     ===================================================================== */
+  (function dashboardModeOverlay() {
+    'use strict';
+    function syncHeadPill() {
+      const m = localStorage.getItem('fly_data_mode') || 'demo';
+      document.querySelectorAll('.dash-head .fly-mode-switch [data-mode]').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === m);
+      });
+    }
+    window.addEventListener('fly:data-mode-change', () => {
+      syncHeadPill();
+      const overlay = document.getElementById('dashboardSupremoOverlay');
+      if (overlay && !overlay.classList.contains('hidden')) {
+        const activeBtn = overlay.querySelector('[data-dash-section].active');
+        if (activeBtn) activeBtn.click();
+      }
+    });
+    // Adiciona pill no topo do dashboard
+    const obs = new MutationObserver(() => {
+      const head = document.querySelector('.dash-head');
+      if (head && !head.querySelector('.fly-mode-switch')) {
+        const m = localStorage.getItem('fly_data_mode') || 'demo';
+        const pill = document.createElement('div');
+        pill.className = 'fly-mode-switch dash-head-mode';
+        pill.innerHTML = `
+          <button type="button" data-mode="demo" class="${m==='demo'?'active':''}">DEMO</button>
+          <button type="button" data-mode="operational" class="${m==='operational'?'active':''}">NORMAL</button>
+          <button type="button" data-mode="goal" class="${m==='goal'?'active':''}">META</button>`;
+        head.insertBefore(pill, head.querySelector('.dash-close'));
+        pill.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
+          localStorage.setItem('fly_data_mode', b.dataset.mode);
+          try { window.dispatchEvent(new CustomEvent('fly:data-mode-change', { detail: { mode: b.dataset.mode } })); } catch {}
+          const activeBtn = document.querySelector('[data-dash-section].active');
+          if (activeBtn) activeBtn.click();
+        }));
+      }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
   })();
   </script>
 
@@ -22894,12 +23430,121 @@
       bases: 'bases fly', partners: 'parceiros', finance: 'financeiro'
     };
 
+    function readJSON(key, fb) { try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fb; } catch { return fb; } }
+
     /* -----------------------------------------------------------------
-       5 · MOTOR DE RESPOSTA (Nível 1 — lookup determinístico)
+       4b · NÍVEL 2 — LLM (OpenAI / Anthropic) com API key opcional
+       ---------------------------------------------------------------*/
+    function getApiKey() {
+      return {
+        openai:    localStorage.getItem('fly_james_openai_key') || '',
+        anthropic: localStorage.getItem('fly_james_anthropic_key') || ''
+      };
+    }
+    function setApiKey(provider, key) {
+      localStorage.setItem(provider === 'anthropic' ? 'fly_james_anthropic_key' : 'fly_james_openai_key', key || '');
+    }
+
+    function buildJamesContext() {
+      const t = (typeof window.__flyDashboardOpen === 'function')
+        ? (window.__flyWarSnapshot?.() || {})
+        : {};
+      const mode = localStorage.getItem('fly_data_mode') || 'demo';
+      const wars = readJSON(`fly_war_territories_v1_${mode}`, null) || readJSON('fly_war_territories_v1', []) || [];
+      const flows = readJSON(`fly_war_connections_v1_${mode}`, null) || readJSON('fly_war_connections_v1', []) || [];
+      const cofre = window.__flyCofreAPI ? {
+        mode: window.__flyCofreAPI.mode(),
+        caixa_fly: window.__flyCofreAPI.totalCaixaFly(),
+        caixa_pessoal_total: window.__flyCofreAPI.totalCaixaPersonal(),
+        fatura_aberta_total: window.__flyCofreAPI.invoiceOpenTotal(),
+        saldos_por_socio: window.__flyCofreAPI.partners().map(p => ({ socio: p, saldo: window.__flyCofreAPI.partnerBalance(p) }))
+      } : null;
+      return { mode, war: { pontos: wars.length, conexoes: flows.length, territorios: wars.slice(0, 12).map(x => ({nome:x.name, layers:x.layers, status:x.status})) }, cofre };
+    }
+
+    async function callLLM(query) {
+      const keys = getApiKey();
+      const sys = 'Você é o JAMES, assistente de IA da Fly (operação Fly Cup, Fly Network, FlyExpert, Plano WAR, Cofre AEY). Responda curto, em português (Brasil), tom executivo e direto, como assessor pessoal. Quando tiver dado, cite o número. Quando não tiver, diga "não tenho esse dado cadastrado". Nunca invente. Contexto JSON atual:\n' + JSON.stringify(buildJamesContext()).slice(0, 6000);
+
+      if (keys.openai) {
+        const r = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${keys.openai}` },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'system', content: sys }, { role: 'user', content: query }],
+            temperature: 0.4,
+            max_tokens: 320
+          })
+        });
+        if (!r.ok) throw new Error('OpenAI ' + r.status);
+        const j = await r.json();
+        return j.choices?.[0]?.message?.content?.trim() || 'Sem resposta.';
+      }
+      if (keys.anthropic) {
+        const r = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': keys.anthropic, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({
+            model: 'claude-3-5-sonnet-20241022',
+            max_tokens: 320,
+            system: sys,
+            messages: [{ role: 'user', content: query }]
+          })
+        });
+        if (!r.ok) throw new Error('Anthropic ' + r.status);
+        const j = await r.json();
+        return j.content?.[0]?.text?.trim() || 'Sem resposta.';
+      }
+      return null;
+    }
+
+    /* -----------------------------------------------------------------
+       5a · NÍVEL 3 — EXECUÇÃO (rotear comandos pra Cofre/Vendas/Plano)
+       ---------------------------------------------------------------*/
+    function isFinanceCommand(q) {
+      return /\b(gastou|gastei|paguei|recebi|recebeu|ganhei|entrou|transferiu|transferi|patrocínio|patrocinio|aporte|sinal|cartão|cartao|fatura)\b/.test(q)
+          && /\bR\$|\bR\$|\b\d+/i.test(q);
+    }
+    function isFinanceQuery(q) {
+      return /(quanto.*caixa|quanto.*total|quanto temos|quem.*segurando|quem.*mais dinheiro|fatura.*aberta|quanto.*fatura)/.test(q);
+    }
+
+    /* -----------------------------------------------------------------
+       5b · MOTOR DE RESPOSTA (Nível 1 — lookup determinístico)
        ---------------------------------------------------------------*/
     function answer(query) {
       const q = (query || '').toLowerCase().trim();
       if (!q) return 'Pode repetir, patrão?';
+
+      // === NÍVEL 3 (execução / Cofre AEY) ===
+      if (window.__flyCofreAPI) {
+        if (isFinanceQuery(q)) {
+          const res = window.__flyCofreAPI.interpret(query);
+          if (res?.reply) return res.reply;
+        }
+        if (isFinanceCommand(q)) {
+          const parsed = window.__flyCofreAPI.parse(query);
+          if (parsed?.amount > 0) {
+            parsed.status = 'confirmed';
+            window.__flyCofreAPI.recordMovement(parsed);
+            const who = parsed.partner || (parsed.from_partner ? `${parsed.from_partner}→${parsed.to_partner}` : 'caixa');
+            return `Registrado no Cofre AEY: ${parsed.movement_type === 'income' ? 'entrada' : parsed.movement_type === 'internal_transfer' ? 'transferência' : 'saída'} de ${parsed.amount.toLocaleString('pt-BR', {minimumFractionDigits:2})} reais por ${who}. Confirme depois no Cofre se quiser ajustar.`;
+          }
+        }
+      }
+
+      // === Vendas (Nível 3) ===
+      if (window.__flySalesAPI && /(criar|cria|nova|registra|registrar).*(venda|vendi|vendido)/.test(q)) {
+        window.__flyDashboardOpen?.();
+        setTimeout(() => document.querySelector('[data-dash-section="sales"]')?.click(), 300);
+        setTimeout(() => document.getElementById('flySalesAddBtn')?.click(), 600);
+        return 'Abrindo o formulário de nova venda.';
+      }
+      if (window.__flySalesAPI && /(quantas vendas|total de vendas|vendas (de )?hoje|vendas (do |dessa )?(semana|mês|mes))/.test(q)) {
+        const s = window.__flySalesAPI.stats(q);
+        return s.text;
+      }
 
       // saudações
       if (/^(oi|olá|ola|e ai|fala|salve|opa|bom dia|boa tarde|boa noite)/.test(q)) {
@@ -23035,17 +23680,31 @@
         orb.setAmplitude(0.5 + Math.min(1, (finalText + interim).length / 60));
       };
       captureRecog.onerror = () => stopCapture();
-      captureRecog.onend = () => {
+      captureRecog.onend = async () => {
         const text = finalText.trim() || userTextEl.textContent;
         if (text) {
-          const reply = answer(text);
-          replyTextEl.textContent = reply;
-          speak(reply);
+          // Nível 3 primeiro (execução determinística — vendas, finanças)
+          const localReply = answer(text);
+          const isFallback = localReply.startsWith('Ainda não tenho esse dado cadastrado');
+          let finalReply = localReply;
+          if (isFallback) {
+            const keys = getApiKey();
+            if (keys.openai || keys.anthropic) {
+              try {
+                setState('listening', 'Pensando…');
+                const llmReply = await callLLM(text);
+                if (llmReply) finalReply = llmReply;
+              } catch (e) {
+                console.warn('JAMES LLM error:', e);
+              }
+            }
+          }
+          replyTextEl.textContent = finalReply;
+          speak(finalReply);
         } else {
           setState('idle', 'Não entendi…');
         }
         captureRecog = null;
-        // retoma wake word
         if (wakeEnabled) setTimeout(() => { try { wakeRecog?.start?.(); } catch (e) {} }, 600);
       };
       setState('capturing', 'Ouvindo…');
@@ -23078,6 +23737,28 @@
       }
     });
     pushBtn.addEventListener('click', startCapture);
+
+    // Settings (Nível 2 — API keys)
+    const settingsPanel = document.getElementById('jamesSettings');
+    const settingsBtn   = document.getElementById('jamesSettingsBtn');
+    const closeSettings = document.getElementById('jamesCloseSettings');
+    const saveKeys      = document.getElementById('jamesSaveKeys');
+    const openaiInput   = document.getElementById('jamesOpenaiKey');
+    const anthropicInput= document.getElementById('jamesAnthropicKey');
+    settingsBtn.addEventListener('click', () => {
+      const keys = getApiKey();
+      openaiInput.value = keys.openai || '';
+      anthropicInput.value = keys.anthropic || '';
+      settingsPanel.classList.remove('hidden');
+    });
+    closeSettings.addEventListener('click', () => settingsPanel.classList.add('hidden'));
+    saveKeys.addEventListener('click', () => {
+      setApiKey('openai',    openaiInput.value.trim());
+      setApiKey('anthropic', anthropicInput.value.trim());
+      settingsPanel.classList.add('hidden');
+      replyTextEl.textContent = 'Configurações salvas. JAMES Nível 2 ativado.';
+      speak('Configurações salvas. Nível dois ativado.');
+    });
 
     // ESC fecha
     document.addEventListener('keydown', (e) => {
