@@ -1655,6 +1655,18 @@
     color: #000;
   }
 
+  /* Admin toggle, dock e sync ficam visíveis sobre o overlay do Plano WAR */
+  body.war-plan-open .admin-toggle,
+  body.war-plan-open .pin-change-btn,
+  body.war-plan-open .pin-lock-btn { z-index: 1010 !important; }
+  body.war-plan-open .utility-dock,
+  body.war-plan-open .sync-status { z-index: 1010; }
+
+  /* Overlays internos (Turmas, Changelog, Ficha) cobrem o dock quando abertos dentro do WAR */
+  body.war-plan-open .fly-tu-overlay,
+  body.war-plan-open .fly-cl-overlay,
+  body.war-plan-open .fly-ficha-overlay { z-index: 1020; }
+
   /* Botão Modo Apresentação */
   .present-toggle {
     position: fixed;
@@ -12062,7 +12074,7 @@
               <p>Mapa global de expansão, aquisição, destinos e domínio da Fly.</p>
             </div>
             <div class="war-plan-actions">
-              <button class="war-mode-toggle" type="button" data-war-mode-toggle title="Alternar Demo / Normal / Meta" onclick="event.stopPropagation();window.__flyWarCycleMode&&window.__flyWarCycleMode()">
+              <button class="war-mode-toggle" type="button" data-war-mode-toggle title="Alternar Demo / Normal / Meta">
                 <span>Modo</span><strong id="warModeLabel">DEMO</strong>
               </button>
               <div class="war-zoom-actions">
@@ -12074,10 +12086,10 @@
           </header>
           <div class="war-plan-kpis" id="warPlanKpis"></div>
           <div class="war-edit-bar">
-            <button class="war-edit-primary" type="button" data-war-add-toggle onclick="event.stopPropagation();window.__flyWarToggleAddMode&&window.__flyWarToggleAddMode()">
+            <button class="war-edit-primary" type="button" data-war-add-toggle>
               <span>+</span><strong>Adicionar ponto</strong><small>Clique no mapa para posicionar</small>
             </button>
-            <button class="war-edit-danger" type="button" data-war-delete-selected disabled onclick="event.stopPropagation();window.__flyWarDeleteSelected&&window.__flyWarDeleteSelected()">
+            <button class="war-edit-danger" type="button" data-war-delete-selected disabled>
               <span>×</span><strong>Excluir ponto</strong><small>Selecione uma cidade</small>
             </button>
             <div class="war-mode-readout" id="warModeReadout"></div>
@@ -12087,7 +12099,7 @@
             <section class="war-map-card">
               <div class="war-map-toolbar">
                 <span id="warTimeLabel">2027</span>
-                <small id="warAdminHint">Admin ON: clique no mapa para adicionar pin</small>
+                <small id="warAdminHint">Modo adicionar ON: clique no mapa para fixar um ponto</small>
               </div>
               <div class="war-map-stage" id="warMapStage"></div>
               <div class="war-timeline">
@@ -12242,13 +12254,11 @@
         const addBtn = overlay.querySelector('[data-war-add-toggle]');
         if (addBtn) {
           addBtn.classList.toggle('active', warAddMode);
-          addBtn.classList.toggle('is-disabled', !isAdmin);
+          addBtn.classList.remove('is-disabled');
           const title = addBtn.querySelector('strong');
           const hint = addBtn.querySelector('small');
           if (title) title.textContent = warAddMode ? 'Modo adicionar ON' : 'Adicionar ponto';
-          if (hint) hint.textContent = isAdmin
-            ? (warAddMode ? 'Agora clique no mapa' : 'Clique para ativar')
-            : 'Ative ADMIN para editar';
+          if (hint) hint.textContent = warAddMode ? 'Agora clique no mapa' : 'Clique para ativar';
         }
         const deleteBtn = overlay.querySelector('[data-war-delete-selected]');
         const canDelete = Boolean(activeTerritoryId && territoryById(activeTerritoryId));
@@ -12659,6 +12669,31 @@
               <label>CAC <input name="cac" type="number" min="0" value="0"></label>
               <label>LTV <input name="ltv" type="number" min="0" value="0"></label>
             </div>
+            <div class="war-editor-wide war-editor-connect">
+              <div class="war-editor-connect-head">
+                <strong>Conectar este ponto com pontos já existentes</strong>
+                <small>Marque as cidades/países e escolha o tipo de fluxo. Cada conexão vira uma linha no mapa.</small>
+              </div>
+              <div class="war-editor-connect-list">
+                ${territories.length === 0
+                  ? '<p class="war-editor-connect-empty">Nenhum ponto criado ainda — este é o primeiro pin. Crie outros para poder conectá-los.</p>'
+                  : territories.map(t => `
+                      <label class="war-editor-connect-row">
+                        <input type="checkbox" name="connectTo" value="${escapeHtml(t.id)}">
+                        <span class="war-editor-connect-name">
+                          <strong>${escapeHtml(t.name)}</strong>
+                          <small>${escapeHtml([t.city || '', t.country || ''].filter(Boolean).join(' · ') || t.role || '')}</small>
+                        </span>
+                        <select name="connectType_${escapeHtml(t.id)}" class="war-editor-connect-type">
+                          <option value="clientes">Clientes</option>
+                          <option value="pacotes">Pacotes</option>
+                          <option value="expansao">Expansão</option>
+                          <option value="midia">Mídia</option>
+                        </select>
+                      </label>
+                    `).join('')}
+              </div>
+            </div>
             <label class="war-editor-wide">Próximas ações <textarea name="nextActions" placeholder="fechar 3 CTs, contratar líder local, ativar campanha Dubai"></textarea></label>
             <label class="war-editor-wide">Observações estratégicas <textarea name="notes" placeholder="Contexto, risco, oportunidade e leitura da IA Fly"></textarea></label>
             <div class="war-editor-foot">
@@ -12755,6 +12790,26 @@
           internal: { topicKey: 'PROJETOS' }
         });
         territories = [...territories, territory];
+
+        const connectToIds = data.getAll('connectTo').map(String).filter(Boolean);
+        if (connectToIds.length) {
+          const stamp = Date.now();
+          const metricMap = { clientes: 'clients', pacotes: 'packages', expansao: 'clients', midia: 'media' };
+          const newFlows = connectToIds.map((toId, idx) => {
+            const flowType = String(data.get(`connectType_${toId}`) || 'clientes');
+            return normalizeWarConnection({
+              id: `flow-${stamp}-${idx}`,
+              fromTerritoryId: territory.id,
+              toTerritoryId: toId,
+              type: flowType,
+              metricType: metricMap[flowType] || 'clients',
+              startDate: territory.startDate,
+              status: 'planned'
+            });
+          });
+          flows = [...flows, ...newFlows];
+        }
+
         saveWarData();
         activeTerritoryId = territory.id;
         activeConnectionId = null;
@@ -12834,12 +12889,6 @@
       }
 
       function toggleWarAddMode() {
-        if (!document.body.classList.contains('admin-mode')) {
-          warAddMode = false;
-          renderWarControls();
-          alert('Ative ADMIN para adicionar pontos no Plano WAR.');
-          return;
-        }
         warAddMode = !warAddMode;
         activeTerritoryId = null;
         activeConnectionId = null;
@@ -12989,7 +13038,7 @@
           return;
         }
         const mapClick = event.target.closest('.war-map-inner');
-        if (mapClick && warAddMode && document.body.classList.contains('admin-mode') && !event.target.closest('.war-pin') && !event.target.closest('[data-war-connection]')) {
+        if (mapClick && warAddMode && !event.target.closest('.war-pin') && !event.target.closest('[data-war-connection]')) {
           openWarEditor(getClickMapCoordinates(event));
           return;
         }
