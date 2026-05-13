@@ -11658,14 +11658,15 @@
       if (!trigger || document.getElementById('warPlanOverlay')) return;
 
       const layers = [
-        { id: 'overview', label: 'Projetos' },
-        { id: 'packages', label: 'Pacotes' },
-        { id: 'flycup', label: 'Fly Cup' },
-        { id: 'tourism', label: 'Turismo' },
-        { id: 'events', label: 'Eventos' },
-        { id: 'bases', label: 'Bases Fly' },
-        { id: 'partners', label: 'Parceiros' },
-        { id: 'finance', label: 'Financeiro' }
+        { id: 'overview',  label: 'Visão Geral',       short: 'Geral'      },
+        { id: 'marketing', label: 'Mapa Marketing',    short: 'Marketing'  },
+        { id: 'packages',  label: 'Mapa Pacotes',      short: 'Pacotes'    },
+        { id: 'flycup',    label: 'Mapa Fly Cup',      short: 'Fly Cup'    },
+        { id: 'tourism',   label: 'Mapa Turismo',      short: 'Turismo'    },
+        { id: 'events',    label: 'Mapa Eventos',      short: 'Eventos'    },
+        { id: 'bases',     label: 'Mapa Bases Fly',    short: 'Bases Fly'  },
+        { id: 'partners',  label: 'Mapa Parceiros',    short: 'Parceiros'  },
+        { id: 'finance',   label: 'Mapa Financeiro',   short: 'Financeiro' }
       ];
       const dashboardTabs = [
         { id: 'summary', label: 'Resumo Global' },
@@ -11975,10 +11976,16 @@
       function normalizeWarTerritory(territory) {
         territory = territory || {};
         const metrics = territory.metrics || {};
+        // Mapas em que esse pin aparece (multi-select). Aceita legacy "layer" como string.
+        let layersArr = Array.isArray(territory.layers)
+          ? territory.layers
+          : (territory.layer ? [territory.layer] : []);
+        layersArr = layersArr.filter(Boolean);
         return {
           id: territory.id || ('war-' + Date.now()),
           name: territory.name || 'Novo território',
           type: territory.type || 'city',
+          layers: layersArr,
           parentId: territory.parentId || '',
           coordinates: territory.coordinates || [0, 0],
           mapOffset: territory.mapOffset || [0, 0],
@@ -12178,12 +12185,24 @@
       }
 
       function visibleFlows() {
-        return flows.filter(flow => isAvailableAtActivePeriod(flow));
+        return flows.filter(flow => {
+          if (!isAvailableAtActivePeriod(flow)) return false;
+          const from = territoryById(flow.fromTerritoryId);
+          const to = territoryById(flow.toTerritoryId);
+          if (!from || !to) return false;
+          return layerMatches(from) && layerMatches(to);
+        });
       }
 
       function layerMatches(territory) {
-        const haystack = [...territory.products, ...territory.projects, territory.role].join(' ').toLowerCase();
         if (activeLayer === 'overview') return true;
+        // Se o pin tem layers explícitos marcados, usa apenas esses
+        if (Array.isArray(territory.layers) && territory.layers.length) {
+          return territory.layers.includes(activeLayer);
+        }
+        // Fallback (dados legados sem layers): heurística por palavras-chave
+        const haystack = [...territory.products, ...territory.projects, territory.role].join(' ').toLowerCase();
+        if (activeLayer === 'marketing') return haystack.includes('marketing') || haystack.includes('campanha') || haystack.includes('midia') || haystack.includes('mídia');
         if (activeLayer === 'packages') return haystack.includes('dubai') || haystack.includes('family') || haystack.includes('billionaire') || haystack.includes('premium');
         if (activeLayer === 'flycup') return haystack.includes('fly cup');
         if (activeLayer === 'tourism') return territory.role === 'destination' || haystack.includes('dubai') || haystack.includes('paris') || haystack.includes('maldivas');
@@ -12191,7 +12210,7 @@
         if (activeLayer === 'bases') return territory.role === 'base' || haystack.includes('base');
         if (activeLayer === 'partners') return territory.role === 'partner' || haystack.includes('parceiro') || haystack.includes('hotel') || haystack.includes('fornecedor');
         if (activeLayer === 'finance') return Boolean(territory.metrics.revenue || territory.metrics.profit);
-        return true;
+        return false;
       }
 
       function formatCompact(value) {
@@ -12322,9 +12341,9 @@
               <circle class="war-dubai-sun" cx="${dubaiPoint[0]}" cy="${dubaiPoint[1]}" r="86" fill="url(#warDubaiGlow)" />
             </svg>
             <div class="war-pins">
-              ${territories.map(territory => {
+              ${territories.filter(t => layerMatches(t)).map(territory => {
                 const future = !isAvailableAtActivePeriod(territory);
-                const hiddenByLayer = !layerMatches(territory);
+                const hiddenByLayer = false;
                 const [x, y] = getWarMapPoint(territory);
                 return `<button type="button"
                   class="war-pin status-${territory.status} role-${territory.role} ${territory.id === activeTerritoryId ? 'active' : ''} ${future ? 'is-future' : ''} ${hiddenByLayer ? 'is-dimmed' : ''}"
@@ -12625,6 +12644,20 @@
             </div>
             <input type="hidden" name="lat" value="${point.lat.toFixed(5)}">
             <input type="hidden" name="lon" value="${point.lon.toFixed(5)}">
+            <div class="war-editor-wide war-editor-layers">
+              <div class="war-editor-layers-head">
+                <strong>📍 Em quais mapas este pin aparece?</strong>
+                <small>Marque pelo menos um. O pin vai aparecer em todos os mapas que você selecionar.</small>
+              </div>
+              <div class="war-editor-layers-list">
+                ${layers.filter(l => l.id !== 'overview').map(l => `
+                  <label class="war-editor-layer-chip">
+                    <input type="checkbox" name="layers" value="${escapeHtml(l.id)}" ${activeLayer === l.id ? 'checked' : ''}>
+                    <span>${escapeHtml(l.short || l.label)}</span>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
             <div class="war-editor-grid">
               <label>Nome da cidade/território <input name="name" required placeholder="São Paulo, Lisboa, Dubai"></label>
               <label>Tipo de ponto
@@ -12677,12 +12710,20 @@
               <div class="war-editor-connect-list">
                 ${territories.length === 0
                   ? '<p class="war-editor-connect-empty">Nenhum ponto criado ainda — este é o primeiro pin. Crie outros para poder conectá-los.</p>'
-                  : territories.map(t => `
+                  : territories.map(t => {
+                      const tLayerLabels = (Array.isArray(t.layers) ? t.layers : [])
+                        .map(id => layers.find(l => l.id === id)?.short)
+                        .filter(Boolean);
+                      const subline = [
+                        [t.city || '', t.country || ''].filter(Boolean).join(' · '),
+                        tLayerLabels.length ? '🗺 ' + tLayerLabels.join(' · ') : ''
+                      ].filter(Boolean).join(' — ') || (t.role || '');
+                      return `
                       <label class="war-editor-connect-row">
                         <input type="checkbox" name="connectTo" value="${escapeHtml(t.id)}">
                         <span class="war-editor-connect-name">
                           <strong>${escapeHtml(t.name)}</strong>
-                          <small>${escapeHtml([t.city || '', t.country || ''].filter(Boolean).join(' · ') || t.role || '')}</small>
+                          <small>${escapeHtml(subline)}</small>
                         </span>
                         <select name="connectType_${escapeHtml(t.id)}" class="war-editor-connect-type">
                           <option value="clientes">Clientes</option>
@@ -12690,8 +12731,8 @@
                           <option value="expansao">Expansão</option>
                           <option value="midia">Mídia</option>
                         </select>
-                      </label>
-                    `).join('')}
+                      </label>`;
+                    }).join('')}
               </div>
             </div>
             <label class="war-editor-wide">Próximas ações <textarea name="nextActions" placeholder="fechar 3 CTs, contratar líder local, ativar campanha Dubai"></textarea></label>
@@ -12751,10 +12792,12 @@
         }
         const startDate = monthValueToDate(data.get('startDate'));
         const targetDate = monthValueToDate(data.get('targetDate'));
+        const selectedLayers = data.getAll('layers').map(String).filter(Boolean);
         const territory = normalizeWarTerritory({
           id,
           name,
           type: 'city',
+          layers: selectedLayers.length ? selectedLayers : (activeLayer && activeLayer !== 'overview' ? [activeLayer] : []),
           coordinates: [Number(data.get('lat')), Number(data.get('lon'))],
           status: data.get('status'),
           role: data.get('role'),

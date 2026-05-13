@@ -1103,6 +1103,78 @@ body.admin-mode .war-map-toolbar small {
   margin-top: 10px;
 }
 
+.war-editor-layers {
+  border: 1px solid rgba(255, 216, 102, 0.34);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: rgba(255, 216, 102, 0.06);
+  margin-bottom: 14px;
+}
+
+.war-editor-layers-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.war-editor-layers-head strong {
+  font-size: 13px;
+  letter-spacing: 1.2px;
+  color: #ffd770;
+  text-transform: uppercase;
+}
+
+.war-editor-layers-head small {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.war-editor-layers-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.war-editor-layer-chip {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+
+.war-editor-layer-chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.war-editor-layer-chip span {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.65);
+  transition: all 0.15s;
+}
+
+.war-editor-layer-chip:hover span {
+  border-color: rgba(255, 216, 102, 0.55);
+  color: #fff3c4;
+}
+
+.war-editor-layer-chip input:checked + span {
+  background: linear-gradient(135deg, rgba(255, 216, 102, 0.32), rgba(255, 216, 102, 0.16));
+  border-color: rgba(255, 216, 102, 0.85);
+  color: #fff8d8;
+  box-shadow: 0 0 0 1px rgba(255, 216, 102, 0.4), 0 0 14px rgba(255, 216, 102, 0.2);
+}
+
 .war-editor-connect {
   border: 1px solid rgba(255, 216, 102, 0.22);
   border-radius: 14px;
