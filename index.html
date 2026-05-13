@@ -12020,6 +12020,10 @@
           },
           nextActions: Array.isArray(territory.nextActions) ? territory.nextActions : [],
           notes: territory.notes || territory.observacoes || '',
+          docStatus: territory.docStatus || '',
+          passportValidity: territory.passportValidity || '',
+          docsMissing: territory.docsMissing || '',
+          incidents: Array.isArray(territory.incidents) ? territory.incidents : (territory.incidents ? [territory.incidents] : []),
           internal: territory.internal || {}
         };
       }
@@ -12735,6 +12739,22 @@
                     }).join('')}
               </div>
             </div>
+            <div class="war-editor-grid war-editor-grid--secondary">
+              <label>Status documentação
+                <select name="docStatus">
+                  <option value="">— não informado —</option>
+                  <option value="has_passport">Já tem passaporte</option>
+                  <option value="needs_passport">Precisa fazer passaporte</option>
+                  <option value="renewing">Renovando passaporte</option>
+                  <option value="visa_pending">Visto pendente</option>
+                  <option value="docs_ok">Documentação 100% ok</option>
+                  <option value="docs_missing">Faltam documentos</option>
+                </select>
+              </label>
+              <label>Validade do passaporte <input name="passportValidity" type="month" placeholder=""></label>
+              <label>Documentos faltantes <input name="docsMissing" placeholder="ex: RG, comprovante endereço, foto"></label>
+            </div>
+            <label class="war-editor-wide">⚠ Incidentes / prejuízos do projeto <textarea name="incidents" placeholder="liste atrasos, custos extras, problemas operacionais ou prejuízos identificados. Cada linha vira um incidente."></textarea></label>
             <label class="war-editor-wide">Próximas ações <textarea name="nextActions" placeholder="fechar 3 CTs, contratar líder local, ativar campanha Dubai"></textarea></label>
             <label class="war-editor-wide">Observações estratégicas <textarea name="notes" placeholder="Contexto, risco, oportunidade e leitura da IA Fly"></textarea></label>
             <div class="war-editor-foot">
@@ -12830,6 +12850,10 @@
           },
           nextActions: parseWarList(data.get('nextActions')),
           notes: data.get('notes'),
+          docStatus: data.get('docStatus') || '',
+          passportValidity: data.get('passportValidity') || '',
+          docsMissing: data.get('docsMissing') || '',
+          incidents: parseWarList(data.get('incidents')),
           internal: { topicKey: 'PROJETOS' }
         });
         territories = [...territories, territory];
@@ -21682,6 +21706,45 @@
   </script>
 
   <!-- =====================================================================
+       DASHBOARD SUPREMO · cockpit da Fly
+       ===================================================================== -->
+  <button id="dashboardSupremoTrigger" class="dash-trigger" type="button">
+    <span class="dash-trigger__dot"></span>
+    <span class="dash-trigger__label">COCKPIT</span>
+  </button>
+
+  <div id="dashboardSupremoOverlay" class="dash-overlay hidden" aria-hidden="true">
+    <section class="dash-shell">
+      <header class="dash-head">
+        <div>
+          <span class="dash-kicker">CÉREBRO OPERACIONAL · TEMPO REAL</span>
+          <h1>FLY COMMAND CENTER</h1>
+          <p>Hoje na Fly — visão de dono, alertas críticos e próximas jogadas.</p>
+        </div>
+        <button class="dash-close" id="dashboardSupremoClose" type="button">FECHAR</button>
+      </header>
+      <nav class="dash-nav">
+        <button type="button" class="active" data-dash-section="today">Hoje na Fly</button>
+        <button type="button" data-dash-section="war">Plano WAR</button>
+        <button type="button" data-dash-section="sales">Vendas</button>
+        <button type="button" data-dash-section="customers">Clientes</button>
+        <button type="button" data-dash-section="flycup">Fly Cup</button>
+        <button type="button" data-dash-section="projects">Projetos</button>
+        <button type="button" data-dash-section="finance">Financeiro</button>
+        <button type="button" data-dash-section="james">JAMES</button>
+      </nav>
+      <main class="dash-body" id="dashboardSupremoBody"></main>
+    </section>
+  </div>
+
+  <!-- =====================================================================
+       COFRE AEY · caixa privado dos sócios (área oculta)
+       ===================================================================== -->
+  <div id="cofreAeyOverlay" class="cofre-overlay hidden" aria-hidden="true">
+    <div class="cofre-shell" id="cofreAeyShell"></div>
+  </div>
+
+  <!-- =====================================================================
        JAMES · IA da Fly (voz + orbe animado)
        ===================================================================== -->
   <button id="jamesTrigger" class="james-trigger" type="button" aria-label="Ativar JAMES">
@@ -21709,6 +21772,922 @@
       <small class="james-stage__hint">Diga <strong>"James"</strong> a qualquer momento para chamá-lo.</small>
     </div>
   </div>
+
+  <script>
+  /* =====================================================================
+     DASHBOARD SUPREMO · cockpit operacional
+     ===================================================================== */
+  (function dashboardSupremoBoot() {
+    'use strict';
+    const trigger  = document.getElementById('dashboardSupremoTrigger');
+    const overlay  = document.getElementById('dashboardSupremoOverlay');
+    const closeBtn = document.getElementById('dashboardSupremoClose');
+    const body     = document.getElementById('dashboardSupremoBody');
+    const navBtns  = overlay.querySelectorAll('[data-dash-section]');
+    if (!trigger || !overlay) return;
+
+    function readJSON(key, fb) { try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fb; } catch { return fb; } }
+    function warMode() { return localStorage.getItem('fly_data_mode') || 'demo'; }
+    function warTerritories() { return readJSON(`fly_war_territories_v1_${warMode()}`, null) || readJSON('fly_war_territories_v1', []) || []; }
+    function warFlows()       { return readJSON(`fly_war_connections_v1_${warMode()}`, null) || readJSON('fly_war_connections_v1', []) || []; }
+    function fmtMoney(n) { n = Number(n) || 0; return 'R$ ' + n.toLocaleString('pt-BR', { maximumFractionDigits: 0 }); }
+    function fmt(n)      { return Number(n || 0).toLocaleString('pt-BR'); }
+
+    function sumMetric(field) {
+      return warTerritories().reduce((s, t) => s + Number(t.metrics?.[field] || 0), 0);
+    }
+
+    function collectAlerts() {
+      const alerts = [];
+      const terr = warTerritories();
+      terr.forEach(t => {
+        if (t.docStatus === 'needs_passport' || t.docStatus === 'docs_missing') {
+          alerts.push({ level: 'warn', msg: `${t.name}: documentação pendente (${t.docStatus === 'needs_passport' ? 'sem passaporte' : 'faltam documentos'})` });
+        }
+        if (Array.isArray(t.incidents) && t.incidents.length) {
+          t.incidents.forEach(i => alerts.push({ level: 'critical', msg: `${t.name}: ${i}` }));
+        }
+        if (Array.isArray(t.nextActions) && t.nextActions.length) {
+          t.nextActions.slice(0, 1).forEach(a => alerts.push({ level: 'info', msg: `${t.name}: ${a}` }));
+        }
+      });
+      return alerts;
+    }
+
+    function renderToday() {
+      const terr  = warTerritories();
+      const flows = warFlows();
+      const leads = sumMetric('leads');
+      const subs  = sumMetric('subscribers');
+      const pacotes = sumMetric('packagesSold');
+      const receita = sumMetric('revenue');
+      const lucro   = sumMetric('profit');
+      const eventos = sumMetric('events');
+      const bases   = sumMetric('bases');
+      const alerts  = collectAlerts();
+
+      const kpiTiles = [
+        { label: 'Pontos no Plano WAR', value: fmt(terr.length), hint: `${flows.length} conexões` },
+        { label: 'Leads totais',        value: fmt(leads),  hint: 'cadastrados' },
+        { label: 'Assinantes ativos',   value: fmt(subs),   hint: 'Fly Network / Cup' },
+        { label: 'Pacotes vendidos',    value: fmt(pacotes), hint: 'no período' },
+        { label: 'Receita',             value: fmtMoney(receita), hint: 'acumulada' },
+        { label: 'Lucro',               value: fmtMoney(lucro),   hint: 'estimado', accent: 'gold' },
+        { label: 'Eventos',             value: fmt(eventos), hint: 'realizados' },
+        { label: 'Bases Fly',           value: fmt(bases),   hint: 'ativas' }
+      ];
+
+      body.innerHTML = `
+        <div class="dash-kpi-grid">
+          ${kpiTiles.map(k => `
+            <article class="dash-kpi ${k.accent ? 'is-' + k.accent : ''}">
+              <span class="dash-kpi__label">${k.label}</span>
+              <strong>${k.value}</strong>
+              <small>${k.hint}</small>
+            </article>
+          `).join('')}
+        </div>
+
+        <section class="dash-section">
+          <header><h2>⚠ Alertas críticos</h2><small>${alerts.length} item${alerts.length === 1 ? '' : 's'}</small></header>
+          <div class="dash-alerts">
+            ${alerts.length ? alerts.slice(0, 12).map(a => `
+              <div class="dash-alert is-${a.level}">
+                <span class="dash-alert__lvl">${a.level === 'critical' ? '🔥' : a.level === 'warn' ? '⚠' : '➜'}</span>
+                <span>${a.msg}</span>
+              </div>
+            `).join('') : '<p class="dash-empty">Nenhum alerta. Tudo sob controle no momento.</p>'}
+          </div>
+        </section>
+
+        <div class="dash-2col">
+          <section class="dash-section">
+            <header><h2>📍 Mapas ativos</h2></header>
+            <div class="dash-maps">
+              ${(() => {
+                const labels = { marketing:'Marketing', packages:'Pacotes', flycup:'Fly Cup', tourism:'Turismo', events:'Eventos', bases:'Bases Fly', partners:'Parceiros', finance:'Financeiro' };
+                const counts = {};
+                terr.forEach(t => (t.layers || []).forEach(l => counts[l] = (counts[l] || 0) + 1));
+                const ids = Object.keys(labels);
+                return ids.map(id => `
+                  <div class="dash-map-chip ${counts[id] ? 'active' : ''}">
+                    <strong>${labels[id]}</strong>
+                    <span>${counts[id] || 0} pontos</span>
+                  </div>
+                `).join('');
+              })()}
+            </div>
+          </section>
+
+          <section class="dash-section">
+            <header><h2>🛂 Documentação dos territórios</h2></header>
+            <div class="dash-docs">
+              ${(() => {
+                const groups = { has_passport: [], needs_passport: [], renewing: [], visa_pending: [], docs_ok: [], docs_missing: [] };
+                terr.forEach(t => { if (t.docStatus && groups[t.docStatus]) groups[t.docStatus].push(t.name); });
+                const labels = { has_passport: 'Já com passaporte', needs_passport: 'Precisa de passaporte', renewing: 'Renovando', visa_pending: 'Visto pendente', docs_ok: 'Docs ok', docs_missing: 'Faltam docs' };
+                return Object.entries(groups).map(([k, arr]) => `
+                  <div class="dash-doc-line">
+                    <span>${labels[k]}</span>
+                    <strong>${arr.length}</strong>
+                    <small>${arr.slice(0, 3).join(', ')}${arr.length > 3 ? '…' : ''}</small>
+                  </div>
+                `).join('');
+              })()}
+            </div>
+          </section>
+        </div>
+
+        <section class="dash-section">
+          <header><h2>🎯 Próximas ações</h2></header>
+          <div class="dash-next">
+            ${(() => {
+              const items = [];
+              terr.forEach(t => (t.nextActions || []).forEach(a => items.push({ t: t.name, a })));
+              return items.length
+                ? items.slice(0, 10).map(i => `<div class="dash-next-item"><strong>${i.t}</strong><span>${i.a}</span></div>`).join('')
+                : '<p class="dash-empty">Cadastre próximas ações nos territórios do Plano WAR para vê-las aqui.</p>';
+            })()}
+          </div>
+        </section>
+      `;
+    }
+
+    function renderWar() {
+      const terr = warTerritories();
+      const flows = warFlows();
+      body.innerHTML = `
+        <section class="dash-section">
+          <header><h2>🌍 Plano WAR</h2><small>${terr.length} pontos · ${flows.length} conexões</small></header>
+          <p class="dash-lead">Visão consolidada do mapa global. Acesse o mapa completo via botão "PLANO WAR" da landing.</p>
+          <div class="dash-kpi-grid">
+            <article class="dash-kpi"><span class="dash-kpi__label">Pontos cadastrados</span><strong>${fmt(terr.length)}</strong><small>total</small></article>
+            <article class="dash-kpi"><span class="dash-kpi__label">Conexões traçadas</span><strong>${fmt(flows.length)}</strong><small>flows</small></article>
+            <article class="dash-kpi"><span class="dash-kpi__label">Receita projetada</span><strong>${fmtMoney(sumMetric('revenue'))}</strong><small>acumulada</small></article>
+            <article class="dash-kpi is-gold"><span class="dash-kpi__label">Lucro projetado</span><strong>${fmtMoney(sumMetric('profit'))}</strong><small>estimado</small></article>
+          </div>
+          <button class="dash-cta" type="button" onclick="document.getElementById('warPlanTrigger')?.click();document.getElementById('dashboardSupremoOverlay')?.classList.add('hidden');">Abrir Plano WAR completo →</button>
+        </section>`;
+    }
+
+    function renderEmpty(title, msg) {
+      body.innerHTML = `
+        <section class="dash-section dash-section--empty">
+          <header><h2>${title}</h2></header>
+          <p class="dash-empty">${msg}</p>
+        </section>`;
+    }
+
+    const sections = {
+      today:    renderToday,
+      war:      renderWar,
+      sales:    () => renderEmpty('💸 Central de Vendas', 'Em construção — vai puxar vendas, leads, pacotes, comissões e jornada do cliente. (Formulário de venda já tem campo de documentação/passaporte no Plano WAR.)'),
+      customers:() => renderEmpty('👥 Central de Clientes / CRM', 'Em construção — vai cruzar leads, clientes Fly Cup, viajantes Dubai, score de venda e próxima ação.'),
+      flycup:   () => renderEmpty('🏆 Central Fly Cup', 'Em construção — modalidades (futebol, futevôlei, tênis, kart, surf, basquete, skate, paintball, airsoft), polos, ranking, eventos, conversão Dubai.'),
+      projects: () => renderEmpty('📂 Central de Projetos', 'Em construção — projetos com meta, responsável, orçamento, lucro, timeline, incidentes/prejuízos e patrocinadores.'),
+      finance:  () => renderEmpty('💰 Central Financeira', 'Em construção — receita por vertical, lucro por pacote, fluxo de caixa, runway, projeção. Caixa privado dos sócios está no COFRE AEY (acesso oculto).'),
+      james:    () => renderEmpty('🤖 JAMES', 'JAMES está sempre ativo no botão flutuante. Fala "James" ou clica para chamá-lo. Nível 1 (lookup) já funciona, Níveis 2 e 3 (interpretação e execução) chegam em breve.')
+    };
+
+    function activate(section) {
+      navBtns.forEach(b => b.classList.toggle('active', b.dataset.dashSection === section));
+      (sections[section] || sections.today)();
+    }
+
+    function open() {
+      overlay.classList.remove('hidden');
+      overlay.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('dashboard-supremo-open');
+      activate('today');
+    }
+    function close() {
+      overlay.classList.add('hidden');
+      overlay.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('dashboard-supremo-open');
+    }
+    window.__flyDashboardOpen = open;
+    window.__flyDashboardClose = close;
+
+    trigger.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    navBtns.forEach(b => b.addEventListener('click', () => activate(b.dataset.dashSection)));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !overlay.classList.contains('hidden')) close(); });
+  })();
+
+  /* =====================================================================
+     COFRE AEY · caixa privado dos sócios (área oculta)
+     ===================================================================== */
+  (function cofreAeyBoot() {
+    'use strict';
+    const overlay = document.getElementById('cofreAeyOverlay');
+    const shell   = document.getElementById('cofreAeyShell');
+    if (!overlay || !shell) return;
+
+    const PIN_KEY     = 'aey_cofre_pin';
+    const PARTNERS    = ['Victor', 'Emanuel', 'Alen/Adrian', 'Juninho'];
+    const WALLETS_KEY = 'aey_cofre_wallets_v1';
+    const MOVES_KEY   = 'aey_cofre_movements_v1';
+    const AUDIT_KEY   = 'aey_cofre_audit_v1';
+    const JFC_KEY     = 'aey_cofre_jarvis_v1';
+
+    function read(key, fb) { try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fb; } catch { return fb; } }
+    function write(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+    function readWallets()  { return read(WALLETS_KEY, []); }
+    function readMoves()    { return read(MOVES_KEY, []); }
+    function readAudit()    { return read(AUDIT_KEY, []); }
+    function readJarvis()   { return read(JFC_KEY, []); }
+    function logAudit(action, payload) {
+      const arr = readAudit();
+      arr.push({ id: 'log-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), action, payload, ts: Date.now() });
+      write(AUDIT_KEY, arr);
+    }
+    function fmtMoney(n) { return 'R$ ' + (Number(n) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2, minimumFractionDigits: 2 }); }
+    function fmt(n) { return Number(n || 0).toLocaleString('pt-BR'); }
+    function escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function uid(prefix) { return prefix + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7); }
+
+    /* --------- Cálculo de saldos --------- */
+    function partnerBalance(name) {
+      const moves = readMoves();
+      let bal = 0;
+      moves.forEach(m => {
+        if (m.status === 'reversed') return;
+        if (m.movement_type === 'income' && m.partner === name) bal += m.amount;
+        if (m.movement_type === 'expense' && m.partner === name) bal -= m.amount;
+        if (m.movement_type === 'internal_transfer') {
+          if (m.from_partner === name) bal -= m.amount;
+          if (m.to_partner === name)   bal += m.amount;
+        }
+        if (m.movement_type === 'invoice_payment' && m.partner === name) bal -= m.amount;
+        if (m.movement_type === 'adjustment' && m.partner === name) bal += m.amount;
+      });
+      return bal;
+    }
+    function totalCaixaFly() {
+      const moves = readMoves();
+      let bal = 0;
+      moves.forEach(m => {
+        if (m.status === 'reversed') return;
+        if (m.money_owner === 'fly' || m.money_owner === 'aey') {
+          if (m.movement_type === 'income') bal += m.amount;
+          if (m.movement_type === 'expense') bal -= m.amount;
+          if (m.movement_type === 'invoice_payment') bal -= m.amount;
+        }
+      });
+      return bal;
+    }
+    function totalCaixaPersonal() {
+      return PARTNERS.reduce((s, p) => s + partnerBalance(p), 0);
+    }
+    function walletBalance(walletId) {
+      const w = readWallets().find(x => x.id === walletId);
+      if (!w) return 0;
+      let bal = Number(w.current_balance || 0);
+      const moves = readMoves();
+      moves.forEach(m => {
+        if (m.status === 'reversed') return;
+        if (m.from_wallet_id === walletId) bal -= m.amount;
+        if (m.to_wallet_id === walletId)   bal += m.amount;
+      });
+      return bal;
+    }
+    function invoiceOpen(walletId) {
+      const moves = readMoves();
+      const cardExpenses = moves.filter(m => m.status !== 'reversed' && m.movement_type === 'credit_card_expense' && m.from_wallet_id === walletId)
+        .reduce((s, m) => s + m.amount, 0);
+      const payments = moves.filter(m => m.status !== 'reversed' && m.movement_type === 'invoice_payment' && m.from_wallet_id === walletId)
+        .reduce((s, m) => s + m.amount, 0);
+      return cardExpenses - payments;
+    }
+
+    /* --------- Tela: LOCK / PIN --------- */
+    function renderLock(mode) {
+      mode = mode || (localStorage.getItem(PIN_KEY) ? 'unlock' : 'setup');
+      shell.innerHTML = `
+        <div class="cofre-lock">
+          <div class="cofre-lock__brand">
+            <span>AEY · ÁREA RESTRITA</span>
+            <h1>COFRE AEY</h1>
+            <small>Caixa privado dos sócios</small>
+          </div>
+          <form class="cofre-lock__form" id="cofreLockForm" autocomplete="off">
+            <label>${mode === 'setup' ? 'Defina seu PIN de 6 dígitos' : 'PIN de acesso'}</label>
+            <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="cofrePin" autofocus required placeholder="••••••" />
+            ${mode === 'setup' ? '<small class="cofre-lock__hint">Este PIN será exigido sempre que abrir o Cofre.</small>' : ''}
+            <button type="submit">${mode === 'setup' ? 'Definir PIN' : 'Entrar'}</button>
+            <button type="button" class="ghost" id="cofreLockClose">Cancelar</button>
+            <p class="cofre-lock__err" id="cofreLockErr"></p>
+          </form>
+        </div>`;
+      const form = document.getElementById('cofreLockForm');
+      const pinIn = document.getElementById('cofrePin');
+      const err   = document.getElementById('cofreLockErr');
+      document.getElementById('cofreLockClose').addEventListener('click', closeCofre);
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        const val = pinIn.value.trim();
+        if (!/^\d{4,6}$/.test(val)) { err.textContent = 'PIN inválido. Use 4 a 6 dígitos.'; return; }
+        if (mode === 'setup') {
+          localStorage.setItem(PIN_KEY, val);
+          logAudit('pin_setup', {});
+          renderDashboard();
+        } else {
+          if (localStorage.getItem(PIN_KEY) === val) {
+            logAudit('login', {});
+            renderDashboard();
+          } else {
+            err.textContent = 'PIN incorreto.';
+            pinIn.value = '';
+          }
+        }
+      });
+    }
+
+    /* --------- Layout principal autenticado --------- */
+    function renderLayout(active, contentHTML) {
+      shell.innerHTML = `
+        <header class="cofre-head">
+          <div>
+            <span class="cofre-kicker">AEY · ÁREA RESTRITA</span>
+            <h1>COFRE AEY</h1>
+            <small>Caixa privado dos sócios</small>
+          </div>
+          <div class="cofre-head__actions">
+            <button type="button" id="cofreLogoutBtn" class="ghost">Bloquear</button>
+            <button type="button" id="cofreCloseBtn">Fechar</button>
+          </div>
+        </header>
+        <nav class="cofre-nav">
+          <button type="button" data-cofre-tab="dashboard" class="${active==='dashboard'?'active':''}">Dashboard</button>
+          <button type="button" data-cofre-tab="partners" class="${active==='partners'?'active':''}">Sócios</button>
+          <button type="button" data-cofre-tab="wallets" class="${active==='wallets'?'active':''}">Bancos &amp; Cartões</button>
+          <button type="button" data-cofre-tab="moves" class="${active==='moves'?'active':''}">Lançamentos</button>
+          <button type="button" data-cofre-tab="jarvis" class="${active==='jarvis'?'active':''}">Jarvis Finance</button>
+          <button type="button" data-cofre-tab="audit" class="${active==='audit'?'active':''}">Auditoria</button>
+        </nav>
+        <main class="cofre-body">${contentHTML}</main>`;
+      document.getElementById('cofreCloseBtn').addEventListener('click', closeCofre);
+      document.getElementById('cofreLogoutBtn').addEventListener('click', () => renderLock('unlock'));
+      shell.querySelectorAll('[data-cofre-tab]').forEach(b => {
+        b.addEventListener('click', () => {
+          const tab = b.dataset.cofreTab;
+          if (tab === 'dashboard') renderDashboard();
+          else if (tab === 'partners') renderPartners();
+          else if (tab === 'wallets')  renderWallets();
+          else if (tab === 'moves')    renderMoves();
+          else if (tab === 'jarvis')   renderJarvis();
+          else if (tab === 'audit')    renderAudit();
+        });
+      });
+    }
+
+    /* --------- Dashboard --------- */
+    function renderDashboard() {
+      const wallets = readWallets();
+      const moves = readMoves();
+      const totalFly = totalCaixaFly();
+      const totalPersonal = totalCaixaPersonal();
+      const totalBank = wallets.filter(w => ['bank_account','pj_account','digital_wallet'].includes(w.type)).reduce((s,w) => s + walletBalance(w.id), 0);
+      const totalCash = wallets.filter(w => w.type === 'cash').reduce((s,w) => s + walletBalance(w.id), 0);
+      const cards = wallets.filter(w => w.type === 'credit_card');
+      const totalInvoices = cards.reduce((s,w) => s + invoiceOpen(w.id), 0);
+      const now = Date.now();
+      const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+      const monthMoves = moves.filter(m => m.status !== 'reversed' && new Date(m.date || m.created_at || 0).getTime() >= monthStart.getTime());
+      const monthIn  = monthMoves.filter(m => m.movement_type === 'income').reduce((s,m) => s + m.amount, 0);
+      const monthOut = monthMoves.filter(m => ['expense','invoice_payment'].includes(m.movement_type)).reduce((s,m) => s + m.amount, 0);
+
+      const recent = moves.slice().sort((a,b) => (b.created_at||0)-(a.created_at||0)).slice(0, 8);
+
+      const kpis = [
+        { label: 'Caixa Fly/AEY',       value: fmtMoney(totalFly),       accent: 'gold' },
+        { label: 'Caixa pessoal sócios', value: fmtMoney(totalPersonal) },
+        { label: 'Bancos / contas',     value: fmtMoney(totalBank) },
+        { label: 'Dinheiro físico',     value: fmtMoney(totalCash) },
+        { label: 'Faturas abertas',     value: fmtMoney(totalInvoices), accent: 'danger' },
+        { label: 'Entradas no mês',     value: fmtMoney(monthIn) },
+        { label: 'Saídas no mês',       value: fmtMoney(monthOut) },
+        { label: 'Saldo líquido real',  value: fmtMoney(totalFly + totalPersonal + totalCash + totalBank - totalInvoices), accent: 'gold' }
+      ];
+
+      const html = `
+        <section class="cofre-section">
+          <header><h2>Cofre Total</h2><small>Resumo consolidado</small></header>
+          <div class="cofre-kpi-grid">
+            ${kpis.map(k => `
+              <article class="cofre-kpi ${k.accent ? 'is-' + k.accent : ''}">
+                <span>${k.label}</span>
+                <strong>${k.value}</strong>
+              </article>
+            `).join('')}
+          </div>
+        </section>
+
+        <div class="cofre-2col">
+          <section class="cofre-section">
+            <header><h2>Com quem está o dinheiro</h2></header>
+            <div class="cofre-partners-row">
+              ${PARTNERS.map(p => {
+                const bal = partnerBalance(p);
+                return `
+                  <div class="cofre-partner-card">
+                    <strong>${escHtml(p)}</strong>
+                    <span class="${bal < 0 ? 'is-neg' : ''}">${fmtMoney(bal)}</span>
+                  </div>`;
+              }).join('')}
+            </div>
+          </section>
+
+          <section class="cofre-section">
+            <header><h2>Últimas movimentações</h2></header>
+            <div class="cofre-recent">
+              ${recent.length ? recent.map(m => moveRowHTML(m)).join('') : '<p class="cofre-empty">Nenhum lançamento ainda.</p>'}
+            </div>
+          </section>
+        </div>
+      `;
+      renderLayout('dashboard', html);
+    }
+
+    function moveRowHTML(m) {
+      const typeLabel = {
+        income: '↑ Entrada',
+        expense: '↓ Saída',
+        internal_transfer: '⇄ Transferência interna',
+        credit_card_expense: '💳 Cartão',
+        invoice_payment: '✓ Fatura paga',
+        adjustment: '⚙ Ajuste',
+        reversal: '↺ Estorno'
+      }[m.movement_type] || m.movement_type;
+      const who = m.movement_type === 'internal_transfer' ? `${m.from_partner||'?'} → ${m.to_partner||'?'}` : (m.partner || '—');
+      return `
+        <div class="cofre-move-row status-${m.status||'confirmed'}">
+          <span class="cofre-move-type">${typeLabel}</span>
+          <span class="cofre-move-amt">${fmtMoney(m.amount)}</span>
+          <span class="cofre-move-who">${escHtml(who)}</span>
+          <span class="cofre-move-desc">${escHtml(m.description || m.category || '')}</span>
+          <span class="cofre-move-date">${m.date ? new Date(m.date).toLocaleDateString('pt-BR') : ''}</span>
+        </div>`;
+    }
+
+    /* --------- Sócios --------- */
+    function renderPartners() {
+      const moves = readMoves();
+      const html = `
+        <section class="cofre-section">
+          <header><h2>Sócios</h2><small>Caixa individual de cada sócio</small></header>
+          <div class="cofre-partners-grid">
+            ${PARTNERS.map(p => {
+              const bal = partnerBalance(p);
+              const recent = moves.filter(m => m.status !== 'reversed' && (m.partner === p || m.from_partner === p || m.to_partner === p))
+                .sort((a,b) => (b.created_at||0)-(a.created_at||0)).slice(0, 5);
+              return `
+                <article class="cofre-partner-tile">
+                  <header>
+                    <strong>${escHtml(p)}</strong>
+                    <span class="${bal<0?'is-neg':''}">${fmtMoney(bal)}</span>
+                  </header>
+                  <div class="cofre-partner-recent">
+                    ${recent.length ? recent.map(moveRowHTML).join('') : '<small class="cofre-empty">Sem movimentações ainda.</small>'}
+                  </div>
+                </article>`;
+            }).join('')}
+          </div>
+        </section>`;
+      renderLayout('partners', html);
+    }
+
+    /* --------- Bancos / Cartões --------- */
+    function renderWallets() {
+      const wallets = readWallets();
+      const html = `
+        <section class="cofre-section">
+          <header>
+            <h2>Bancos &amp; Cartões</h2>
+            <button class="cofre-add-btn" type="button" id="cofreAddWalletBtn">+ Nova conta/cartão</button>
+          </header>
+          <div class="cofre-wallets-grid">
+            ${wallets.length ? wallets.map(w => {
+              const bal = walletBalance(w.id);
+              const fat = w.type === 'credit_card' ? invoiceOpen(w.id) : null;
+              return `
+                <article class="cofre-wallet-card type-${w.type}">
+                  <header>
+                    <strong>${escHtml(w.name)}</strong>
+                    <span>${({cash:'Dinheiro físico', bank_account:'Conta corrente', pj_account:'Conta PJ', credit_card:'Cartão de crédito', digital_wallet:'Carteira digital'})[w.type] || w.type}</span>
+                  </header>
+                  <div class="cofre-wallet-body">
+                    ${w.type === 'credit_card'
+                      ? `<div class="cofre-wallet-line"><span>Fatura aberta</span><strong class="${fat>0?'is-danger':''}">${fmtMoney(fat)}</strong></div>
+                         <div class="cofre-wallet-line"><span>Limite</span><strong>${fmtMoney(w.credit_limit)}</strong></div>
+                         <div class="cofre-wallet-line"><span>Fecha</span><strong>dia ${w.closing_day||'—'}</strong></div>
+                         <div class="cofre-wallet-line"><span>Vence</span><strong>dia ${w.due_day||'—'}</strong></div>`
+                      : `<div class="cofre-wallet-line"><span>Saldo atual</span><strong class="${bal<0?'is-neg':''}">${fmtMoney(bal)}</strong></div>`}
+                    <div class="cofre-wallet-line"><span>Titular</span><strong>${escHtml(w.owner_partner || '—')}</strong></div>
+                  </div>
+                  <footer>
+                    <button type="button" data-cofre-del-wallet="${w.id}">Remover</button>
+                  </footer>
+                </article>`;
+            }).join('') : '<p class="cofre-empty">Nenhuma conta/cartão cadastrado. Cadastre o primeiro para começar.</p>'}
+          </div>
+        </section>`;
+      renderLayout('wallets', html);
+      document.getElementById('cofreAddWalletBtn').addEventListener('click', openWalletForm);
+      shell.querySelectorAll('[data-cofre-del-wallet]').forEach(b => {
+        b.addEventListener('click', () => {
+          if (!confirm('Remover essa conta/cartão? As movimentações continuam, mas o saldo dela some.')) return;
+          const id = b.dataset.cofreDelWallet;
+          const arr = readWallets().filter(w => w.id !== id);
+          write(WALLETS_KEY, arr);
+          logAudit('wallet_delete', { id });
+          renderWallets();
+        });
+      });
+    }
+
+    function openWalletForm() {
+      const html = `
+        <form class="cofre-modal" id="cofreWalletForm">
+          <h3>Nova conta / cartão</h3>
+          <label>Nome <input name="name" required placeholder="Nubank, Itaú PJ, dinheiro Victor"></label>
+          <label>Tipo
+            <select name="type" required>
+              <option value="bank_account">Conta corrente</option>
+              <option value="pj_account">Conta PJ</option>
+              <option value="cash">Dinheiro físico</option>
+              <option value="credit_card">Cartão de crédito</option>
+              <option value="digital_wallet">Carteira digital</option>
+            </select>
+          </label>
+          <label>Titular
+            <select name="owner_partner">
+              <option value="">— Fly/AEY (conjunto) —</option>
+              ${PARTNERS.map(p => `<option value="${escHtml(p)}">${escHtml(p)}</option>`).join('')}
+            </select>
+          </label>
+          <label>Saldo inicial <input name="current_balance" type="number" step="0.01" value="0"></label>
+          <label class="cc-only">Limite (cartão) <input name="credit_limit" type="number" step="0.01" value="0"></label>
+          <label class="cc-only">Fechamento <input name="closing_day" type="number" min="1" max="31"></label>
+          <label class="cc-only">Vencimento <input name="due_day" type="number" min="1" max="31"></label>
+          <div class="cofre-modal-actions">
+            <button type="submit">Salvar</button>
+            <button type="button" class="ghost" id="cofreCancelWallet">Cancelar</button>
+          </div>
+        </form>`;
+      const modal = document.createElement('div');
+      modal.className = 'cofre-modal-overlay';
+      modal.innerHTML = html;
+      shell.appendChild(modal);
+      document.getElementById('cofreCancelWallet').addEventListener('click', () => modal.remove());
+      document.getElementById('cofreWalletForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const f = e.target;
+        const w = {
+          id: uid('w'),
+          name: f.name.value.trim(),
+          type: f.type.value,
+          owner_partner: f.owner_partner.value || '',
+          current_balance: Number(f.current_balance.value) || 0,
+          credit_limit: Number(f.credit_limit.value) || 0,
+          closing_day: f.closing_day.value || null,
+          due_day: f.due_day.value || null,
+          active: true,
+          created_at: Date.now()
+        };
+        const arr = readWallets();
+        arr.push(w);
+        write(WALLETS_KEY, arr);
+        logAudit('wallet_create', { id: w.id, name: w.name });
+        modal.remove();
+        renderWallets();
+      });
+    }
+
+    /* --------- Lançamentos --------- */
+    function renderMoves() {
+      const moves = readMoves().sort((a,b) => (b.created_at||0)-(a.created_at||0));
+      const html = `
+        <section class="cofre-section">
+          <header>
+            <h2>Lançamentos</h2>
+            <button class="cofre-add-btn" type="button" id="cofreAddMoveBtn">+ Novo lançamento</button>
+          </header>
+          <div class="cofre-moves-table">
+            <div class="cofre-moves-head">
+              <span>Tipo</span><span>Valor</span><span>Pessoa</span><span>Descrição</span><span>Data</span><span></span>
+            </div>
+            ${moves.length ? moves.map(m => `
+              <div class="cofre-moves-row status-${m.status||'confirmed'}">
+                <span>${({income:'↑ Entrada',expense:'↓ Saída',internal_transfer:'⇄ Transf.',credit_card_expense:'💳 Cartão',invoice_payment:'✓ Fatura',adjustment:'⚙ Ajuste'})[m.movement_type] || m.movement_type}</span>
+                <span>${fmtMoney(m.amount)}</span>
+                <span>${escHtml(m.movement_type==='internal_transfer' ? `${m.from_partner||'?'} → ${m.to_partner||'?'}` : (m.partner||'—'))}</span>
+                <span>${escHtml(m.description || m.category || '')}</span>
+                <span>${m.date ? new Date(m.date).toLocaleDateString('pt-BR') : ''}</span>
+                <span><button type="button" data-cofre-reverse="${m.id}" ${m.status==='reversed'?'disabled':''}>${m.status==='reversed'?'Estornado':'Estornar'}</button></span>
+              </div>
+            `).join('') : '<p class="cofre-empty">Nenhum lançamento. Use o botão acima ou o Jarvis Finance para registrar.</p>'}
+          </div>
+        </section>`;
+      renderLayout('moves', html);
+      document.getElementById('cofreAddMoveBtn').addEventListener('click', openMoveForm);
+      shell.querySelectorAll('[data-cofre-reverse]').forEach(b => {
+        b.addEventListener('click', () => {
+          const id = b.dataset.cofreReverse;
+          if (!confirm('Estornar esse lançamento? Histórico fica preservado.')) return;
+          const arr = readMoves();
+          const idx = arr.findIndex(x => x.id === id);
+          if (idx < 0) return;
+          const old = JSON.parse(JSON.stringify(arr[idx]));
+          arr[idx].status = 'reversed';
+          arr[idx].updated_at = Date.now();
+          write(MOVES_KEY, arr);
+          logAudit('move_reverse', { id, before: old.status, after: 'reversed' });
+          renderMoves();
+        });
+      });
+    }
+
+    function openMoveForm() {
+      const wallets = readWallets();
+      const html = `
+        <form class="cofre-modal" id="cofreMoveForm">
+          <h3>Novo lançamento</h3>
+          <label>Tipo
+            <select name="movement_type" required>
+              <option value="income">Entrada</option>
+              <option value="expense">Saída / Gasto</option>
+              <option value="internal_transfer">Transferência interna</option>
+              <option value="credit_card_expense">Cartão de crédito</option>
+              <option value="invoice_payment">Pagamento de fatura</option>
+              <option value="adjustment">Ajuste</option>
+            </select>
+          </label>
+          <label>Valor <input name="amount" type="number" step="0.01" required></label>
+          <label>Data <input name="date" type="date" value="${new Date().toISOString().slice(0,10)}"></label>
+          <label>Pessoa
+            <select name="partner">
+              <option value="">—</option>
+              ${PARTNERS.map(p => `<option value="${escHtml(p)}">${escHtml(p)}</option>`).join('')}
+            </select>
+          </label>
+          <label class="transfer-only">De (sócio) <select name="from_partner"><option value="">—</option>${PARTNERS.map(p => `<option>${escHtml(p)}</option>`).join('')}</select></label>
+          <label class="transfer-only">Para (sócio) <select name="to_partner"><option value="">—</option>${PARTNERS.map(p => `<option>${escHtml(p)}</option>`).join('')}</select></label>
+          <label>Conta de origem
+            <select name="from_wallet_id">
+              <option value="">—</option>
+              ${wallets.map(w => `<option value="${w.id}">${escHtml(w.name)} (${w.type})</option>`).join('')}
+            </select>
+          </label>
+          <label>Conta de destino
+            <select name="to_wallet_id">
+              <option value="">—</option>
+              ${wallets.map(w => `<option value="${w.id}">${escHtml(w.name)} (${w.type})</option>`).join('')}
+            </select>
+          </label>
+          <label>Dono do dinheiro
+            <select name="money_owner">
+              <option value="fly">Fly</option>
+              <option value="aey">AEY</option>
+              <option value="personal">Pessoal do sócio</option>
+              <option value="project">Projeto específico</option>
+            </select>
+          </label>
+          <label>Categoria <input name="category" placeholder="uber, almoço, patrocínio, comissão…"></label>
+          <label>Projeto vinculado <input name="project_id" placeholder="Fly Cup Futevôlei, Dubai Explorer…"></label>
+          <label class="cofre-wide">Descrição <textarea name="description" placeholder="o que foi essa movimentação"></textarea></label>
+          <div class="cofre-modal-actions">
+            <button type="submit">Salvar lançamento</button>
+            <button type="button" class="ghost" id="cofreCancelMove">Cancelar</button>
+          </div>
+        </form>`;
+      const modal = document.createElement('div');
+      modal.className = 'cofre-modal-overlay';
+      modal.innerHTML = html;
+      shell.appendChild(modal);
+      const form = document.getElementById('cofreMoveForm');
+      document.getElementById('cofreCancelMove').addEventListener('click', () => modal.remove());
+      function syncFields() {
+        const t = form.movement_type.value;
+        modal.querySelectorAll('.transfer-only').forEach(el => el.style.display = (t === 'internal_transfer' ? '' : 'none'));
+      }
+      form.movement_type.addEventListener('change', syncFields);
+      syncFields();
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        const m = {
+          id: uid('m'),
+          movement_type: fd.get('movement_type'),
+          amount: Number(fd.get('amount')) || 0,
+          date: fd.get('date') || new Date().toISOString().slice(0,10),
+          partner: fd.get('partner') || '',
+          from_partner: fd.get('from_partner') || '',
+          to_partner: fd.get('to_partner') || '',
+          from_wallet_id: fd.get('from_wallet_id') || '',
+          to_wallet_id: fd.get('to_wallet_id') || '',
+          money_owner: fd.get('money_owner') || 'fly',
+          category: fd.get('category') || '',
+          project_id: fd.get('project_id') || '',
+          description: fd.get('description') || '',
+          status: 'confirmed',
+          created_by: 'cofre-ui',
+          created_at: Date.now()
+        };
+        const arr = readMoves();
+        arr.push(m);
+        write(MOVES_KEY, arr);
+        logAudit('move_create', { id: m.id, type: m.movement_type, amount: m.amount });
+        modal.remove();
+        renderMoves();
+      });
+    }
+
+    /* --------- Jarvis Finance --------- */
+    function parseFinanceCommand(text) {
+      const raw = text;
+      const t = text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      const amountMatch = t.match(/r\$?\s*([\d\.\,]+)|\b(\d[\d\.\,]*)\s*(?:reais|r\$)?\b/);
+      let amount = 0;
+      if (amountMatch) {
+        const num = (amountMatch[1] || amountMatch[2] || '').replace(/\./g, '').replace(',', '.');
+        amount = Number(num) || 0;
+      }
+      const partners = ['Victor','Emanuel','Alen','Adrian','Juninho'];
+      const personFound = partners.find(p => t.includes(p.toLowerCase()));
+      const partner = personFound === 'Alen' || personFound === 'Adrian' ? 'Alen/Adrian' : personFound || '';
+
+      let movement_type = 'expense';
+      if (/entrou|entrei|ganhei|recebi|recebeu|recebido|patrocinio|patrocínio|aporte|sinal|pagou .* a fly|pra fly/.test(t)) movement_type = 'income';
+      if (/transferiu|transferi|passou pra|enviou pra|mandou pra/.test(t)) movement_type = 'internal_transfer';
+      if (/cartao|cartão|passou no cartao|passou no cartão|debitou no cartao|na fatura/.test(t)) movement_type = 'credit_card_expense';
+      if (/paguei a fatura|fatura paga|paguei o cartao|paguei o cartão/.test(t)) movement_type = 'invoice_payment';
+
+      const money_owner = /pra fly|para a fly|pra aey|para a aey|da fly|da aey|fly\/aey/.test(t)
+        ? 'fly'
+        : /pessoal/.test(t) ? 'personal' : 'fly';
+
+      let from_partner = '', to_partner = '';
+      if (movement_type === 'internal_transfer') {
+        const m2 = raw.match(new RegExp('(' + partners.join('|') + ')\\s+transferiu.*?(?:pra|para)\\s+(' + partners.join('|') + ')', 'i'));
+        if (m2) { from_partner = m2[1]; to_partner = m2[2]; }
+      }
+
+      const knownCategories = ['uber','99','táxi','taxi','almoço','almoco','jantar','passagem','viagem','combustivel','combustível','marketing','midia','mídia','fumaca','fumaça','evento','assessoria','contador','salario','salário','comissao','comissão','patrocinio','patrocínio'];
+      const cat = knownCategories.find(c => t.includes(c)) || '';
+
+      return {
+        movement_type, amount, money_owner, partner, from_partner, to_partner,
+        category: cat, description: raw,
+        date: new Date().toISOString().slice(0,10),
+        status: 'pending',
+        created_at: Date.now(),
+        created_by: 'jarvis',
+        id: uid('m')
+      };
+    }
+
+    function jarvisInterpret(text) {
+      // consulta?
+      const t = text.toLowerCase();
+      if (/quanto.*caixa|quanto.*total|quanto temos/.test(t)) {
+        const total = totalCaixaFly() + totalCaixaPersonal();
+        return { kind: 'query', reply: `O caixa total consolidado (Fly + sócios) é ${fmtMoney(total)}. Caixa Fly/AEY: ${fmtMoney(totalCaixaFly())}, pessoal dos sócios: ${fmtMoney(totalCaixaPersonal())}.` };
+      }
+      if (/quem.*segurando|quem.*mais dinheiro/.test(t)) {
+        const top = PARTNERS.map(p => ({p, b: partnerBalance(p)})).sort((a,b) => b.b - a.b)[0];
+        return { kind: 'query', reply: `Quem está segurando mais dinheiro hoje é ${top.p}, com ${fmtMoney(top.b)}.` };
+      }
+      if (/fatura.*aberta|quanto.*fatura/.test(t)) {
+        const total = readWallets().filter(w => w.type === 'credit_card').reduce((s,w) => s + invoiceOpen(w.id), 0);
+        return { kind: 'query', reply: `Fatura aberta acumulada: ${fmtMoney(total)}.` };
+      }
+      // senão, transação
+      const parsed = parseFinanceCommand(text);
+      return { kind: 'transaction', parsed };
+    }
+
+    function renderJarvis() {
+      const history = readJarvis().slice(-12).reverse();
+      const html = `
+        <section class="cofre-section">
+          <header><h2>Jarvis Financeiro</h2><small>Fale em linguagem natural. Ex: "Victor gastou R$50 de Uber"</small></header>
+          <form class="cofre-jarvis-form" id="cofreJarvisForm">
+            <input name="cmd" placeholder="Digite ou cole o comando…" autocomplete="off">
+            <button type="submit">Interpretar</button>
+          </form>
+          <div class="cofre-jarvis-out" id="cofreJarvisOut"></div>
+          <h3 class="cofre-sub">Histórico de comandos</h3>
+          <div class="cofre-jarvis-hist">
+            ${history.length ? history.map(h => `
+              <div class="cofre-jarvis-row">
+                <strong>${escHtml(h.raw)}</strong>
+                <span>${h.confirmation_status === 'confirmed' ? '✓ confirmado' : '✗ descartado'}</span>
+              </div>`).join('') : '<p class="cofre-empty">Sem comandos ainda.</p>'}
+          </div>
+        </section>`;
+      renderLayout('jarvis', html);
+      const form = document.getElementById('cofreJarvisForm');
+      const out  = document.getElementById('cofreJarvisOut');
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        const cmd = form.cmd.value.trim();
+        if (!cmd) return;
+        const res = jarvisInterpret(cmd);
+        if (res.kind === 'query') {
+          out.innerHTML = `<div class="cofre-jarvis-reply">🤖 ${escHtml(res.reply)}</div>`;
+        } else {
+          const p = res.parsed;
+          out.innerHTML = `
+            <div class="cofre-jarvis-reply">
+              <p>🤖 Entendi como <strong>${p.movement_type}</strong> de <strong>${fmtMoney(p.amount)}</strong>${p.partner ? ' por <strong>' + escHtml(p.partner) + '</strong>' : ''}${p.category ? ' · categoria <strong>' + escHtml(p.category) + '</strong>' : ''} (dono: ${p.money_owner}).</p>
+              <p class="cofre-jarvis-confirm">Confirma o lançamento?</p>
+              <div class="cofre-modal-actions">
+                <button type="button" id="cofreJarvisConfirm">✓ Registrar</button>
+                <button type="button" class="ghost" id="cofreJarvisDiscard">Descartar</button>
+              </div>
+            </div>`;
+          document.getElementById('cofreJarvisConfirm').addEventListener('click', () => {
+            p.status = 'confirmed';
+            const arr = readMoves(); arr.push(p); write(MOVES_KEY, arr);
+            const jhist = readJarvis(); jhist.push({ raw: cmd, parsed: p, confirmation_status: 'confirmed', created_at: Date.now() }); write(JFC_KEY, jhist);
+            logAudit('jarvis_create_move', { id: p.id });
+            out.innerHTML = `<div class="cofre-jarvis-reply ok">✓ Registrado. Caixa do ${p.partner||'sistema'} atualizado. Caixa geral AEY atualizado.</div>`;
+            form.cmd.value = '';
+          });
+          document.getElementById('cofreJarvisDiscard').addEventListener('click', () => {
+            const jhist = readJarvis(); jhist.push({ raw: cmd, parsed: p, confirmation_status: 'discarded', created_at: Date.now() }); write(JFC_KEY, jhist);
+            out.innerHTML = '<div class="cofre-jarvis-reply">Descartado.</div>';
+          });
+        }
+      });
+    }
+
+    /* --------- Auditoria --------- */
+    function renderAudit() {
+      const arr = readAudit().slice().reverse();
+      const html = `
+        <section class="cofre-section">
+          <header><h2>Auditoria</h2><small>Log imutável de tudo que aconteceu no Cofre</small></header>
+          <div class="cofre-audit">
+            ${arr.length ? arr.map(l => `
+              <div class="cofre-audit-row">
+                <span>${new Date(l.ts).toLocaleString('pt-BR')}</span>
+                <strong>${escHtml(l.action)}</strong>
+                <small>${escHtml(JSON.stringify(l.payload))}</small>
+              </div>`).join('') : '<p class="cofre-empty">Sem registros ainda.</p>'}
+          </div>
+        </section>`;
+      renderLayout('audit', html);
+    }
+
+    /* --------- Abertura / fechamento --------- */
+    function openCofre() {
+      overlay.classList.remove('hidden');
+      overlay.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('cofre-open');
+      renderLock();
+    }
+    function closeCofre() {
+      overlay.classList.add('hidden');
+      overlay.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('cofre-open');
+    }
+    window.__flyCofreOpen = openCofre;
+
+    /* --------- Acesso oculto: hold no logo da Fly ---------
+       (segura por 1.6s o brandLogo ou o título PLANO WAR/COMMAND) */
+    function bindHoldOpen(el) {
+      if (!el) return;
+      let pressTimer = null;
+      const start = () => {
+        if (pressTimer) clearTimeout(pressTimer);
+        pressTimer = setTimeout(openCofre, 1600);
+      };
+      const cancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+      el.addEventListener('pointerdown', start);
+      el.addEventListener('pointerup', cancel);
+      el.addEventListener('pointerleave', cancel);
+      el.addEventListener('pointercancel', cancel);
+    }
+    // Tenta vincular ao logo e ao título; espera um tick para garantir DOM
+    setTimeout(() => {
+      bindHoldOpen(document.getElementById('brandLogo'));
+      bindHoldOpen(document.querySelector('.grid-main-logo'));
+    }, 800);
+
+    // ESC fecha
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !overlay.classList.contains('hidden')) closeCofre(); });
+
+    // Atalho secreto: Ctrl/Cmd + Shift + A (Adrian) abre direto
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        openCofre();
+      }
+    });
+  })();
+  </script>
 
   <script>
   (function flyJamesBoot() {
@@ -21871,13 +22850,15 @@
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'pt-BR';
-      u.rate = 1.02;
-      u.pitch = 0.95;
+      u.rate = 1.0;
+      u.pitch = 0.78; // grave, masculino
       const voices = window.speechSynthesis.getVoices();
-      const pt = voices.find(v => /pt[-_]BR/i.test(v.lang) && /male|homem|google|daniel/i.test(v.name + v.voiceURI))
-              || voices.find(v => /pt[-_]BR/i.test(v.lang))
-              || voices.find(v => /pt/i.test(v.lang));
-      if (pt) u.voice = pt;
+      // Voz masculina pt-BR / pt-PT prioritária
+      const malePT = voices.find(v => /pt[-_](BR|PT)/i.test(v.lang) && /\b(felipe|ricardo|daniel|joaquim|luciano|paulo|joão|joao|antonio|antônio)\b/i.test(v.name + ' ' + v.voiceURI));
+      const malePT2 = voices.find(v => /pt[-_](BR|PT)/i.test(v.lang) && /(male|homem|masculino)/i.test(v.name + ' ' + v.voiceURI));
+      const ptBR    = voices.find(v => /pt[-_]BR/i.test(v.lang));
+      const ptAny   = voices.find(v => /pt/i.test(v.lang));
+      u.voice = malePT || malePT2 || ptBR || ptAny || null;
       setState('speaking', 'Respondendo…');
       orb.setAmplitude(0.85);
       let pulseTimer = setInterval(() => orb.setAmplitude(0.5 + Math.random() * 0.6), 90);
