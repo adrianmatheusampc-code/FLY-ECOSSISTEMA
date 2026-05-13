@@ -21680,5 +21680,443 @@
       }
     });
   </script>
+
+  <!-- =====================================================================
+       JAMES · IA da Fly (voz + orbe animado)
+       ===================================================================== -->
+  <button id="jamesTrigger" class="james-trigger" type="button" aria-label="Ativar JAMES">
+    <span class="james-trigger__core"></span>
+    <span class="james-trigger__label">JAMES</span>
+    <span class="james-trigger__dot" data-state="idle"></span>
+  </button>
+
+  <div id="jamesStage" class="james-stage" aria-hidden="true">
+    <canvas id="jamesOrbCanvas" class="james-orb-canvas"></canvas>
+    <div class="james-stage__overlay">
+      <div class="james-stage__brand">
+        <span class="james-stage__brand-pre">FLY · IA</span>
+        <strong>JAMES</strong>
+        <small id="jamesState">Aguardando…</small>
+      </div>
+      <div class="james-stage__transcript">
+        <p class="james-stage__user" id="jamesUserText"></p>
+        <p class="james-stage__reply" id="jamesReplyText"></p>
+      </div>
+      <div class="james-stage__controls">
+        <button type="button" class="james-stage__btn" id="jamesPushBtn">🎙 Falar</button>
+        <button type="button" class="james-stage__btn ghost" id="jamesCloseBtn">Fechar</button>
+      </div>
+      <small class="james-stage__hint">Diga <strong>"James"</strong> a qualquer momento para chamá-lo.</small>
+    </div>
+  </div>
+
+  <script>
+  (function flyJamesBoot() {
+    'use strict';
+
+    const trigger      = document.getElementById('jamesTrigger');
+    const stage        = document.getElementById('jamesStage');
+    const canvas       = document.getElementById('jamesOrbCanvas');
+    const stateEl      = document.getElementById('jamesState');
+    const userTextEl   = document.getElementById('jamesUserText');
+    const replyTextEl  = document.getElementById('jamesReplyText');
+    const pushBtn      = document.getElementById('jamesPushBtn');
+    const closeBtn     = document.getElementById('jamesCloseBtn');
+    const dot          = trigger.querySelector('.james-trigger__dot');
+    if (!trigger || !stage || !canvas) return;
+
+    /* -----------------------------------------------------------------
+       1 · ORBE  (canvas 2D — esfera de partículas douradas)
+       ---------------------------------------------------------------*/
+    const orb = (function buildOrb() {
+      const ctx = canvas.getContext('2d');
+      const PARTICLES = 1400;
+      const points = [];
+      // Distribuição uniforme via espiral de Fibonacci
+      for (let i = 0; i < PARTICLES; i++) {
+        const phi   = Math.acos(1 - 2 * (i + 0.5) / PARTICLES);
+        const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+        points.push({
+          x: Math.sin(phi) * Math.cos(theta),
+          y: Math.sin(phi) * Math.sin(theta),
+          z: Math.cos(phi),
+          off: Math.random() * Math.PI * 2
+        });
+      }
+
+      let rotY = 0, rotX = 0, t = 0;
+      let amplitude = 0.5;
+      let targetAmp = 0.5;
+      let raf = 0;
+      let activeMode = 'idle'; // idle | listening | speaking
+
+      function resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width  = window.innerWidth * dpr;
+        canvas.height = window.innerHeight * dpr;
+        canvas.style.width  = window.innerWidth + 'px';
+        canvas.style.height = window.innerHeight + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function frame() {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const cx = w / 2;
+        const cy = h / 2;
+
+        amplitude += (targetAmp - amplitude) * 0.08;
+        const pulse = 1 + Math.sin(t * 0.9) * 0.04 + amplitude * 0.18;
+        const radius = Math.min(w, h) * 0.22 * pulse;
+
+        // Trail fade
+        ctx.fillStyle = 'rgba(2, 2, 4, 0.22)';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.globalCompositeOperation = 'lighter';
+
+        const cy_  = Math.cos(rotY), sy_ = Math.sin(rotY);
+        const cx_  = Math.cos(rotX), sx_ = Math.sin(rotX);
+        const speakingShimmer = activeMode === 'speaking' ? 1.2 : 1;
+
+        for (let i = 0; i < PARTICLES; i++) {
+          const p = points[i];
+          // rot Y
+          let x = p.x * cy_ - p.z * sy_;
+          let z = p.x * sy_ + p.z * cy_;
+          let y = p.y;
+          // rot X
+          const y2 = y * cx_ - z * sx_;
+          z = y * sx_ + z * cx_;
+          y = y2;
+
+          // Ondulação radial (tipo Siri)
+          const wave = Math.sin(t * 1.8 + p.off + (x + y) * 2) * (0.08 + amplitude * 0.18);
+          const r = radius * (1 + wave);
+
+          const persp = 1.6 + z * 0.9;
+          const px = cx + (x * r) / persp;
+          const py = cy + (y * r) / persp;
+          const depth = (z + 1) * 0.5; // 0..1
+          const size = (0.6 + depth * 2.2) * speakingShimmer;
+          const aBase = 0.18 + depth * 0.62;
+          const hueShift = (Math.sin(t + p.off) * 8) | 0;
+
+          ctx.fillStyle = activeMode === 'listening'
+            ? `hsla(${48 + hueShift}, 100%, ${55 + depth * 18}%, ${aBase})`
+            : activeMode === 'speaking'
+              ? `hsla(${36 + hueShift}, 100%, ${60 + depth * 22}%, ${aBase + 0.15})`
+              : `hsla(${42 + hueShift}, 92%, ${52 + depth * 16}%, ${aBase})`;
+          ctx.beginPath();
+          ctx.arc(px, py, size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Núcleo
+        const grd = ctx.createRadialGradient(cx, cy, radius * 0.05, cx, cy, radius * 0.9);
+        grd.addColorStop(0, `rgba(255, 232, 160, ${0.32 + amplitude * 0.3})`);
+        grd.addColorStop(0.4, 'rgba(255, 180, 70, 0.08)');
+        grd.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grd;
+        ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+
+        ctx.globalCompositeOperation = 'source-over';
+
+        rotY += 0.0042 + amplitude * 0.004;
+        rotX += 0.0018 + amplitude * 0.002;
+        t    += 0.024;
+
+        raf = requestAnimationFrame(frame);
+      }
+
+      window.addEventListener('resize', resize);
+      resize();
+      frame();
+
+      return {
+        setAmplitude(a) { targetAmp = Math.max(0, Math.min(1.4, a)); },
+        setMode(m) { activeMode = m; }
+      };
+    })();
+
+    /* -----------------------------------------------------------------
+       2 · ESTADOS & UI
+       ---------------------------------------------------------------*/
+    function setState(s, label) {
+      dot.dataset.state = s;
+      stateEl.textContent = label || s;
+      orb.setMode(s === 'speaking' ? 'speaking' : s === 'listening' || s === 'capturing' ? 'listening' : 'idle');
+    }
+
+    function openStage() {
+      stage.classList.add('open');
+      stage.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('james-active');
+    }
+    function closeStage() {
+      stage.classList.remove('open');
+      stage.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('james-active');
+      stopCapture();
+      window.speechSynthesis?.cancel?.();
+      setState('idle', 'Aguardando…');
+    }
+    closeBtn.addEventListener('click', closeStage);
+
+    /* -----------------------------------------------------------------
+       3 · FALA (TTS)
+       ---------------------------------------------------------------*/
+    function speak(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'pt-BR';
+      u.rate = 1.02;
+      u.pitch = 0.95;
+      const voices = window.speechSynthesis.getVoices();
+      const pt = voices.find(v => /pt[-_]BR/i.test(v.lang) && /male|homem|google|daniel/i.test(v.name + v.voiceURI))
+              || voices.find(v => /pt[-_]BR/i.test(v.lang))
+              || voices.find(v => /pt/i.test(v.lang));
+      if (pt) u.voice = pt;
+      setState('speaking', 'Respondendo…');
+      orb.setAmplitude(0.85);
+      let pulseTimer = setInterval(() => orb.setAmplitude(0.5 + Math.random() * 0.6), 90);
+      u.onend = () => { clearInterval(pulseTimer); orb.setAmplitude(0.4); setState('idle', 'Pronto'); };
+      u.onerror = u.onend;
+      window.speechSynthesis.speak(u);
+    }
+
+    /* -----------------------------------------------------------------
+       4 · LEITURA DE DADOS (lookup local)
+       ---------------------------------------------------------------*/
+    function readJSON(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; }
+      catch { return fallback; }
+    }
+    function getActiveWarMode() {
+      return localStorage.getItem('fly_data_mode') || 'demo';
+    }
+    function getWarTerritories() {
+      const mode = getActiveWarMode();
+      return readJSON(`fly_war_territories_v1_${mode}`, null)
+          || readJSON('fly_war_territories_v1', []);
+    }
+    function getWarFlows() {
+      const mode = getActiveWarMode();
+      return readJSON(`fly_war_connections_v1_${mode}`, null)
+          || readJSON('fly_war_connections_v1', []);
+    }
+
+    const LAYER_LABELS = {
+      overview: 'visão geral', marketing: 'marketing', packages: 'pacotes',
+      flycup: 'fly cup', tourism: 'turismo', events: 'eventos',
+      bases: 'bases fly', partners: 'parceiros', finance: 'financeiro'
+    };
+
+    /* -----------------------------------------------------------------
+       5 · MOTOR DE RESPOSTA (Nível 1 — lookup determinístico)
+       ---------------------------------------------------------------*/
+    function answer(query) {
+      const q = (query || '').toLowerCase().trim();
+      if (!q) return 'Pode repetir, patrão?';
+
+      // saudações
+      if (/^(oi|olá|ola|e ai|fala|salve|opa|bom dia|boa tarde|boa noite)/.test(q)) {
+        return 'Pronto, patrão. Em que posso ajudar a Fly hoje?';
+      }
+      if (/(quem é você|quem é voce|seu nome|você é o james)/.test(q)) {
+        return 'Sou o James, sua IA da Fly. Conectado ao seu plano de guerra, vendas e operação.';
+      }
+      if (/(obrigado|valeu|tmj|massa)/.test(q)) {
+        return 'Sempre que precisar, patrão.';
+      }
+
+      // contagens — territórios
+      if (/(quantos\s+)?(pontos|pin|pins|territórios|territorios|cidades|países|paises).*(plano|war|mapa|cadastra)/.test(q)
+        || /(plano war|no mapa).+(quantos|tem|exist)/.test(q)) {
+        const all = getWarTerritories();
+        return `Você tem ${all.length} ${all.length === 1 ? 'ponto cadastrado' : 'pontos cadastrados'} no Plano WAR.`;
+      }
+      if (/^(quant[oa]s?\s+)(pontos|pin|pins|territórios|territorios|cidades)/.test(q)) {
+        const all = getWarTerritories();
+        return `Temos ${all.length} pontos no mapa hoje.`;
+      }
+
+      // contagens — conexões
+      if (/(quant[oa]s?\s+)?(conexões|conexoes|linhas|flows|fluxos|rotas)/.test(q)) {
+        const f = getWarFlows();
+        return `Existem ${f.length} conexões traçadas entre os pontos.`;
+      }
+
+      // pontos por mapa / camada
+      for (const [id, label] of Object.entries(LAYER_LABELS)) {
+        if (id === 'overview') continue;
+        if (q.includes(label) || q.includes(id)) {
+          const all = getWarTerritories();
+          const filtered = all.filter(t => Array.isArray(t.layers) && t.layers.includes(id));
+          if (/(quant|quanto|listar|mostrar|tem|qual|quais)/.test(q)) {
+            const names = filtered.map(t => t.name).slice(0, 8).join(', ');
+            return filtered.length
+              ? `No mapa de ${label} temos ${filtered.length} ${filtered.length === 1 ? 'ponto' : 'pontos'}: ${names}.`
+              : `Ainda não tem ponto cadastrado no mapa de ${label}, patrão.`;
+          }
+        }
+      }
+
+      // status do plano war
+      if (/(status|resumo|panorama|situação|situacao).*(war|plano)/.test(q)
+        || /(como (está|esta) o war|plano war agora)/.test(q)) {
+        const t = getWarTerritories();
+        const f = getWarFlows();
+        const layersAtivas = new Set();
+        t.forEach(x => (x.layers || []).forEach(l => layersAtivas.add(l)));
+        return `Plano WAR: ${t.length} pontos, ${f.length} conexões, ${layersAtivas.size} mapas ativos.`;
+      }
+
+      // ajuda
+      if (/(o que (pode|consegue|faz)|ajuda|comandos)/.test(q)) {
+        return 'Posso te dizer quantos pontos tem no Plano WAR, quantas conexões, listar pontos por mapa, ou abrir telas. Pode perguntar à vontade.';
+      }
+
+      // abrir plano war
+      if (/(abre|abrir|abra|mostra|mostrar|leva).*(plano|war|mapa)/.test(q)) {
+        document.getElementById('warPlanTrigger')?.click();
+        return 'Abrindo o Plano WAR agora.';
+      }
+
+      return 'Ainda não tenho esse dado cadastrado, patrão. Quando você cadastrar, eu te respondo na hora.';
+    }
+
+    /* -----------------------------------------------------------------
+       6 · RECONHECIMENTO DE VOZ
+       ---------------------------------------------------------------*/
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let wakeRecog = null;
+    let captureRecog = null;
+    let wakeEnabled = false;
+
+    function isJamesMention(text) {
+      return /\b(james|jeams|jeyms|djems|jams|jamiz|james)\b/i.test(text);
+    }
+
+    function startWakeWordListener() {
+      if (!SR || wakeRecog) return;
+      try {
+        wakeRecog = new SR();
+        wakeRecog.lang = 'pt-BR';
+        wakeRecog.continuous = true;
+        wakeRecog.interimResults = true;
+        wakeRecog.onresult = (e) => {
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            const t = e.results[i][0].transcript;
+            if (isJamesMention(t) && !stage.classList.contains('open')) {
+              activateJames();
+              break;
+            }
+          }
+        };
+        wakeRecog.onend = () => { if (wakeEnabled) { try { wakeRecog.start(); } catch (e) {} } };
+        wakeRecog.onerror = () => { if (wakeEnabled) setTimeout(() => { try { wakeRecog.start(); } catch (e) {} }, 1200); };
+        wakeRecog.start();
+        wakeEnabled = true;
+      } catch (e) {
+        wakeRecog = null;
+      }
+    }
+
+    function stopWakeWord() {
+      wakeEnabled = false;
+      try { wakeRecog?.stop(); } catch (e) {}
+      wakeRecog = null;
+    }
+
+    function startCapture() {
+      if (!SR) {
+        const txt = 'Seu navegador não tem suporte a reconhecimento de voz. Use Chrome/Safari ou clique no botão Falar.';
+        replyTextEl.textContent = txt;
+        speak(txt);
+        return;
+      }
+      try { wakeRecog?.stop?.(); } catch (e) {}
+      captureRecog = new SR();
+      captureRecog.lang = 'pt-BR';
+      captureRecog.continuous = false;
+      captureRecog.interimResults = true;
+      let finalText = '';
+      captureRecog.onresult = (e) => {
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const r = e.results[i];
+          if (r.isFinal) finalText += r[0].transcript;
+          else interim += r[0].transcript;
+        }
+        userTextEl.textContent = (finalText + ' ' + interim).trim();
+        orb.setAmplitude(0.5 + Math.min(1, (finalText + interim).length / 60));
+      };
+      captureRecog.onerror = () => stopCapture();
+      captureRecog.onend = () => {
+        const text = finalText.trim() || userTextEl.textContent;
+        if (text) {
+          const reply = answer(text);
+          replyTextEl.textContent = reply;
+          speak(reply);
+        } else {
+          setState('idle', 'Não entendi…');
+        }
+        captureRecog = null;
+        // retoma wake word
+        if (wakeEnabled) setTimeout(() => { try { wakeRecog?.start?.(); } catch (e) {} }, 600);
+      };
+      setState('capturing', 'Ouvindo…');
+      userTextEl.textContent = '…';
+      replyTextEl.textContent = '';
+      try { captureRecog.start(); } catch (e) {}
+    }
+    function stopCapture() {
+      try { captureRecog?.stop?.(); } catch (e) {}
+    }
+
+    function activateJames() {
+      openStage();
+      setState('listening', 'James online');
+      const greet = 'Pronto, patrão. Pode falar.';
+      replyTextEl.textContent = greet;
+      speak(greet);
+      // espera o TTS terminar antes de capturar
+      setTimeout(startCapture, 1100);
+    }
+
+    /* -----------------------------------------------------------------
+       7 · TRIGGERS
+       ---------------------------------------------------------------*/
+    trigger.addEventListener('click', () => {
+      if (stage.classList.contains('open')) {
+        startCapture();
+      } else {
+        activateJames();
+      }
+    });
+    pushBtn.addEventListener('click', startCapture);
+
+    // ESC fecha
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && stage.classList.contains('open')) closeStage();
+    });
+
+    // Wake word: precisa de gesto do usuário. Habilitamos no primeiro click em qualquer lugar.
+    function bootWakeWordOnce() {
+      startWakeWordListener();
+      document.removeEventListener('click', bootWakeWordOnce);
+      document.removeEventListener('touchstart', bootWakeWordOnce);
+    }
+    document.addEventListener('click', bootWakeWordOnce, { once: false });
+    document.addEventListener('touchstart', bootWakeWordOnce, { once: false });
+
+    // Voz pode carregar assíncrono no Chrome
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => {};
+    }
+  })();
+  </script>
 </body>
 </html>

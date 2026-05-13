@@ -1103,6 +1103,194 @@ body.admin-mode .war-map-toolbar small {
   margin-top: 10px;
 }
 
+/* ============================================================
+   JAMES · IA da Fly  (botão flutuante + orbe animado fullscreen)
+   ============================================================ */
+.james-trigger {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 1015;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px 9px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 216, 102, 0.45);
+  background:
+    radial-gradient(circle at 22% 30%, rgba(255, 216, 102, 0.32), transparent 60%),
+    rgba(0, 0, 0, 0.62);
+  color: #fff3c4;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2.6px;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, 0.45),
+    0 0 22px rgba(255, 216, 102, 0.18);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s;
+}
+.james-trigger:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 216, 102, 0.85);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.55), 0 0 32px rgba(255, 216, 102, 0.34);
+}
+.james-trigger__core {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 30%, #fff5d2 0%, #ffb840 38%, #8a5202 88%);
+  box-shadow:
+    inset 0 0 4px rgba(255, 255, 255, 0.5),
+    0 0 14px rgba(255, 184, 70, 0.85);
+  animation: jamesCorePulse 2.2s ease-in-out infinite;
+}
+@keyframes jamesCorePulse {
+  0%, 100% { transform: scale(1);   box-shadow: inset 0 0 4px rgba(255,255,255,.5), 0 0 14px rgba(255,184,70,.85); }
+  50%      { transform: scale(1.18); box-shadow: inset 0 0 6px rgba(255,255,255,.7), 0 0 26px rgba(255,210,120,1);   }
+}
+.james-trigger__label { color: #ffe7a4; }
+.james-trigger__dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.james-trigger__dot[data-state="listening"],
+.james-trigger__dot[data-state="capturing"] {
+  background: #6dffb0; box-shadow: 0 0 10px #6dffb0;
+}
+.james-trigger__dot[data-state="speaking"] {
+  background: #ffd770; box-shadow: 0 0 10px #ffd770;
+}
+body.james-active .james-trigger { display: none; }
+
+/* ---------- PALCO FULLSCREEN ---------- */
+.james-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 1020;
+  display: none;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(20, 12, 2, 0.86), rgba(0, 0, 0, 0.96) 65%, #000 100%);
+  opacity: 0;
+  transition: opacity 0.32s ease;
+}
+.james-stage.open { display: block; opacity: 1; }
+
+.james-orb-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 60px rgba(255, 184, 70, 0.18));
+}
+
+.james-stage__overlay {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  padding: clamp(20px, 4vw, 48px);
+  pointer-events: none;
+}
+.james-stage__overlay > * { pointer-events: auto; }
+
+.james-stage__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+.james-stage__brand-pre {
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: rgba(255, 230, 160, 0.6);
+  text-transform: uppercase;
+}
+.james-stage__brand strong {
+  font-size: clamp(38px, 7vw, 78px);
+  letter-spacing: 14px;
+  font-weight: 900;
+  background: linear-gradient(180deg, #fff3c4 0%, #ffd770 45%, #b88318 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  line-height: 1;
+}
+.james-stage__brand small {
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: rgba(255, 255, 255, 0.62);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.james-stage__transcript {
+  align-self: end;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 12vw;
+  margin-bottom: 24px;
+}
+.james-stage__user {
+  font-size: clamp(14px, 1.6vw, 18px);
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.55);
+  font-style: italic;
+  min-height: 22px;
+}
+.james-stage__reply {
+  font-size: clamp(18px, 2.4vw, 28px);
+  font-weight: 600;
+  color: #fff8d8;
+  min-height: 28px;
+  text-shadow: 0 0 18px rgba(255, 200, 90, 0.25);
+}
+
+.james-stage__controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.james-stage__btn {
+  padding: 13px 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 216, 102, 0.55);
+  background: linear-gradient(135deg, rgba(255, 216, 102, 0.32), rgba(255, 216, 102, 0.08));
+  color: #fff8d8;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+.james-stage__btn.ghost {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.7);
+}
+.james-stage__btn:hover { border-color: rgba(255, 216, 102, 0.9); }
+
+.james-stage__hint {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 14px;
+}
+.james-stage__hint strong { color: #ffd770; }
+
 .war-editor-layers {
   border: 1px solid rgba(255, 216, 102, 0.34);
   border-radius: 14px;
