@@ -2366,6 +2366,74 @@ body.james-active .james-trigger { display: none; }
     0 0 28px rgba(255, 176, 46, 0.4);
 }
 
+/* ============================================================
+   COFRE TRIGGER BUTTON
+   ============================================================ */
+
+.header-controls {
+  display: flex;
+  gap: clamp(12px, 2vw, 24px);
+  align-items: center;
+  justify-content: center;
+  margin-bottom: clamp(12px, 1.5vh, 20px);
+}
+
+.cofre-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(48px, 8vw, 72px);
+  height: clamp(48px, 8vw, 72px);
+  border: 2px solid rgba(245, 184, 66, 0.7);
+  border-radius: 12px;
+  background: linear-gradient(135deg,
+    rgba(245, 184, 66, 0.12) 0%,
+    rgba(245, 184, 66, 0.04) 100%);
+  color: rgba(245, 184, 66, 0.85);
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow:
+    0 0 20px rgba(245, 184, 66, 0.2),
+    inset 0 0 16px rgba(245, 184, 66, 0.06);
+  backdrop-filter: blur(12px);
+  outline: none;
+}
+
+.cofre-trigger svg {
+  width: clamp(32px, 6vw, 52px);
+  height: clamp(32px, 6vw, 52px);
+  transition: transform 200ms ease;
+}
+
+.cofre-trigger:hover {
+  border-color: rgba(245, 184, 66, 0.95);
+  background: linear-gradient(135deg,
+    rgba(245, 184, 66, 0.18) 0%,
+    rgba(245, 184, 66, 0.08) 100%);
+  color: rgba(255, 224, 140, 1);
+  transform: scale(1.08) translateY(-3px);
+  box-shadow:
+    0 0 32px rgba(245, 184, 66, 0.4),
+    inset 0 0 22px rgba(245, 184, 66, 0.12);
+}
+
+.cofre-trigger:hover svg {
+  transform: scale(1.05) rotate(-5deg);
+}
+
+.cofre-trigger:active {
+  transform: scale(0.95);
+  box-shadow:
+    0 0 16px rgba(245, 184, 66, 0.2),
+    inset 0 0 20px rgba(245, 184, 66, 0.1);
+}
+
+.cofre-trigger:focus-visible {
+  outline: 2px solid rgba(245, 184, 66, 0.7);
+  outline-offset: 2px;
+}
+
 #gridView.has-3d-landing .grid-title .title {
   font-size: clamp(42px, 7vmin, 84px);
 }
