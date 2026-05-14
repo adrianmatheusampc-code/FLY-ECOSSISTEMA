@@ -24515,8 +24515,19 @@
     // Botão SETUP sempre abre o wizard
     setupBtn.addEventListener('click', openWizard);
 
-    // Auto-marca como completo (não abre mais sozinho — só via botão SETUP)
+    // Auto-marca como completo (não abre mais sozinho — só via atalho/função)
     localStorage.setItem(completionFlag, 'true');
+
+    // Atalho de teclado: Cmd+Shift+S (Mac) ou Ctrl+Shift+S (Windows/Linux) reabre o wizard
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'S' || e.key === 's')) {
+        e.preventDefault();
+        openWizard();
+      }
+    });
+
+    // Função global pra reabrir manualmente: __flyOpenSetup()
+    window.__flyOpenSetup = openWizard;
 
     // Load schema.sql for display (embedded) — VERSION 4 (NO DO BLOCKS, NO ENUMS)
     const schemaSQL = `-- =============================================================

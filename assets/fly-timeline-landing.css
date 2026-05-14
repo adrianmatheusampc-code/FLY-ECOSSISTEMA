@@ -6405,8 +6405,9 @@ body.fly-exp-open .fly-exp-trigger { opacity: 0; pointer-events: none; }
   50%      { height: 38px; opacity: 1; }
 }
 
-/* ===== BOTÃO SETUP (sempre visível) ===== */
+/* ===== BOTÃO SETUP (escondido — use Cmd+Shift+S ou __flyOpenSetup()) ===== */
 .fly-setup-btn {
+  display: none;
   position: fixed;
   bottom: 20px;
   left: 50%;
