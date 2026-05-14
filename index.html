@@ -24336,11 +24336,35 @@
 
     trigger.addEventListener('click', () => {
       if (!stage.classList.contains('open')) {
+        // Garante que abre em mini-mode
+        stage.classList.add('mini');
         openStage();
-        setState('idle', 'Pronto para digitar');
-        setTimeout(() => jamesInput?.focus(), 100);
+        setState('listening', 'Pronto');
+        replyTextEl.textContent = '';
+        const ut = document.getElementById('jamesUserText');
+        if (ut) ut.textContent = '';
+
+        // Fala saudação + ativa mic quando TTS termina
+        speak('Fala comigo, chefe!', () => {
+          try { window.showWaveformExt?.(); } catch (e) {}
+          setTimeout(() => startCapture(), 200);
+        });
       }
     });
+
+    // Clicar no orbe pequeno (em mini-mode) → expande pra tela cheia
+    if (canvas) {
+      canvas.addEventListener('click', (e) => {
+        if (stage.classList.contains('mini') && stage.classList.contains('open')) {
+          e.stopPropagation();
+          stage.classList.remove('mini');
+          document.body.classList.remove('james-mini');
+          const eb = document.getElementById('jamesExpandBtn');
+          if (eb) { eb.textContent = '⤡'; eb.title = 'Recolher'; }
+        }
+      });
+      canvas.style.cursor = 'pointer';
+    }
 
     jamesInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
