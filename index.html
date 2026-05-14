@@ -21772,6 +21772,7 @@
         <small id="jamesState">Aguardando…</small>
       </div>
       <div class="james-stage__transcript">
+        <p class="james-stage__user-text" id="jamesUserText"></p>
         <p class="james-stage__reply" id="jamesReplyText" style="min-height: 60px; margin-bottom: 20px;"></p>
       </div>
       <div class="james-stage__chat">
@@ -23972,13 +23973,61 @@
     async function ensureMicPermission() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Fechamos o stream — só queremos garantir permissão
         stream.getTracks().forEach(t => t.stop());
         return true;
       } catch (e) {
         console.error('[JAMES] Permissão de mic negada:', e);
         return false;
       }
+    }
+
+    // ===== ANÁLISE REAL DE ÁUDIO — anima as barras do waveform com o volume =====
+    let audioStream = null;
+    let audioCtx = null;
+    let analyser = null;
+    let analyserRAF = null;
+
+    async function startAudioAnalyser() {
+      try {
+        stopAudioAnalyser();
+        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const src = audioCtx.createMediaStreamSource(audioStream);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 64;
+        src.connect(analyser);
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        const bars = document.querySelectorAll('.james-waveform .wave-bar');
+
+        function tick() {
+          analyser.getByteFrequencyData(data);
+          for (let i = 0; i < bars.length; i++) {
+            const bin = data[Math.min(i, data.length - 1)] || 0;
+            const height = 6 + (bin / 255) * 40;
+            bars[i].style.height = height + 'px';
+            bars[i].style.animation = 'none'; // sobrescreve animação CSS
+            bars[i].style.opacity = 0.6 + (bin / 255) * 0.4;
+          }
+          analyserRAF = requestAnimationFrame(tick);
+        }
+        tick();
+      } catch (e) {
+        console.warn('[JAMES] Análise áudio falhou (usa animação CSS):', e);
+      }
+    }
+
+    function stopAudioAnalyser() {
+      if (analyserRAF) cancelAnimationFrame(analyserRAF);
+      analyserRAF = null;
+      if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
+      if (audioCtx) { try { audioCtx.close(); } catch (e) {} audioCtx = null; }
+      analyser = null;
+      // Reseta barras pra animação CSS padrão
+      document.querySelectorAll('.james-waveform .wave-bar').forEach(b => {
+        b.style.height = '';
+        b.style.animation = '';
+        b.style.opacity = '';
+      });
     }
 
     async function startCapture() {
@@ -24009,6 +24058,13 @@
       captureRecog.onstart = () => {
         console.log('[JAMES] Mic ATIVO');
         setState('capturing', 'Ouvindo…');
+        // Mostra waveform e limpa transcrição anterior
+        try { window.showWaveformExt?.(); } catch (e) {}
+        const ut = document.getElementById('jamesUserText');
+        if (ut) ut.textContent = '';
+        if (replyTextEl) replyTextEl.textContent = '';
+        // Inicia análise real de áudio (volume → tamanho das barras)
+        try { startAudioAnalyser(); } catch (e) {}
       };
       captureRecog.onresult = (e) => {
         let interim = '';
@@ -24017,8 +24073,11 @@
           if (r.isFinal) finalText += r[0].transcript;
           else interim += r[0].transcript;
         }
-        userTextEl.textContent = (finalText + ' ' + interim).trim();
-        orb.setAmplitude(0.5 + Math.min(1, (finalText + interim).length / 60));
+        const transcript = (finalText + ' ' + interim).trim();
+        // Atualiza userTextEl em tempo real (referência dinâmica)
+        const ut = document.getElementById('jamesUserText');
+        if (ut) ut.textContent = transcript;
+        orb.setAmplitude(0.5 + Math.min(1, transcript.length / 60));
       };
       captureRecog.onerror = (e) => {
         console.error('[JAMES] Erro mic:', e.error);
@@ -24033,6 +24092,8 @@
         const text = finalText.trim() || userTextEl.textContent;
         console.log('[JAMES VOZ] Texto capturado:', text);
         captureRecog = null;
+        stopAudioAnalyser();
+        try { window.hideWaveformExt?.(); } catch (e) {}
 
         // Comandos de saída do modo conversa
         if (text && /^\s*(tchau\s+james|fechar|sair|fica\s+quieto|para)\s*\.?$/i.test(text)) {

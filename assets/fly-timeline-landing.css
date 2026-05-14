@@ -6282,6 +6282,31 @@ body.fly-exp-open .fly-exp-trigger { opacity: 0; pointer-events: none; }
   border-radius: 50%; font-size: 22px; cursor: pointer;
 }
 
+/* ===== JAMES — Transcrição em tempo real ===== */
+.james-stage__user-text {
+  min-height: 0;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(245, 184, 66, 0.85);
+  font-style: italic;
+  text-align: center;
+  letter-spacing: 0.3px;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.james-stage__user-text:not(:empty) {
+  opacity: 1;
+  margin-bottom: 14px;
+  min-height: 22px;
+}
+
+.james-stage__user-text::before {
+  content: '🎤 ';
+  margin-right: 4px;
+}
+
 /* ===== JAMES — Botão Microfone + Waveform ===== */
 .james-mic-btn {
   display: inline-flex;
