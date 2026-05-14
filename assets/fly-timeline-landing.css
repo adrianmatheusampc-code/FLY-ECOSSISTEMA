@@ -6315,6 +6315,199 @@ body.fly-exp-open .fly-exp-trigger { opacity: 0; pointer-events: none; }
   border-radius: 50%; font-size: 22px; cursor: pointer;
 }
 
+/* ===== BARRA DE MEMÓRIA (localStorage indicator) ===== */
+.fly-mem-bar {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1010;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(10, 8, 4, 0.7);
+  border: 1px solid rgba(245, 184, 66, 0.2);
+  border-radius: 999px;
+  color: rgba(255, 240, 200, 0.85);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+.fly-mem-bar:hover {
+  border-color: rgba(245, 184, 66, 0.5);
+  background: rgba(10, 8, 4, 0.85);
+}
+.fly-mem-bar__icon { font-size: 12px; line-height: 1; }
+.fly-mem-bar__track {
+  width: 60px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+.fly-mem-bar__fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #51cf66 0%, #6dffb0 100%);
+  border-radius: 999px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+.fly-mem-bar__fill.warn {
+  background: linear-gradient(90deg, #ffd770 0%, #ffb84a 100%);
+}
+.fly-mem-bar__fill.danger {
+  background: linear-gradient(90deg, #ff8a8a 0%, #ff4d4d 100%);
+}
+.fly-mem-bar__label {
+  font-variant-numeric: tabular-nums;
+  min-width: 50px;
+  text-align: right;
+}
+
+/* Modal de detalhes */
+.fly-mem-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 2050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+}
+.fly-mem-modal.hidden { display: none; }
+.fly-mem-modal__panel {
+  background: linear-gradient(135deg, #0c0c0c 0%, #1a1812 100%);
+  border: 1px solid rgba(245, 184, 66, 0.25);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+}
+.fly-mem-modal__panel header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.fly-mem-modal__panel h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffd770;
+}
+.fly-mem-modal__close {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+}
+.fly-mem-modal__overview {
+  margin-bottom: 20px;
+}
+.fly-mem-modal__big {
+  text-align: center;
+  margin-bottom: 12px;
+}
+.fly-mem-modal__big strong {
+  font-size: 32px;
+  font-weight: 800;
+  color: #ffd770;
+  display: block;
+  margin-bottom: 4px;
+}
+.fly-mem-modal__big small {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+}
+.fly-mem-modal__bar {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.fly-mem-modal__bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #51cf66 0%, #6dffb0 100%);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.fly-mem-modal__bar-fill.warn { background: linear-gradient(90deg, #ffd770 0%, #ffb84a 100%); }
+.fly-mem-modal__bar-fill.danger { background: linear-gradient(90deg, #ff8a8a 0%, #ff4d4d 100%); }
+
+.fly-mem-modal__details {
+  margin: 20px 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.fly-mem-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+}
+.fly-mem-row:last-child { border-bottom: none; }
+.fly-mem-row__cat { color: rgba(255, 255, 255, 0.85); }
+.fly-mem-row__count { color: rgba(255, 255, 255, 0.45); }
+.fly-mem-row__size {
+  font-variant-numeric: tabular-nums;
+  color: #ffd770;
+  font-weight: 600;
+  min-width: 60px;
+  text-align: right;
+}
+
+.fly-mem-modal__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.fly-mem-btn {
+  flex: 1;
+  min-width: 140px;
+  padding: 10px 12px;
+  background: rgba(245, 184, 66, 0.15);
+  border: 1px solid rgba(245, 184, 66, 0.3);
+  color: #ffd770;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.fly-mem-btn:hover {
+  background: rgba(245, 184, 66, 0.25);
+  border-color: #ffd770;
+}
+.fly-mem-modal__hint {
+  display: block;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .fly-mem-bar { top: 8px; padding: 4px 10px; font-size: 10px; }
+  .fly-mem-bar__track { width: 40px; }
+  .fly-mem-bar__label { min-width: 38px; }
+}
+
 /* ===== JAMES — Transcrição em tempo real ===== */
 .james-stage__user-text {
   min-height: 0;

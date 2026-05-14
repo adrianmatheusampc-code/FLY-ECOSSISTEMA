@@ -23476,10 +23476,8 @@
 
       function resize() {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        // Usa tamanho real do canvas (mini ou full) em vez de window
-        const rect = canvas.getBoundingClientRect();
-        const w = Math.max(rect.width, 100);
-        const h = Math.max(rect.height, 100);
+        const w = window.innerWidth;
+        const h = window.innerHeight;
         canvas.width  = w * dpr;
         canvas.height = h * dpr;
         canvas.style.width  = w + 'px';
@@ -23488,10 +23486,8 @@
       }
 
       function frame() {
-        // Usa o tamanho real do canvas pra centralizar o orbe
-        const rect = canvas.getBoundingClientRect();
-        const w = Math.max(rect.width, 100);
-        const h = Math.max(rect.height, 100);
+        const w = window.innerWidth;
+        const h = window.innerHeight;
         const cx = w / 2;
         const cy = h / 2;
 
@@ -24467,6 +24463,182 @@
     }
   })();
   </script>
+
+  <!-- ===== INDICADOR DE MEMÓRIA (localStorage) ===== -->
+  <button id="flyMemBar" class="fly-mem-bar" type="button" title="Memória do navegador usada por este site">
+    <span class="fly-mem-bar__icon">💾</span>
+    <span class="fly-mem-bar__track">
+      <span class="fly-mem-bar__fill" id="flyMemFill"></span>
+    </span>
+    <span class="fly-mem-bar__label" id="flyMemLabel">--</span>
+  </button>
+
+  <!-- Modal de detalhes da memória -->
+  <div id="flyMemModal" class="fly-mem-modal hidden">
+    <div class="fly-mem-modal__panel">
+      <header>
+        <h3>💾 Memória do Navegador</h3>
+        <button class="fly-mem-modal__close" type="button" aria-label="Fechar">×</button>
+      </header>
+      <div class="fly-mem-modal__overview">
+        <div class="fly-mem-modal__big">
+          <strong id="flyMemUsedBig">--</strong>
+          <small>de <span id="flyMemTotalBig">~5 MB</span> usados</small>
+        </div>
+        <div class="fly-mem-modal__bar">
+          <div class="fly-mem-modal__bar-fill" id="flyMemModalFill"></div>
+        </div>
+      </div>
+      <div class="fly-mem-modal__details" id="flyMemDetails">
+        <p>Carregando...</p>
+      </div>
+      <div class="fly-mem-modal__actions">
+        <button id="flyMemExport" class="fly-mem-btn" type="button">📥 Exportar Backup (JSON)</button>
+        <button id="flyMemImport" class="fly-mem-btn" type="button">📤 Importar Backup</button>
+        <input type="file" id="flyMemImportFile" accept=".json" style="display:none">
+      </div>
+      <small class="fly-mem-modal__hint">
+        Limite típico do navegador: ~5-10 MB por site. Se chegar perto do limite, exporta o backup e limpa o que não precisa.
+      </small>
+    </div>
+  </div>
+
+  <script>
+  (function flyMemoryBar() {
+    function getStorageSize() {
+      let total = 0;
+      const breakdown = [];
+      for (let key in localStorage) {
+        if (!localStorage.hasOwnProperty(key)) continue;
+        const val = localStorage.getItem(key) || '';
+        const size = (key.length + val.length) * 2; // UTF-16: 2 bytes/char
+        total += size;
+        breakdown.push({ key, size });
+      }
+      breakdown.sort((a, b) => b.size - a.size);
+      return { total, breakdown };
+    }
+
+    function fmt(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    function classifyKey(key) {
+      if (/cofre|wallet|partner|move|jarvis_finance/i.test(key)) return '💰 Cofre AEY';
+      if (/sale|customer/i.test(key)) return '🛒 Vendas';
+      if (/fly_cup/i.test(key)) return '🏆 Fly Cup';
+      if (/war/i.test(key)) return '⚔️ Plano WAR';
+      if (/project/i.test(key)) return '📁 Projetos';
+      if (/james|openai|anthropic/i.test(key)) return '🧠 JAMES IA';
+      if (/supabase|sync/i.test(key)) return '☁️ Supabase';
+      if (/onboarding|setup|admin|pin/i.test(key)) return '⚙️ Sistema';
+      return '📦 Outros';
+    }
+
+    function updateBar() {
+      const { total, breakdown } = getStorageSize();
+      const QUOTA = 5 * 1024 * 1024; // 5 MB estimativa típica
+      const pct = Math.min(100, (total / QUOTA) * 100);
+
+      const fill = document.getElementById('flyMemFill');
+      const label = document.getElementById('flyMemLabel');
+      if (fill) {
+        fill.style.width = pct + '%';
+        fill.classList.toggle('warn', pct > 60 && pct <= 85);
+        fill.classList.toggle('danger', pct > 85);
+      }
+      if (label) label.textContent = fmt(total);
+
+      // Detalhes do modal
+      const usedBig = document.getElementById('flyMemUsedBig');
+      const modalFill = document.getElementById('flyMemModalFill');
+      const details = document.getElementById('flyMemDetails');
+      if (usedBig) usedBig.textContent = fmt(total);
+      if (modalFill) {
+        modalFill.style.width = pct + '%';
+        modalFill.classList.toggle('warn', pct > 60 && pct <= 85);
+        modalFill.classList.toggle('danger', pct > 85);
+      }
+      if (details) {
+        // Agrupa por categoria
+        const groups = {};
+        for (const item of breakdown) {
+          const cat = classifyKey(item.key);
+          if (!groups[cat]) groups[cat] = { size: 0, count: 0 };
+          groups[cat].size += item.size;
+          groups[cat].count++;
+        }
+        const sortedGroups = Object.entries(groups).sort((a, b) => b[1].size - a[1].size);
+        details.innerHTML = sortedGroups.map(([cat, g]) => `
+          <div class="fly-mem-row">
+            <span class="fly-mem-row__cat">${cat}</span>
+            <span class="fly-mem-row__count">${g.count} ${g.count === 1 ? 'item' : 'itens'}</span>
+            <span class="fly-mem-row__size">${fmt(g.size)}</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Abre modal de detalhes
+    const bar = document.getElementById('flyMemBar');
+    const modal = document.getElementById('flyMemModal');
+    const closeBtn = modal.querySelector('.fly-mem-modal__close');
+    bar?.addEventListener('click', () => {
+      updateBar();
+      modal.classList.remove('hidden');
+    });
+    closeBtn?.addEventListener('click', () => modal.classList.add('hidden'));
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
+
+    // Exportar backup
+    document.getElementById('flyMemExport')?.addEventListener('click', () => {
+      const data = {};
+      for (let key in localStorage) {
+        if (localStorage.hasOwnProperty(key)) data[key] = localStorage.getItem(key);
+      }
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'fly-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // Importar backup
+    document.getElementById('flyMemImport')?.addEventListener('click', () => {
+      document.getElementById('flyMemImportFile').click();
+    });
+    document.getElementById('flyMemImportFile')?.addEventListener('change', (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (confirm('Importar substituirá todos os dados atuais. Continuar?')) {
+            localStorage.clear();
+            for (const k in data) localStorage.setItem(k, data[k]);
+            alert('Backup importado! A página vai recarregar.');
+            location.reload();
+          }
+        } catch (err) {
+          alert('Arquivo inválido: ' + err.message);
+        }
+      };
+      reader.readAsText(f);
+    });
+
+    // Atualiza a cada 3s + ao salvar algo
+    updateBar();
+    setInterval(updateBar, 3000);
+    const origSetItem = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = function(k, v) { origSetItem(k, v); setTimeout(updateBar, 100); };
+  })();
+  </script>
+
   <script type="module" src="assets/fly-supabase-sync.js"></script>
   <script src="assets/fly-expansoes.js"></script>
 
