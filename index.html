@@ -23475,17 +23475,16 @@
       let activeMode = 'idle'; // idle | listening | speaking
 
       function getCanvasSize() {
-        // Em mini-mode, usa o tamanho real do canvas. Em fullscreen, usa o viewport.
-        const rect = canvas.getBoundingClientRect();
-        if (rect.width > 10 && rect.height > 10 && rect.width < window.innerWidth * 0.9) {
-          return { w: rect.width, h: rect.height };
-        }
-        return { w: window.innerWidth, h: window.innerHeight };
+        // SEMPRE usa tamanho real do canvas (clientWidth/Height funciona em mini e full)
+        const w = canvas.clientWidth || canvas.offsetWidth || window.innerWidth;
+        const h = canvas.clientHeight || canvas.offsetHeight || window.innerHeight;
+        return { w, h };
       }
 
       function resize() {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         const { w, h } = getCanvasSize();
+        if (w < 10 || h < 10) return; // skip se ainda não renderizou
         canvas.width  = w * dpr;
         canvas.height = h * dpr;
         canvas.style.width  = w + 'px';
@@ -23495,6 +23494,10 @@
 
       function frame() {
         const { w, h } = getCanvasSize();
+        if (w < 10 || h < 10) {
+          raf = requestAnimationFrame(frame);
+          return; // skip render se canvas ainda não tem tamanho
+        }
         const cx = w / 2;
         const cy = h / 2;
 
@@ -23563,13 +23566,20 @@
       }
 
       window.addEventListener('resize', resize);
-      // Observa redimensionamentos do próprio canvas (mini ↔ full)
+      // Observa o canvas E o stage pra detectar mudanças de mini ↔ full
       try {
         const ro = new ResizeObserver(() => resize());
         ro.observe(canvas);
+        const stageEl = document.getElementById('jamesStage');
+        if (stageEl) ro.observe(stageEl);
       } catch (e) {}
-      // Expõe pra ser chamado manualmente quando abre o stage
-      window.__flyOrbResize = resize;
+      // Expõe pra ser chamado manualmente
+      window.__flyOrbResize = () => {
+        resize();
+        // Re-tenta após transições CSS (300-400ms)
+        setTimeout(resize, 200);
+        setTimeout(resize, 500);
+      };
       resize();
       frame();
 
