@@ -504,6 +504,185 @@
   }
 
   /* =====================================================================
+     WIREFRAME ORB — esfera 3D mesh dourada (canvas)
+     ===================================================================== */
+  function buildMeshOrb(canvas, opts = {}) {
+    const ctx = canvas.getContext('2d');
+    const PARTICLES = opts.particles || 1100;
+    const OUTER_RING = opts.outerRing !== false;
+    const points = [];
+
+    // Distribuição via espiral de Fibonacci na esfera
+    const phi = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < PARTICLES; i++) {
+      const y = 1 - (i / (PARTICLES - 1)) * 2;
+      const r = Math.sqrt(1 - y * y);
+      const theta = phi * i;
+      points.push({
+        x: Math.cos(theta) * r,
+        y,
+        z: Math.sin(theta) * r,
+        off: Math.random() * Math.PI * 2,
+      });
+    }
+
+    // Pontos da névoa orbital externa
+    const orbital = [];
+    if (OUTER_RING) {
+      for (let i = 0; i < 220; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = 1.18 + Math.random() * 0.18;
+        orbital.push({
+          baseR: r,
+          a,
+          speed: 0.002 + Math.random() * 0.004,
+          size: 0.5 + Math.random() * 1.1,
+          alpha: 0.25 + Math.random() * 0.5,
+          off: Math.random() * Math.PI * 2,
+        });
+      }
+    }
+
+    let rotY = 0;
+    let rotX = 0.4;
+    let t = 0;
+    let amplitude = 0;
+    let targetAmp = 0;
+    let raf = 0;
+    let status = STATUS.IDLE;
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = canvas.clientWidth || canvas.offsetWidth || canvas.width || 80;
+      const h = canvas.clientHeight || canvas.offsetHeight || canvas.height || 80;
+      canvas.width  = w * dpr;
+      canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+
+    let ro;
+    try {
+      ro = new ResizeObserver(() => resize());
+      ro.observe(canvas);
+    } catch (e) {}
+
+    function frame() {
+      const w = canvas.clientWidth || canvas.offsetWidth;
+      const h = canvas.clientHeight || canvas.offsetHeight;
+      if (w < 10 || h < 10) { raf = requestAnimationFrame(frame); return; }
+
+      const cx = w / 2;
+      const cy = h / 2;
+
+      amplitude += (targetAmp - amplitude) * 0.1;
+
+      // Trail fade
+      ctx.fillStyle = 'rgba(2, 2, 4, 0.28)';
+      ctx.fillRect(0, 0, w, h);
+
+      const pulse = 1 + Math.sin(t * 0.9) * 0.04 + amplitude * 0.18;
+      const radius = Math.min(w, h) * 0.36 * pulse;
+
+      ctx.globalCompositeOperation = 'lighter';
+
+      const cy_ = Math.cos(rotY), sy_ = Math.sin(rotY);
+      const cx_ = Math.cos(rotX), sx_ = Math.sin(rotX);
+
+      // Pontos da esfera com onda radial
+      for (let i = 0; i < PARTICLES; i++) {
+        const p = points[i];
+        let x = p.x * cy_ - p.z * sy_;
+        let z = p.x * sy_ + p.z * cy_;
+        let y = p.y;
+        const y2 = y * cx_ - z * sx_;
+        z = y * sx_ + z * cx_;
+        y = y2;
+
+        // Distorção tipo Siri/mesh com noise senoidal
+        const wave = Math.sin(t * 1.4 + p.off + (x + y) * 2.2) * (0.08 + amplitude * 0.22);
+        const r = radius * (1 + wave);
+
+        const persp = 1.6 + z * 0.85;
+        const px = cx + (x * r) / persp;
+        const py = cy + (y * r) / persp;
+        const depth = (z + 1) * 0.5; // 0..1
+        const size = 0.5 + depth * 1.4;
+        const aBase = 0.22 + depth * 0.7;
+        const hueShift = (Math.sin(t * 0.6 + p.off) * 8) | 0;
+
+        let hue, sat, light;
+        if (status === STATUS.LISTENING) { hue = 48 + hueShift; sat = 100; light = 56 + depth * 18; }
+        else if (status === STATUS.SPEAKING) { hue = 32 + hueShift; sat = 100; light = 62 + depth * 22; }
+        else if (status === STATUS.THINKING) { hue = 42 + hueShift; sat = 95; light = 60 + depth * 18; }
+        else if (status === STATUS.ERROR)    { hue = 8 + hueShift;  sat = 80; light = 55 + depth * 14; }
+        else { hue = 42 + hueShift; sat = 92; light = 50 + depth * 16; }
+
+        ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, ${aBase})`;
+        ctx.beginPath();
+        ctx.arc(px, py, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Núcleo brilhante
+      const coreR = radius * 0.55;
+      const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
+      const coreAlpha = 0.38 + amplitude * 0.35 + (status === STATUS.SPEAKING ? 0.2 : 0);
+      grd.addColorStop(0, `rgba(255, 240, 180, ${coreAlpha})`);
+      grd.addColorStop(0.45, 'rgba(255, 180, 70, 0.12)');
+      grd.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grd;
+      ctx.fillRect(cx - coreR, cy - coreR, coreR * 2, coreR * 2);
+
+      // Partículas orbitando (anel externo)
+      if (OUTER_RING) {
+        for (let i = 0; i < orbital.length; i++) {
+          const o = orbital[i];
+          o.a += o.speed * (1 + amplitude);
+          const x = Math.cos(o.a) * o.baseR;
+          const z = Math.sin(o.a) * o.baseR;
+          const yWob = Math.sin(t * 0.4 + o.off) * 0.18;
+
+          // Rotação X
+          const y2 = yWob * cx_ - z * sx_;
+          const zR = yWob * sx_ + z * cx_;
+
+          const persp = 1.6 + zR * 0.85;
+          const px = cx + (x * radius) / persp;
+          const py = cy + (y2 * radius) / persp;
+          const depth = (zR + 1) * 0.5;
+          const a = o.alpha * (0.5 + depth * 0.7);
+
+          ctx.fillStyle = `hsla(${42}, 100%, ${60 + depth * 20}%, ${a})`;
+          ctx.beginPath();
+          ctx.arc(px, py, o.size * (0.7 + depth * 0.7), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.globalCompositeOperation = 'source-over';
+
+      // Velocidade de rotação acelera com status
+      const spinMul = status === STATUS.THINKING ? 3 : status === STATUS.LISTENING ? 1.4 : status === STATUS.SPEAKING ? 1.8 : 1;
+      rotY += 0.0045 * spinMul + amplitude * 0.003;
+      rotX += 0.0018 * spinMul + amplitude * 0.0018;
+      t += 0.024;
+
+      raf = requestAnimationFrame(frame);
+    }
+    frame();
+
+    return {
+      setStatus(s) { status = s; },
+      setAmplitude(v) { targetAmp = Math.max(0, Math.min(1, v)); },
+      destroy() {
+        if (raf) cancelAnimationFrame(raf);
+        if (ro) try { ro.disconnect(); } catch (e) {}
+      },
+    };
+  }
+
+  /* =====================================================================
      COMPONENTES DOM
      ===================================================================== */
   function buildOrb(container) {
@@ -513,25 +692,19 @@
     btn.setAttribute('aria-label', 'Ativar James');
     btn.setAttribute('data-status', STATUS.IDLE);
     btn.innerHTML = `
-      <span class="jms-orb__ring-2"></span>
-      <span class="jms-orb__ring"></span>
-      <span class="jms-orb__core"></span>
+      <canvas class="jms-orb__canvas"></canvas>
       <span class="jms-orb__status-dot"></span>
       <span class="jms-orb__label">JAMES</span>
     `;
     container.appendChild(btn);
+    // monta o mesh no canvas
+    const canvas = btn.querySelector('.jms-orb__canvas');
+    btn._mesh = buildMeshOrb(canvas, { particles: 700, outerRing: true });
     return btn;
   }
 
-  function buildPower(container) {
-    const btn = document.createElement('button');
-    btn.id = 'jms-power';
-    btn.type = 'button';
-    btn.setAttribute('aria-label', 'Ligar/Desligar James');
-    btn.innerHTML = `<span class="jms-power-led"></span><span class="jms-power-text">OFF</span>`;
-    container.appendChild(btn);
-    return btn;
-  }
+  // Power button: agora vive DENTRO do label do orbe (status do orbe)
+  function buildPower() { return null; }
 
   function buildPanel(container) {
     const panel = document.createElement('div');
@@ -589,9 +762,7 @@
       </header>
 
       <div class="jms-fs__big-orb" id="jms-fs-orb">
-        <span class="jms-orb__ring-2"></span>
-        <span class="jms-orb__ring"></span>
-        <span class="jms-orb__core"></span>
+        <canvas class="jms-fs__big-orb-canvas"></canvas>
       </div>
 
       <div class="jms-fs__status">
@@ -653,7 +824,6 @@
 
     // Cria componentes
     const orbEl    = buildOrb(root);
-    const powerEl  = buildPower(root);
     const panelEl  = buildPanel(root);
     const fsEl     = buildFullscreen(root);
 
@@ -678,14 +848,15 @@
       fsActivate:   $('jms-fs-activate'),
       fsStop:       $('jms-fs-stop'),
       fsClose:      $('jms-fs-close'),
-      // Power
-      powerLed:  powerEl.querySelector('.jms-power-led'),
-      powerText: powerEl.querySelector('.jms-power-text'),
     };
 
     // Visualizers
     const vizPanel = createAudioVisualizer($('jms-viz'), 24);
     const vizFS    = createAudioVisualizer($('jms-fs-viz'), 40);
+
+    // Mesh do orbe grande (fullscreen)
+    const fsCanvas = fsEl.querySelector('.jms-fs__big-orb-canvas');
+    const fsMesh = buildMeshOrb(fsCanvas, { particles: 1400, outerRing: true });
 
     // Estado da UI
     let panelOpen = false;
@@ -701,8 +872,16 @@
 
     function updateStatusUI(status) {
       orbEl.setAttribute('data-status', status);
-      if (fsEl.classList.contains('open')) ui.fsOrb.setAttribute('data-status', status);
       ui.fsOrb.setAttribute('data-status', status);
+
+      // Propaga status pros meshes (cor + velocidade de rotação)
+      if (orbEl._mesh) orbEl._mesh.setStatus(status);
+      if (fsMesh) fsMesh.setStatus(status);
+
+      // Amplitude dos meshes
+      const amp = status === STATUS.LISTENING ? 0.6 : status === STATUS.SPEAKING ? 0.85 : status === STATUS.THINKING ? 0.4 : 0.15;
+      if (orbEl._mesh) orbEl._mesh.setAmplitude(amp);
+      if (fsMesh) fsMesh.setAmplitude(amp);
 
       const label = STATUS_LABELS[status] || status;
       ui.statusText.textContent = label;
@@ -766,9 +945,11 @@
     }
 
     function updatePowerButton(on) {
-      powerEl.classList.toggle('on', on);
-      ui.powerText.textContent = on ? 'ON' : 'OFF';
+      // Atualiza status dot e label do orbe
       orbEl.querySelector('.jms-orb__status-dot').classList.toggle('on', on);
+      const label = orbEl.querySelector('.jms-orb__label');
+      if (label) label.textContent = on ? 'JAMES · ON' : 'JAMES';
+      orbEl.classList.toggle('is-on', on);
     }
 
     // Cria o voice hook com handlers
@@ -839,10 +1020,13 @@
       });
     });
 
-    // Botão power (chefe pediu)
-    powerEl.addEventListener('click', () => {
-      voice.toggleJames();
-    });
+    // Shift+click no orbe liga/desliga (atalho rápido)
+    orbEl.addEventListener('click', (e) => {
+      if (e.shiftKey) {
+        e.preventDefault();
+        voice.toggleJames();
+      }
+    }, true);
 
     // Erro: se SR não disponível
     if (!voice.hasSR) {
