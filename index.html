@@ -24235,16 +24235,35 @@
     </div>
   </div>
 
+  <!-- BOTÃO SETUP (sempre visível) -->
+  <button id="flySetupBtn" class="fly-setup-btn" type="button" title="Configurar Supabase + IA">
+    ⚙️ SETUP
+  </button>
+
   <script>
   // ===== ONBOARDING WIZARD =====
   (function() {
     const wizard = document.getElementById('flyOnboardingWizard');
     const completionFlag = 'fly_onboarding_complete';
+    const setupBtn = document.getElementById('flySetupBtn');
 
-    // Check if already completed
-    if (localStorage.getItem(completionFlag)) {
-      wizard.remove();
-      return;
+    // Função pra abrir o wizard manualmente
+    function openWizard() {
+      wizard.classList.remove('hidden');
+      // reset pro passo 1
+      document.querySelectorAll('.fly-onboarding-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.fly-onboarding-step').forEach(el => el.classList.remove('active'));
+      document.getElementById('onboardStep1').classList.remove('hidden');
+      document.querySelector('[data-step="1"]').classList.add('active');
+    }
+
+    // Botão SETUP sempre abre o wizard
+    setupBtn.addEventListener('click', openWizard);
+
+    // Auto-abre na primeira vez (se não tiver Supabase configurado)
+    const hasSupabase = localStorage.getItem('fly_supabase_config');
+    if (!hasSupabase && !localStorage.getItem(completionFlag)) {
+      wizard.classList.remove('hidden');
     }
 
     // Load schema.sql for display (embedded)

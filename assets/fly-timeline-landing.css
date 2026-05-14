@@ -6282,6 +6282,43 @@ body.fly-exp-open .fly-exp-trigger { opacity: 0; pointer-events: none; }
   border-radius: 50%; font-size: 22px; cursor: pointer;
 }
 
+/* ===== BOTÃO SETUP (sempre visível) ===== */
+.fly-setup-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #f5b842 0%, #ffd070 100%);
+  color: #000;
+  border: none;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(245, 184, 66, 0.4), 0 0 30px rgba(245, 184, 66, 0.3);
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  animation: pulseSetup 2s ease-in-out infinite;
+}
+
+@keyframes pulseSetup {
+  0%, 100% { box-shadow: 0 8px 24px rgba(245, 184, 66, 0.4), 0 0 30px rgba(245, 184, 66, 0.3); }
+  50% { box-shadow: 0 8px 30px rgba(245, 184, 66, 0.6), 0 0 50px rgba(245, 184, 66, 0.5); }
+}
+
+.fly-setup-btn:hover {
+  transform: translateX(-50%) translateY(-3px) scale(1.05);
+  box-shadow: 0 12px 35px rgba(245, 184, 66, 0.6);
+  animation: none;
+}
+
+.fly-setup-btn:active {
+  transform: translateX(-50%) translateY(-1px) scale(1.02);
+}
+
 /* ===== ONBOARDING WIZARD ===== */
 .fly-onboarding-wrapper {
   position: fixed;
