@@ -1,15 +1,8 @@
 -- =============================================================
--- FLY ECOSSISTEMA · Esquema base Supabase
--- Rode esse arquivo no SQL editor do Supabase (uma vez).
--- Habilita RLS em todas as tabelas com policies básicas.
+-- FLY ECOSSISTEMA · Esquema base Supabase — VERSION 4 (SIMPLES)
+-- Sem DO blocks, sem ENUMs. Só sintaxe básica que SEMPRE funciona.
+-- Pode rodar várias vezes que não dá erro.
 -- =============================================================
-
--- Modo de dados (DEMO / NORMAL / META) — espelha localStorage.
-do $$ begin
-  create type fly_data_mode as enum ('demo', 'operational', 'goal');
-exception
-  when duplicate_object then null;
-end $$;
 
 -- =============================================================
 -- 1 · COFRE AEY (caixa privado dos sócios)
@@ -20,13 +13,13 @@ create table if not exists partners (
   name text not null,
   user_id uuid references auth.users(id),
   active boolean default true,
-  role text default 'socio', -- master | socio | finance_restricted
+  role text default 'socio',
   created_at timestamptz default now()
 );
 
 create table if not exists wallets (
   id uuid primary key default gen_random_uuid(),
-  data_mode fly_data_mode not null default 'demo',
+  data_mode text not null default 'demo' check (data_mode in ('demo','operational','goal')),
   name text not null,
   type text not null check (type in ('cash','bank_account','credit_card','pj_account','digital_wallet')),
   owner_partner_id uuid references partners(id) on delete set null,
@@ -42,7 +35,7 @@ create table if not exists wallets (
 
 create table if not exists money_movements (
   id uuid primary key default gen_random_uuid(),
-  data_mode fly_data_mode not null default 'demo',
+  data_mode text not null default 'demo' check (data_mode in ('demo','operational','goal')),
   movement_type text not null check (movement_type in
     ('income','expense','internal_transfer','credit_card_expense','invoice_payment','adjustment','reversal')),
   amount numeric not null check (amount >= 0),
@@ -99,7 +92,7 @@ create table if not exists jarvis_finance_commands (
 
 create table if not exists customers (
   id uuid primary key default gen_random_uuid(),
-  data_mode fly_data_mode not null default 'demo',
+  data_mode text not null default 'demo' check (data_mode in ('demo','operational','goal')),
   name text not null,
   phone text,
   instagram text,
@@ -122,9 +115,9 @@ create table if not exists customers (
 
 create table if not exists sales (
   id uuid primary key default gen_random_uuid(),
-  data_mode fly_data_mode not null default 'demo',
+  data_mode text not null default 'demo' check (data_mode in ('demo','operational','goal')),
   customer_id uuid references customers(id) on delete set null,
-  name text not null, -- snapshot
+  name text not null,
   phone text,
   instagram text,
   origin text,
@@ -165,7 +158,7 @@ on conflict (id) do nothing;
 
 create table if not exists fly_cup_polos (
   id uuid primary key default gen_random_uuid(),
-  data_mode fly_data_mode not null default 'demo',
+  data_mode text not null default 'demo' check (data_mode in ('demo','operational','goal')),
   modalidade text references fly_cup_modalidades(id) on delete set null,
   nome text not null,
   cidade text,
@@ -178,7 +171,7 @@ create table if not exists fly_cup_polos (
 
 create table if not exists fly_cup_eventos (
   id uuid primary key default gen_random_uuid(),
-  data_mode fly_data_mode not null default 'demo',
+  data_mode text not null default 'demo' check (data_mode in ('demo','operational','goal')),
   modalidade text references fly_cup_modalidades(id) on delete set null,
   nome text not null,
   data date,
@@ -194,7 +187,7 @@ create table if not exists fly_cup_eventos (
 
 create table if not exists fly_cup_atletas (
   id uuid primary key default gen_random_uuid(),
-  data_mode fly_data_mode not null default 'demo',
+  data_mode text not null default 'demo' check (data_mode in ('demo','operational','goal')),
   polo_id uuid references fly_cup_polos(id) on delete cascade,
   customer_id uuid references customers(id) on delete set null,
   modalidade text references fly_cup_modalidades(id) on delete set null,
@@ -205,19 +198,19 @@ create table if not exists fly_cup_atletas (
 );
 
 -- =============================================================
--- 4 · PLANO WAR (já existe no localStorage — espelhar)
+-- 4 · PLANO WAR
 -- =============================================================
 
 create table if not exists war_territories (
   id text primary key,
-  data_mode fly_data_mode not null default 'demo',
+  data_mode text not null default 'demo' check (data_mode in ('demo','operational','goal')),
   payload jsonb not null,
   updated_at timestamptz default now()
 );
 
 create table if not exists war_connections (
   id text primary key,
-  data_mode fly_data_mode not null default 'demo',
+  data_mode text not null default 'demo' check (data_mode in ('demo','operational','goal')),
   payload jsonb not null,
   updated_at timestamptz default now()
 );
@@ -240,30 +233,73 @@ alter table fly_cup_atletas       enable row level security;
 alter table war_territories       enable row level security;
 alter table war_connections       enable row level security;
 
--- Policy padrão: usuário autenticado faz tudo.
--- Ajuste depois pra checar role de partner (master/socio/finance_restricted).
-do $$
-declare t text;
-begin
-  for t in select unnest(array[
-    'partners','wallets','money_movements','movement_attachments',
-    'audit_logs','jarvis_finance_commands',
-    'customers','sales',
-    'fly_cup_polos','fly_cup_eventos','fly_cup_atletas',
-    'war_territories','war_connections'
-  ])
-  loop
-    execute format('
-      drop policy if exists "auth read %1$s" on %1$s;
-      drop policy if exists "auth write %1$s" on %1$s;
-      create policy "auth read %1$s"  on %1$s for select to authenticated using (true);
-      create policy "auth write %1$s" on %1$s for all    to authenticated using (true) with check (true);
-    ', t);
-  end loop;
-end$$;
+drop policy if exists "auth read partners" on partners;
+drop policy if exists "auth write partners" on partners;
+create policy "auth read partners" on partners for select to authenticated using (true);
+create policy "auth write partners" on partners for all to authenticated using (true) with check (true);
+
+drop policy if exists "auth read wallets" on wallets;
+drop policy if exists "auth write wallets" on wallets;
+create policy "auth read wallets" on wallets for select to authenticated using (true);
+create policy "auth write wallets" on wallets for all to authenticated using (true) with check (true);
+
+drop policy if exists "auth read money_movements" on money_movements;
+drop policy if exists "auth write money_movements" on money_movements;
+create policy "auth read money_movements" on money_movements for select to authenticated using (true);
+create policy "auth write money_movements" on money_movements for all to authenticated using (true) with check (true);
+
+drop policy if exists "auth read movement_attachments" on movement_attachments;
+drop policy if exists "auth write movement_attachments" on movement_attachments;
+create policy "auth read movement_attachments" on movement_attachments for select to authenticated using (true);
+create policy "auth write movement_attachments" on movement_attachments for all to authenticated using (true) with check (true);
+
+drop policy if exists "auth read audit_logs" on audit_logs;
+drop policy if exists "auth write audit_logs" on audit_logs;
+create policy "auth read audit_logs" on audit_logs for select to authenticated using (true);
+create policy "auth write audit_logs" on audit_logs for all to authenticated using (true) with check (true);
+
+drop policy if exists "auth read jarvis_finance_commands" on jarvis_finance_commands;
+drop policy if exists "auth write jarvis_finance_commands" on jarvis_finance_commands;
+create policy "auth read jarvis_finance_commands" on jarvis_finance_commands for select to authenticated using (true);
+create policy "auth write jarvis_finance_commands" on jarvis_finance_commands for all to authenticated using (true) with check (true);
+
+drop policy if exists "auth read customers" on customers;
+drop policy if exists "auth write customers" on customers;
+create policy "auth read customers" on customers for select to authenticated using (true);
+create policy "auth write customers" on customers for all to authenticated using (true) with check (true);
+
+drop policy if exists "auth read sales" on sales;
+drop policy if exists "auth write sales" on sales;
+create policy "auth read sales" on sales for select to authenticated using (true);
+create policy "auth write sales" on sales for all to authenticated using (true) with check (true);
+
+drop policy if exists "auth read fly_cup_polos" on fly_cup_polos;
+drop policy if exists "auth write fly_cup_polos" on fly_cup_polos;
+create policy "auth read fly_cup_polos" on fly_cup_polos for select to authenticated using (true);
+create policy "auth write fly_cup_polos" on fly_cup_polos for all to authenticated using (true) with check (true);
+
+drop policy if exists "auth read fly_cup_eventos" on fly_cup_eventos;
+drop policy if exists "auth write fly_cup_eventos" on fly_cup_eventos;
+create policy "auth read fly_cup_eventos" on fly_cup_eventos for select to authenticated using (true);
+create policy "auth write fly_cup_eventos" on fly_cup_eventos for all to authenticated using (true) with check (true);
+
+drop policy if exists "auth read fly_cup_atletas" on fly_cup_atletas;
+drop policy if exists "auth write fly_cup_atletas" on fly_cup_atletas;
+create policy "auth read fly_cup_atletas" on fly_cup_atletas for select to authenticated using (true);
+create policy "auth write fly_cup_atletas" on fly_cup_atletas for all to authenticated using (true) with check (true);
+
+drop policy if exists "auth read war_territories" on war_territories;
+drop policy if exists "auth write war_territories" on war_territories;
+create policy "auth read war_territories" on war_territories for select to authenticated using (true);
+create policy "auth write war_territories" on war_territories for all to authenticated using (true) with check (true);
+
+drop policy if exists "auth read war_connections" on war_connections;
+drop policy if exists "auth write war_connections" on war_connections;
+create policy "auth read war_connections" on war_connections for select to authenticated using (true);
+create policy "auth write war_connections" on war_connections for all to authenticated using (true) with check (true);
 
 -- =============================================================
--- 6 · SEED PARTNERS (rode uma vez)
+-- 6 · SEED PARTNERS
 -- =============================================================
 insert into partners (name) values
   ('Victor'), ('Emanuel'), ('Alen/Adrian'), ('Juninho')
