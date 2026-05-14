@@ -24108,5 +24108,257 @@
   </script>
   <script type="module" src="assets/fly-supabase-sync.js"></script>
   <script src="assets/fly-expansoes.js"></script>
+
+  <!-- ONBOARDING WIZARD -->
+  <div id="flyOnboardingWizard" class="fly-onboarding-wrapper hidden">
+    <div class="fly-onboarding-modal">
+      <header class="fly-onboarding-header">
+        <h2>🚀 Bem-vindo ao FLY Ecossistema</h2>
+        <p>Vamos configurar suas integrações em 3 passos</p>
+      </header>
+
+      <div class="fly-onboarding-progress">
+        <div class="fly-onboarding-step active" data-step="1">
+          <span class="step-num">1</span>
+          <span class="step-title">Banco de Dados</span>
+        </div>
+        <div class="fly-onboarding-step" data-step="2">
+          <span class="step-num">2</span>
+          <span class="step-title">Supabase</span>
+        </div>
+        <div class="fly-onboarding-step" data-step="3">
+          <span class="step-num">3</span>
+          <span class="step-title">JAMES IA</span>
+        </div>
+      </div>
+
+      <!-- STEP 1: Schema SQL -->
+      <div class="fly-onboarding-content" id="onboardStep1">
+        <h3>Passo 1: Executar Schema SQL</h3>
+        <p>Cole o código abaixo no SQL Editor do Supabase. Isso cria todas as tabelas necessárias.</p>
+
+        <div class="fly-onboarding-code-block">
+          <pre id="schemaCode" readonly></pre>
+          <button id="copySchemaBtn" class="fly-btn fly-btn-primary" type="button">
+            📋 Copiar SQL
+          </button>
+        </div>
+
+        <div class="fly-onboarding-actions">
+          <a href="https://supabase.com/dashboard" target="_blank" class="fly-btn fly-btn-secondary">
+            Ir para Supabase →
+          </a>
+          <button id="nextStep1Btn" class="fly-btn fly-btn-primary" type="button">
+            Próximo →
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Supabase Config -->
+      <div class="fly-onboarding-content hidden" id="onboardStep2">
+        <h3>Passo 2: Conectar Supabase</h3>
+        <p>Abra o SQL Editor do Supabase, cole o código SQL (passo 1) e execute.</p>
+        <p>Depois, copie suas credenciais de projeto para conectar:</p>
+
+        <div class="fly-onboarding-form">
+          <label>Project URL
+            <input id="onboardSupabaseUrl" type="url" placeholder="https://xxxx.supabase.co" />
+          </label>
+          <label>Anon Key (public)
+            <input id="onboardSupabaseKey" type="password" placeholder="eyJhbGciOi..." />
+          </label>
+          <small>Encontre esses valores em: Settings → API → Project URL e anon key</small>
+        </div>
+
+        <div class="fly-onboarding-actions">
+          <button id="backStep2Btn" class="fly-btn fly-btn-ghost" type="button">
+            ← Voltar
+          </button>
+          <button id="nextStep2Btn" class="fly-btn fly-btn-primary" type="button">
+            Conectar →
+          </button>
+        </div>
+        <div id="onboardStep2Status"></div>
+      </div>
+
+      <!-- STEP 3: JAMES IA Keys -->
+      <div class="fly-onboarding-content hidden" id="onboardStep3">
+        <h3>Passo 3: Ativar JAMES Nível 2 (IA)</h3>
+        <p>Escolha uma IA para ativar o JAMES em modo conversacional:</p>
+
+        <div class="fly-onboarding-tabs">
+          <button class="fly-tab active" data-tab="openai">OpenAI (GPT-4o)</button>
+          <button class="fly-tab" data-tab="anthropic">Anthropic (Claude)</button>
+        </div>
+
+        <div id="openaiTab" class="fly-tab-content active">
+          <p>Use GPT-4o-mini — rápido, barato e poderoso.</p>
+          <label>API Key OpenAI
+            <input id="onboardOpenaiKey" type="password" placeholder="sk-..." />
+          </label>
+          <small>Obtenha em <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a></small>
+        </div>
+
+        <div id="anthropicTab" class="fly-tab-content hidden">
+          <p>Use Claude 3.5 Sonnet — mais poderoso, mais rápido.</p>
+          <label>API Key Anthropic
+            <input id="onboardAnthropicKey" type="password" placeholder="sk-ant-..." />
+          </label>
+          <small>Obtenha em <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com/settings/keys</a></small>
+        </div>
+
+        <div class="fly-onboarding-actions">
+          <button id="backStep3Btn" class="fly-btn fly-btn-ghost" type="button">
+            ← Voltar
+          </button>
+          <button id="finishOnboardBtn" class="fly-btn fly-btn-primary" type="button">
+            Finalizar & Começar 🎉
+          </button>
+          <button id="skipOnboardBtn" class="fly-btn fly-btn-ghost" type="button">
+            Pular por agora
+          </button>
+        </div>
+      </div>
+
+      <!-- Completion -->
+      <div class="fly-onboarding-content hidden" id="onboardComplete">
+        <div style="text-align: center; padding: 60px 40px;">
+          <h2 style="font-size: 48px; margin-bottom: 20px;">✨ Tudo pronto!</h2>
+          <p style="font-size: 18px; color: rgba(255,255,255,0.7); margin-bottom: 30px;">
+            Seu FLY Ecossistema está configurado e pronto para usar.
+          </p>
+          <button id="closeOnboardBtn" class="fly-btn fly-btn-primary" type="button">
+            Começar a usar →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ===== ONBOARDING WIZARD =====
+  (function() {
+    const wizard = document.getElementById('flyOnboardingWizard');
+    const completionFlag = 'fly_onboarding_complete';
+
+    // Check if already completed
+    if (localStorage.getItem(completionFlag)) {
+      wizard.remove();
+      return;
+    }
+
+    // Load schema.sql for display
+    fetch('db/schema.sql')
+      .then(r => r.text())
+      .then(sql => {
+        const schemaCode = document.getElementById('schemaCode');
+        schemaCode.textContent = sql;
+      })
+      .catch(e => {
+        console.warn('Could not load schema.sql:', e);
+        document.getElementById('schemaCode').textContent = '-- Unable to load schema.sql. Please check your setup.';
+      });
+
+    // Copy button for schema
+    document.getElementById('copySchemaBtn').addEventListener('click', () => {
+      const code = document.getElementById('schemaCode').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        alert('SQL copiado! Cole no SQL Editor do Supabase e execute.');
+      }).catch(() => {
+        alert('Não consegui copiar. Selecione manualmente e use Ctrl+C');
+      });
+    });
+
+    // Step navigation
+    function showStep(stepNum) {
+      document.querySelectorAll('.fly-onboarding-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.fly-onboarding-step').forEach(el => el.classList.remove('active'));
+
+      document.getElementById('onboardStep' + stepNum)?.classList.remove('hidden');
+      document.querySelector('[data-step="' + stepNum + '"]')?.classList.add('active');
+    }
+
+    // Step 1 → Step 2
+    document.getElementById('nextStep1Btn').addEventListener('click', () => showStep(2));
+
+    // Step 2 ← Step 1
+    document.getElementById('backStep2Btn').addEventListener('click', () => showStep(1));
+
+    // Step 2 → Step 3 (with validation)
+    document.getElementById('nextStep2Btn').addEventListener('click', async () => {
+      const url = document.getElementById('onboardSupabaseUrl').value.trim();
+      const key = document.getElementById('onboardSupabaseKey').value.trim();
+      const status = document.getElementById('onboardStep2Status');
+
+      if (!url || !key) {
+        status.innerHTML = '<p style="color: #ff6b6b;">Preencha URL e Anon Key</p>';
+        return;
+      }
+
+      status.innerHTML = '<p style="color: #f5b842;">Conectando...</p>';
+
+      // Try to initialize Supabase connection
+      try {
+        const ok = await window.__flySync?.init?.({ url, anonKey: key });
+        if (ok) {
+          status.innerHTML = '<p style="color: #51cf66;">✓ Conectado com sucesso!</p>';
+          setTimeout(() => showStep(3), 1000);
+        } else {
+          status.innerHTML = '<p style="color: #ff6b6b;">Falha na conexão. Verifique URL e Key.</p>';
+        }
+      } catch (e) {
+        status.innerHTML = '<p style="color: #ff6b6b;">Erro: ' + e.message + '</p>';
+      }
+    });
+
+    // Step 3 ← Step 2
+    document.getElementById('backStep3Btn').addEventListener('click', () => showStep(2));
+
+    // Tab switching in Step 3
+    document.querySelectorAll('.fly-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabName = btn.getAttribute('data-tab');
+        document.querySelectorAll('.fly-tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.fly-tab-content').forEach(c => c.classList.add('hidden'));
+        btn.classList.add('active');
+        document.getElementById(tabName + 'Tab').classList.remove('hidden');
+      });
+    });
+
+    // Finish onboarding
+    document.getElementById('finishOnboardBtn').addEventListener('click', () => {
+      const openaiKey = document.getElementById('onboardOpenaiKey').value.trim();
+      const anthropicKey = document.getElementById('onboardAnthropicKey').value.trim();
+
+      if (!openaiKey && !anthropicKey) {
+        alert('Preencha pelo menos uma chave de API');
+        return;
+      }
+
+      // Save keys to localStorage (same format as JAMES settings)
+      if (openaiKey) localStorage.setItem('fly_james_openai_key', openaiKey);
+      if (anthropicKey) localStorage.setItem('fly_james_anthropic_key', anthropicKey);
+
+      // Mark as complete
+      localStorage.setItem(completionFlag, 'true');
+
+      // Show completion screen
+      document.getElementById('onboardStep3').classList.add('hidden');
+      document.querySelector('[data-step="3"]').classList.add('active');
+      document.getElementById('onboardComplete').classList.remove('hidden');
+    });
+
+    // Skip onboarding
+    document.getElementById('skipOnboardBtn').addEventListener('click', () => {
+      localStorage.setItem(completionFlag, 'true');
+      wizard.classList.add('hidden');
+    });
+
+    // Close onboarding (from completion screen)
+    document.getElementById('closeOnboardBtn').addEventListener('click', () => {
+      wizard.classList.add('hidden');
+    });
+  })();
+  </script>
 </body>
 </html>
