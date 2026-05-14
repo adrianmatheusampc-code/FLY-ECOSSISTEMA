@@ -21763,7 +21763,7 @@
     <span class="james-trigger__dot" data-state="idle"></span>
   </button>
 
-  <div id="jamesStage" class="james-stage mini" aria-hidden="true">
+  <div id="jamesStage" class="james-stage" aria-hidden="true">
     <button type="button" class="james-expand-btn" id="jamesExpandBtn" title="Expandir / Recolher">⤢</button>
     <canvas id="jamesOrbCanvas" class="james-orb-canvas"></canvas>
     <div class="james-stage__overlay">
@@ -23477,16 +23477,22 @@
 
       function resize() {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        canvas.width  = window.innerWidth * dpr;
-        canvas.height = window.innerHeight * dpr;
-        canvas.style.width  = window.innerWidth + 'px';
-        canvas.style.height = window.innerHeight + 'px';
+        // Usa tamanho real do canvas (mini ou full) em vez de window
+        const rect = canvas.getBoundingClientRect();
+        const w = Math.max(rect.width, 100);
+        const h = Math.max(rect.height, 100);
+        canvas.width  = w * dpr;
+        canvas.height = h * dpr;
+        canvas.style.width  = w + 'px';
+        canvas.style.height = h + 'px';
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
 
       function frame() {
-        const w = window.innerWidth;
-        const h = window.innerHeight;
+        // Usa o tamanho real do canvas pra centralizar o orbe
+        const rect = canvas.getBoundingClientRect();
+        const w = Math.max(rect.width, 100);
+        const h = Math.max(rect.height, 100);
         const cx = w / 2;
         const cy = h / 2;
 
@@ -23555,6 +23561,13 @@
       }
 
       window.addEventListener('resize', resize);
+      // Observa redimensionamentos do próprio canvas (mini ↔ full)
+      try {
+        const ro = new ResizeObserver(() => resize());
+        ro.observe(canvas);
+      } catch (e) {}
+      // Expõe pra ser chamado manualmente quando abre o stage
+      window.__flyOrbResize = resize;
       resize();
       frame();
 
@@ -23579,6 +23592,8 @@
       document.body.classList.add('james-active');
       if (stage.classList.contains('mini')) document.body.classList.add('james-mini');
       else document.body.classList.remove('james-mini');
+      // Força orbe redimensionar com o novo tamanho do canvas
+      requestAnimationFrame(() => { try { window.__flyOrbResize?.(); } catch (e) {} });
     }
     function closeStage() {
       stage.classList.remove('open');
@@ -23607,6 +23622,7 @@
           expandBtn.textContent = '⤢';
           expandBtn.title = 'Expandir';
         }
+        requestAnimationFrame(() => { try { window.__flyOrbResize?.(); } catch (e) {} });
       });
     }
 
