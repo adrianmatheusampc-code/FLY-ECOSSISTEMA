@@ -348,6 +348,29 @@
       wakeRecog = null;
     }
 
+    /* ----------------- Processamento de comando (real ou mock) ----------------- */
+    async function processCommand(userText) {
+      // Verifica encerramento ANTES de chamar IA
+      if (jamesMockBrain.isStopCommand(userText)) {
+        const reply = jamesMockBrain.generateJamesResponse(userText);
+        return { reply, isStop: true };
+      }
+
+      // Tenta IA real primeiro (Fase 2)
+      if (window.__jamesBrain && window.__jamesBrain.isAvailable()) {
+        try {
+          const result = await window.__jamesBrain.generateRealResponse(userText);
+          if (result && result.text) return { reply: result.text, isStop: false };
+        } catch (e) {
+          console.warn('[JAMES] IA real falhou, usando mock:', e?.message || e);
+        }
+      }
+
+      // Fallback: mock brain
+      const reply = jamesMockBrain.generateJamesResponse(userText);
+      return { reply, isStop: false };
+    }
+
     /* ----------------- Capture loop (escuta um comando) ----------------- */
     function captureOnce() {
       if (!hasSR) {
@@ -378,12 +401,18 @@
         addMessage('user', userText);
         handlers.onUserMessage?.(userText);
 
-        // Verifica comando de encerramento
-        if (jamesMockBrain.isStopCommand(userText)) {
-          const reply = jamesMockBrain.generateJamesResponse(userText);
-          state.lastResponse = reply;
-          addMessage('james', reply);
-          handlers.onJamesMessage?.(reply);
+        // Pensando
+        setStatus(STATUS.THINKING);
+        handlers.onThinkStart?.();
+
+        // Processa comando (real ou mock)
+        const result = await processCommand(userText);
+        const reply = result.reply;
+        state.lastResponse = reply;
+        addMessage('james', reply);
+        handlers.onJamesMessage?.(reply);
+
+        if (result.isStop) {
           speak(reply, () => {
             state.isConversationActive = false;
             setStatus(STATUS.IDLE);
@@ -392,20 +421,7 @@
           return;
         }
 
-        // Pensando
-        setStatus(STATUS.THINKING);
-        handlers.onThinkStart?.();
-        const thinkDelay = 800 + Math.random() * 700;
-        await new Promise(r => setTimeout(r, thinkDelay));
-
-        const reply = jamesMockBrain.generateJamesResponse(userText);
-        state.lastResponse = reply;
-        addMessage('james', reply);
-        handlers.onJamesMessage?.(reply);
-
-        // Speaking
         speak(reply, () => {
-          // Quando termina de falar, volta a ouvir se ainda conversa ativa
           if (state.isConversationActive) {
             setTimeout(() => { if (state.isConversationActive) captureOnce(); }, 250);
           } else {
@@ -461,25 +477,26 @@
       else startJames();
     }
 
-    function sendTextCommand(text) {
+    async function sendTextCommand(text) {
       if (!text) return;
       addMessage('user', text);
       handlers.onUserMessage?.(text);
       setStatus(STATUS.THINKING);
       handlers.onThinkStart?.();
-      setTimeout(() => {
-        const reply = jamesMockBrain.generateJamesResponse(text);
-        state.lastResponse = reply;
-        addMessage('james', reply);
-        handlers.onJamesMessage?.(reply);
-        speak(reply, () => {
-          if (state.isConversationActive) {
-            setTimeout(() => { if (state.isConversationActive) captureOnce(); }, 250);
-          } else {
-            setStatus(STATUS.IDLE);
-          }
-        });
-      }, 700);
+
+      const result = await processCommand(text);
+      const reply = result.reply;
+      state.lastResponse = reply;
+      addMessage('james', reply);
+      handlers.onJamesMessage?.(reply);
+
+      speak(reply, () => {
+        if (state.isConversationActive) {
+          setTimeout(() => { if (state.isConversationActive) captureOnce(); }, 250);
+        } else {
+          setStatus(STATUS.IDLE);
+        }
+      });
     }
 
     function getState() { return { ...state }; }
@@ -567,6 +584,22 @@
       ro.observe(canvas);
     } catch (e) {}
 
+    // Pré-calcula vizinhos pra mesh wireframe (cada ponto liga aos K mais próximos)
+    const K_NEIGHBORS = opts.kNeighbors || 4;
+    const neighbors = [];
+    for (let i = 0; i < PARTICLES; i++) {
+      const dists = [];
+      const pi = points[i];
+      for (let j = 0; j < PARTICLES; j++) {
+        if (j === i) continue;
+        const pj = points[j];
+        const dx = pi.x - pj.x, dy = pi.y - pj.y, dz = pi.z - pj.z;
+        dists.push({ idx: j, d: dx*dx + dy*dy + dz*dz });
+      }
+      dists.sort((a, b) => a.d - b.d);
+      neighbors.push(dists.slice(0, K_NEIGHBORS).map(x => x.idx));
+    }
+
     function frame() {
       const w = canvas.clientWidth || canvas.offsetWidth;
       const h = canvas.clientHeight || canvas.offsetHeight;
@@ -577,19 +610,17 @@
 
       amplitude += (targetAmp - amplitude) * 0.1;
 
-      // Trail fade
-      ctx.fillStyle = 'rgba(2, 2, 4, 0.28)';
-      ctx.fillRect(0, 0, w, h);
+      // LIMPA o canvas (transparente, sem quadrado preto)
+      ctx.clearRect(0, 0, w, h);
 
       const pulse = 1 + Math.sin(t * 0.9) * 0.04 + amplitude * 0.18;
-      const radius = Math.min(w, h) * 0.36 * pulse;
-
-      ctx.globalCompositeOperation = 'lighter';
+      const radius = Math.min(w, h) * 0.38 * pulse;
 
       const cy_ = Math.cos(rotY), sy_ = Math.sin(rotY);
       const cx_ = Math.cos(rotX), sx_ = Math.sin(rotX);
 
-      // Pontos da esfera com onda radial
+      // Calcula posições projetadas pra TODOS os pontos
+      const proj = new Array(PARTICLES);
       for (let i = 0; i < PARTICLES; i++) {
         const p = points[i];
         let x = p.x * cy_ - p.z * sy_;
@@ -599,42 +630,71 @@
         z = y * sx_ + z * cx_;
         y = y2;
 
-        // Distorção tipo Siri/mesh com noise senoidal
         const wave = Math.sin(t * 1.4 + p.off + (x + y) * 2.2) * (0.08 + amplitude * 0.22);
         const r = radius * (1 + wave);
-
         const persp = 1.6 + z * 0.85;
-        const px = cx + (x * r) / persp;
-        const py = cy + (y * r) / persp;
-        const depth = (z + 1) * 0.5; // 0..1
-        const size = 0.5 + depth * 1.4;
-        const aBase = 0.22 + depth * 0.7;
-        const hueShift = (Math.sin(t * 0.6 + p.off) * 8) | 0;
+        proj[i] = {
+          px: cx + (x * r) / persp,
+          py: cy + (y * r) / persp,
+          depth: (z + 1) * 0.5,
+        };
+      }
 
-        let hue, sat, light;
-        if (status === STATUS.LISTENING) { hue = 48 + hueShift; sat = 100; light = 56 + depth * 18; }
-        else if (status === STATUS.SPEAKING) { hue = 32 + hueShift; sat = 100; light = 62 + depth * 22; }
-        else if (status === STATUS.THINKING) { hue = 42 + hueShift; sat = 95; light = 60 + depth * 18; }
-        else if (status === STATUS.ERROR)    { hue = 8 + hueShift;  sat = 80; light = 55 + depth * 14; }
-        else { hue = 42 + hueShift; sat = 92; light = 50 + depth * 16; }
+      // Núcleo brilhante (radial gradient — NÃO fillRect, usa arc + clip)
+      const coreR = radius * 0.6;
+      const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
+      const coreAlpha = 0.35 + amplitude * 0.4 + (status === STATUS.SPEAKING ? 0.18 : 0);
+      grd.addColorStop(0,    `rgba(255, 240, 180, ${coreAlpha})`);
+      grd.addColorStop(0.4,  'rgba(255, 200, 100, 0.16)');
+      grd.addColorStop(0.75, 'rgba(255, 180, 70, 0.04)');
+      grd.addColorStop(1,    'rgba(0,0,0,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(cx, cy, coreR * 1.6, 0, Math.PI * 2);
+      ctx.fill();
 
-        ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, ${aBase})`;
+      ctx.globalCompositeOperation = 'lighter';
+
+      // Wireframe: linhas conectando vizinhos
+      let hue, sat, light;
+      if (status === STATUS.LISTENING)      { hue = 48; sat = 100; light = 60; }
+      else if (status === STATUS.SPEAKING)  { hue = 32; sat = 100; light = 65; }
+      else if (status === STATUS.THINKING)  { hue = 42; sat = 95;  light = 60; }
+      else if (status === STATUS.ERROR)     { hue = 8;  sat = 80;  light = 55; }
+      else                                  { hue = 42; sat = 92;  light = 55; }
+
+      ctx.lineWidth = 0.6;
+      for (let i = 0; i < PARTICLES; i++) {
+        const a = proj[i];
+        const nb = neighbors[i];
+        for (let k = 0; k < nb.length; k++) {
+          const j = nb[k];
+          if (j < i) continue; // evita desenhar 2x
+          const b = proj[j];
+          const avgDepth = (a.depth + b.depth) * 0.5;
+          const lineAlpha = (0.04 + avgDepth * 0.18) * (status === STATUS.SPEAKING ? 1.4 : status === STATUS.LISTENING ? 1.2 : 1);
+          ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${light + avgDepth * 15}%, ${lineAlpha})`;
+          ctx.beginPath();
+          ctx.moveTo(a.px, a.py);
+          ctx.lineTo(b.px, b.py);
+          ctx.stroke();
+        }
+      }
+
+      // Pontos
+      for (let i = 0; i < PARTICLES; i++) {
+        const a = proj[i];
+        const depth = a.depth;
+        const size = 0.5 + depth * 1.6;
+        const aBase = 0.3 + depth * 0.65;
+        const hueShift = (Math.sin(t * 0.6 + points[i].off) * 8) | 0;
+        ctx.fillStyle = `hsla(${hue + hueShift}, ${sat}%, ${light + depth * 18}%, ${aBase})`;
         ctx.beginPath();
-        ctx.arc(px, py, size, 0, Math.PI * 2);
+        ctx.arc(a.px, a.py, size, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Núcleo brilhante
-      const coreR = radius * 0.55;
-      const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
-      const coreAlpha = 0.38 + amplitude * 0.35 + (status === STATUS.SPEAKING ? 0.2 : 0);
-      grd.addColorStop(0, `rgba(255, 240, 180, ${coreAlpha})`);
-      grd.addColorStop(0.45, 'rgba(255, 180, 70, 0.12)');
-      grd.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = grd;
-      ctx.fillRect(cx - coreR, cy - coreR, coreR * 2, coreR * 2);
-
-      // Partículas orbitando (anel externo)
+      // Partículas orbitando (anel externo cósmico)
       if (OUTER_RING) {
         for (let i = 0; i < orbital.length; i++) {
           const o = orbital[i];
@@ -643,7 +703,6 @@
           const z = Math.sin(o.a) * o.baseR;
           const yWob = Math.sin(t * 0.4 + o.off) * 0.18;
 
-          // Rotação X
           const y2 = yWob * cx_ - z * sx_;
           const zR = yWob * sx_ + z * cx_;
 
@@ -651,18 +710,17 @@
           const px = cx + (x * radius) / persp;
           const py = cy + (y2 * radius) / persp;
           const depth = (zR + 1) * 0.5;
-          const a = o.alpha * (0.5 + depth * 0.7);
+          const a = o.alpha * (0.4 + depth * 0.7);
 
-          ctx.fillStyle = `hsla(${42}, 100%, ${60 + depth * 20}%, ${a})`;
+          ctx.fillStyle = `hsla(${hue}, ${sat}%, ${60 + depth * 20}%, ${a})`;
           ctx.beginPath();
-          ctx.arc(px, py, o.size * (0.7 + depth * 0.7), 0, Math.PI * 2);
+          ctx.arc(px, py, o.size * (0.6 + depth * 0.7), 0, Math.PI * 2);
           ctx.fill();
         }
       }
 
       ctx.globalCompositeOperation = 'source-over';
 
-      // Velocidade de rotação acelera com status
       const spinMul = status === STATUS.THINKING ? 3 : status === STATUS.LISTENING ? 1.4 : status === STATUS.SPEAKING ? 1.8 : 1;
       rotY += 0.0045 * spinMul + amplitude * 0.003;
       rotX += 0.0018 * spinMul + amplitude * 0.0018;
@@ -699,7 +757,7 @@
     container.appendChild(btn);
     // monta o mesh no canvas
     const canvas = btn.querySelector('.jms-orb__canvas');
-    btn._mesh = buildMeshOrb(canvas, { particles: 700, outerRing: true });
+    btn._mesh = buildMeshOrb(canvas, { particles: 350, kNeighbors: 3, outerRing: true });
     return btn;
   }
 
@@ -856,7 +914,7 @@
 
     // Mesh do orbe grande (fullscreen)
     const fsCanvas = fsEl.querySelector('.jms-fs__big-orb-canvas');
-    const fsMesh = buildMeshOrb(fsCanvas, { particles: 1400, outerRing: true });
+    const fsMesh = buildMeshOrb(fsCanvas, { particles: 700, kNeighbors: 4, outerRing: true });
 
     // Estado da UI
     let panelOpen = false;
