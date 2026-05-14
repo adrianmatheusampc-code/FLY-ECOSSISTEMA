@@ -21777,7 +21777,36 @@
       <div class="james-stage__chat">
         <input type="text" id="jamesInput" class="james-chat-input" placeholder="Pergunte a James..." autocomplete="off" />
       </div>
+
+      <!-- Visualização de áudio (waveform) -->
+      <div class="james-waveform" id="jamesWaveform">
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+      </div>
+
       <div class="james-stage__controls" style="margin-top: 15px; gap: 10px; flex-direction: row; justify-content: center;">
+        <button type="button" class="james-mic-btn" id="jamesMicBtn" title="Falar com James">
+          <span class="mic-icon">🎤</span>
+          <span class="mic-label">FALAR</span>
+        </button>
         <button type="button" class="james-stage__btn ghost" id="jamesSettingsBtn" title="Configurar IA (Nível 2)">⚙ IA</button>
         <button type="button" class="james-stage__btn ghost" id="jamesCloseBtn">Fechar</button>
       </div>
@@ -24074,6 +24103,55 @@
         processQuery(jamesInput.value);
       }
     });
+
+    // Botão de microfone — toggle gravação
+    const micBtn = document.getElementById('jamesMicBtn');
+    const waveform = document.getElementById('jamesWaveform');
+    let isMicRecording = false;
+
+    function showWaveform() {
+      waveform.classList.add('active');
+      micBtn.classList.add('recording');
+      micBtn.querySelector('.mic-label').textContent = 'OUVINDO';
+      isMicRecording = true;
+    }
+    function hideWaveform() {
+      waveform.classList.remove('active');
+      micBtn.classList.remove('recording');
+      micBtn.querySelector('.mic-label').textContent = 'FALAR';
+      isMicRecording = false;
+    }
+
+    micBtn.addEventListener('click', () => {
+      if (isMicRecording) {
+        // Já tá gravando — para
+        try { captureRecog?.stop?.(); } catch (e) {}
+        hideWaveform();
+        setState('idle', 'Processando…');
+      } else {
+        // Inicia captura
+        showWaveform();
+        try {
+          startCapture();
+        } catch (e) {
+          console.error('[JAMES] Erro ao iniciar microfone:', e);
+          replyTextEl.textContent = '⚠️ Não consegui acessar o microfone. Verifica permissão no navegador.';
+          hideWaveform();
+        }
+      }
+    });
+
+    // Esconde waveform quando termina captura (onend do captureRecog)
+    const _originalStartCapture = window.__startCaptureWrap || null;
+    // Observa state changes pra esconder waveform quando volta pra idle
+    const stateObserver = new MutationObserver(() => {
+      const s = document.getElementById('jamesState')?.textContent || '';
+      if (s.includes('Pronto') || s.includes('Não entendi') || s.includes('Pensando')) {
+        if (isMicRecording) hideWaveform();
+      }
+    });
+    const stateEl = document.getElementById('jamesState');
+    if (stateEl) stateObserver.observe(stateEl, { childList: true, characterData: true, subtree: true });
 
     // Settings (Nível 2 — API keys)
     const settingsPanel = document.getElementById('jamesSettings');

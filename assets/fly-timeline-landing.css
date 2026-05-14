@@ -6282,6 +6282,104 @@ body.fly-exp-open .fly-exp-trigger { opacity: 0; pointer-events: none; }
   border-radius: 50%; font-size: 22px; cursor: pointer;
 }
 
+/* ===== JAMES — Botão Microfone + Waveform ===== */
+.james-mic-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  background: linear-gradient(135deg, #f5b842 0%, #ffd070 100%);
+  color: #000;
+  border: none;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-transform: uppercase;
+  box-shadow: 0 6px 18px rgba(245, 184, 66, 0.4);
+}
+
+.james-mic-btn .mic-icon { font-size: 16px; line-height: 1; }
+.james-mic-btn .mic-label { line-height: 1; }
+
+.james-mic-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(245, 184, 66, 0.55);
+}
+
+.james-mic-btn.recording {
+  background: linear-gradient(135deg, #ff4444 0%, #ff8866 100%);
+  color: #fff;
+  animation: micPulse 1s ease-in-out infinite;
+}
+
+.james-mic-btn.recording .mic-icon {
+  animation: micShake 0.5s ease-in-out infinite;
+}
+
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 6px 18px rgba(255, 68, 68, 0.4), 0 0 0 0 rgba(255, 68, 68, 0.5); }
+  50%      { box-shadow: 0 6px 18px rgba(255, 68, 68, 0.6), 0 0 0 16px rgba(255, 68, 68, 0); }
+}
+
+@keyframes micShake {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.15); }
+}
+
+/* Waveform */
+.james-waveform {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 50px;
+  margin-top: 14px;
+  padding: 0 10px;
+}
+
+.james-waveform.active {
+  display: flex;
+}
+
+.james-waveform .wave-bar {
+  width: 4px;
+  height: 6px;
+  background: linear-gradient(180deg, #f5b842 0%, #ffd070 100%);
+  border-radius: 4px;
+  transform-origin: center;
+  animation: waveJump 0.9s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(245, 184, 66, 0.5);
+}
+
+.james-waveform .wave-bar:nth-child(1)  { animation-delay: 0.00s; }
+.james-waveform .wave-bar:nth-child(2)  { animation-delay: 0.05s; }
+.james-waveform .wave-bar:nth-child(3)  { animation-delay: 0.10s; }
+.james-waveform .wave-bar:nth-child(4)  { animation-delay: 0.15s; }
+.james-waveform .wave-bar:nth-child(5)  { animation-delay: 0.20s; }
+.james-waveform .wave-bar:nth-child(6)  { animation-delay: 0.25s; }
+.james-waveform .wave-bar:nth-child(7)  { animation-delay: 0.30s; }
+.james-waveform .wave-bar:nth-child(8)  { animation-delay: 0.35s; }
+.james-waveform .wave-bar:nth-child(9)  { animation-delay: 0.40s; }
+.james-waveform .wave-bar:nth-child(10) { animation-delay: 0.45s; }
+.james-waveform .wave-bar:nth-child(11) { animation-delay: 0.40s; }
+.james-waveform .wave-bar:nth-child(12) { animation-delay: 0.35s; }
+.james-waveform .wave-bar:nth-child(13) { animation-delay: 0.30s; }
+.james-waveform .wave-bar:nth-child(14) { animation-delay: 0.25s; }
+.james-waveform .wave-bar:nth-child(15) { animation-delay: 0.20s; }
+.james-waveform .wave-bar:nth-child(16) { animation-delay: 0.15s; }
+.james-waveform .wave-bar:nth-child(17) { animation-delay: 0.10s; }
+.james-waveform .wave-bar:nth-child(18) { animation-delay: 0.05s; }
+.james-waveform .wave-bar:nth-child(19) { animation-delay: 0.00s; }
+.james-waveform .wave-bar:nth-child(20) { animation-delay: 0.05s; }
+
+@keyframes waveJump {
+  0%, 100% { height: 6px;  opacity: 0.5; }
+  50%      { height: 38px; opacity: 1; }
+}
+
 /* ===== BOTÃO SETUP (sempre visível) ===== */
 .fly-setup-btn {
   position: fixed;
