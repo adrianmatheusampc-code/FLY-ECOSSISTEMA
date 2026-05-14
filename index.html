@@ -23609,21 +23609,30 @@
       return _cachedMaleVoice;
     }
 
-    function speak(text) {
-      if (!('speechSynthesis' in window)) return;
+    // Modo conversa contínua — depois da 1ª pergunta, continua ouvindo automaticamente
+    let conversationMode = false;
+
+    function speak(text, onComplete) {
+      if (!('speechSynthesis' in window)) { onComplete?.(); return; }
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'pt-BR';
-      u.rate = 0.96;
-      u.pitch = 0.72;
+      u.rate = 1.15;   // + rápido (era 0.96)
+      u.pitch = 0.78;
       u.volume = 1;
       const v = pickMaleVoice();
       if (v) u.voice = v;
       setState('speaking', 'Respondendo…');
       orb.setAmplitude(0.85);
       let pulseTimer = setInterval(() => orb.setAmplitude(0.5 + Math.random() * 0.6), 90);
-      u.onend = () => { clearInterval(pulseTimer); orb.setAmplitude(0.4); setState('idle', 'Pronto'); };
-      u.onerror = u.onend;
+      const done = () => {
+        clearInterval(pulseTimer);
+        orb.setAmplitude(0.4);
+        setState('idle', 'Pronto');
+        onComplete?.();
+      };
+      u.onend = done;
+      u.onerror = done;
       window.speechSynthesis.speak(u);
     }
 
@@ -23688,7 +23697,7 @@
 
     async function callLLM(query) {
       const keys = getApiKey();
-      const sys = 'Você é o JAMES, assistente de IA da Fly (operação Fly Cup, Fly Network, FlyExpert, Plano WAR, Cofre AEY). Responda curto, em português (Brasil), tom executivo e direto, como assessor pessoal. Quando tiver dado, cite o número. Quando não tiver, diga "não tenho esse dado cadastrado". Nunca invente. Contexto JSON atual:\n' + JSON.stringify(buildJamesContext()).slice(0, 6000);
+      const sys = 'Você é JAMES, assistente de voz da Fly. Você está EM CONVERSA POR VOZ com o usuário — respostas devem ser MUITO CURTAS (1-3 frases, max 40 palavras). Português brasileiro, tom executivo direto, trata o usuário como "chefe". Quando tiver dado, cite o número. Quando não tiver, diga "não tenho esse dado". Nunca invente. Sem listas longas, sem markdown. Contexto JSON:\n' + JSON.stringify(buildJamesContext()).slice(0, 4000);
 
       if (keys.openai) {
         const r = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -23711,7 +23720,7 @@
           headers: { 'Content-Type': 'application/json', 'x-api-key': keys.anthropic, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
           body: JSON.stringify({
             model: 'claude-sonnet-4-5-20250929',
-            max_tokens: 320,
+            max_tokens: 200,
             system: sys,
             messages: [{ role: 'user', content: query }]
           })
@@ -24023,25 +24032,28 @@
       captureRecog.onend = async () => {
         const text = finalText.trim() || userTextEl.textContent;
         console.log('[JAMES VOZ] Texto capturado:', text);
+        captureRecog = null;
+
+        // Comandos de saída do modo conversa
+        if (text && /^\s*(tchau\s+james|fechar|sair|fica\s+quieto|para)\s*\.?$/i.test(text)) {
+          conversationMode = false;
+          replyTextEl.textContent = 'Até logo, chefe.';
+          speak('Até logo, chefe.');
+          return;
+        }
+
         if (text && text !== '…') {
-          // Nível 3 primeiro (execução determinística — vendas, finanças)
           const localReply = answer(text);
           const isFallback = localReply.startsWith('Ainda não tenho esse dado cadastrado');
           let finalReply = localReply;
           if (isFallback) {
             const keys = getApiKey();
-            console.log('[JAMES VOZ] Tem chave?', { openai: !!keys.openai, anthropic: !!keys.anthropic });
             if (keys.openai || keys.anthropic) {
               try {
                 setState('listening', 'Pensando…');
-                console.log('[JAMES VOZ] Chamando IA…');
                 const llmReply = await callLLM(text);
-                console.log('[JAMES VOZ] Resposta IA:', llmReply);
-                if (llmReply) {
-                  finalReply = llmReply;
-                } else {
-                  finalReply = '⚠️ IA não retornou resposta.';
-                }
+                if (llmReply) finalReply = llmReply;
+                else finalReply = '⚠️ IA não retornou resposta.';
               } catch (e) {
                 console.error('[JAMES VOZ] ERRO IA:', e);
                 finalReply = '⚠️ Erro: ' + (e?.message || e);
@@ -24051,13 +24063,31 @@
             }
           }
           replyTextEl.textContent = finalReply;
-          speak(finalReply);
+
+          // ATIVA modo conversa após primeira resposta bem-sucedida
+          conversationMode = true;
+
+          // Fala a resposta — quando TERMINAR, reabre o mic automaticamente
+          speak(finalReply, () => {
+            if (conversationMode && stage.classList.contains('open')) {
+              setTimeout(() => {
+                try { showWaveformExt?.(); } catch (e) {}
+                startCapture();
+              }, 300);
+            }
+          });
         } else {
-          replyTextEl.textContent = '🎤 Não consegui ouvir, chefe. Fala mais perto do mic.';
-          setState('idle', 'Não entendi…');
+          replyTextEl.textContent = '🎤 Não ouvi nada. Tenta de novo, chefe.';
+          setState('idle', 'Pronto');
+          // Se tava em modo conversa e não captou nada, sai do modo
+          if (conversationMode) {
+            setTimeout(() => {
+              if (conversationMode && stage.classList.contains('open')) {
+                startCapture();  // tenta de novo
+              }
+            }, 800);
+          }
         }
-        captureRecog = null;
-        if (wakeEnabled) setTimeout(() => { try { wakeRecog?.start?.(); } catch (e) {} }, 600);
       };
       setState('capturing', 'Ouvindo…');
       userTextEl.textContent = '…';
@@ -24165,7 +24195,7 @@
           waveform.classList.add('active');
           micBtn.classList.add('recording');
           const lbl = micBtn.querySelector('.mic-label');
-          if (lbl) lbl.textContent = 'OUVINDO';
+          if (lbl) lbl.textContent = conversationMode ? 'CONVERSANDO' : 'OUVINDO';
           isMicRecording = true;
         }
         function hideWaveform() {
@@ -24175,14 +24205,21 @@
           if (lbl) lbl.textContent = 'FALAR';
           isMicRecording = false;
         }
+        // Expõe pra ser usado no callback do speak (modo conversa)
+        window.showWaveformExt = showWaveform;
+        window.hideWaveformExt = hideWaveform;
 
         micBtn.addEventListener('click', async () => {
-          if (isMicRecording) {
+          if (isMicRecording || conversationMode) {
+            // Encerra completamente o modo conversa
+            conversationMode = false;
             try { captureRecog?.stop?.(); } catch (e) {}
+            try { speechSynthesis.cancel(); } catch (e) {}
             hideWaveform();
+            setState('idle', 'Pronto');
             return;
           }
-          // Inicia gravação direta (sem TTS de boas-vindas)
+          // Inicia gravação direta
           showWaveform();
           replyTextEl.textContent = '';
           userTextEl.textContent = '…';
