@@ -24104,54 +24104,59 @@
       }
     });
 
-    // Botão de microfone — toggle gravação
-    const micBtn = document.getElementById('jamesMicBtn');
-    const waveform = document.getElementById('jamesWaveform');
-    let isMicRecording = false;
+    // Botão de microfone — toggle gravação (defensivo)
+    try {
+      const micBtn = document.getElementById('jamesMicBtn');
+      const waveform = document.getElementById('jamesWaveform');
+      let isMicRecording = false;
 
-    function showWaveform() {
-      waveform.classList.add('active');
-      micBtn.classList.add('recording');
-      micBtn.querySelector('.mic-label').textContent = 'OUVINDO';
-      isMicRecording = true;
-    }
-    function hideWaveform() {
-      waveform.classList.remove('active');
-      micBtn.classList.remove('recording');
-      micBtn.querySelector('.mic-label').textContent = 'FALAR';
-      isMicRecording = false;
-    }
+      if (micBtn && waveform) {
+        function showWaveform() {
+          waveform.classList.add('active');
+          micBtn.classList.add('recording');
+          const lbl = micBtn.querySelector('.mic-label');
+          if (lbl) lbl.textContent = 'OUVINDO';
+          isMicRecording = true;
+        }
+        function hideWaveform() {
+          waveform.classList.remove('active');
+          micBtn.classList.remove('recording');
+          const lbl = micBtn.querySelector('.mic-label');
+          if (lbl) lbl.textContent = 'FALAR';
+          isMicRecording = false;
+        }
 
-    micBtn.addEventListener('click', () => {
-      if (isMicRecording) {
-        // Já tá gravando — para
-        try { captureRecog?.stop?.(); } catch (e) {}
-        hideWaveform();
-        setState('idle', 'Processando…');
-      } else {
-        // Inicia captura
-        showWaveform();
-        try {
-          startCapture();
-        } catch (e) {
-          console.error('[JAMES] Erro ao iniciar microfone:', e);
-          replyTextEl.textContent = '⚠️ Não consegui acessar o microfone. Verifica permissão no navegador.';
-          hideWaveform();
+        micBtn.addEventListener('click', () => {
+          if (isMicRecording) {
+            try { captureRecog?.stop?.(); } catch (e) {}
+            hideWaveform();
+            setState('idle', 'Processando…');
+          } else {
+            showWaveform();
+            try {
+              startCapture();
+            } catch (e) {
+              console.error('[JAMES] Erro ao iniciar microfone:', e);
+              if (replyTextEl) replyTextEl.textContent = '⚠️ Não consegui acessar o microfone.';
+              hideWaveform();
+            }
+          }
+        });
+
+        const stateEl = document.getElementById('jamesState');
+        if (stateEl) {
+          const stateObserver = new MutationObserver(() => {
+            const s = stateEl.textContent || '';
+            if ((s.includes('Pronto') || s.includes('Não entendi')) && isMicRecording) {
+              hideWaveform();
+            }
+          });
+          stateObserver.observe(stateEl, { childList: true, characterData: true, subtree: true });
         }
       }
-    });
-
-    // Esconde waveform quando termina captura (onend do captureRecog)
-    const _originalStartCapture = window.__startCaptureWrap || null;
-    // Observa state changes pra esconder waveform quando volta pra idle
-    const stateObserver = new MutationObserver(() => {
-      const s = document.getElementById('jamesState')?.textContent || '';
-      if (s.includes('Pronto') || s.includes('Não entendi') || s.includes('Pensando')) {
-        if (isMicRecording) hideWaveform();
-      }
-    });
-    const stateEl = document.getElementById('jamesState');
-    if (stateEl) stateObserver.observe(stateEl, { childList: true, characterData: true, subtree: true });
+    } catch (e) {
+      console.warn('[JAMES] Mic button init falhou:', e);
+    }
 
     // Settings (Nível 2 — API keys)
     const settingsPanel = document.getElementById('jamesSettings');
