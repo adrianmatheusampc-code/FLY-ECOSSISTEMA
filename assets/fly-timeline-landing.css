@@ -1782,16 +1782,29 @@ body.james-active .james-trigger { display: none; }
 
 /* ---------- PALCO FULLSCREEN ---------- */
 .james-stage {
-  position: fixed;
-  inset: 0;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
   z-index: 1020;
   display: none;
   background:
     radial-gradient(circle at 50% 50%, rgba(20, 12, 2, 0.86), rgba(0, 0, 0, 0.96) 65%, #000 100%);
   opacity: 0;
   transition: opacity 0.32s ease;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
 }
-.james-stage.open { display: block; opacity: 1; }
+.james-stage.open { display: block !important; opacity: 1; }
+/* Bloqueia qualquer classe .mini que sobrar de cache */
+.james-stage.mini {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  border-radius: 0 !important;
+}
 
 .james-orb-canvas {
   position: absolute;
