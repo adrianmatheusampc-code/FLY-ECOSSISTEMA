@@ -21772,11 +21772,12 @@
         <small id="jamesState">Aguardando…</small>
       </div>
       <div class="james-stage__transcript">
-        <p class="james-stage__user" id="jamesUserText"></p>
-        <p class="james-stage__reply" id="jamesReplyText"></p>
+        <p class="james-stage__reply" id="jamesReplyText" style="min-height: 60px; margin-bottom: 20px;"></p>
       </div>
-      <div class="james-stage__controls">
-        <button type="button" class="james-stage__btn" id="jamesPushBtn">🎙 Falar</button>
+      <div class="james-stage__chat">
+        <input type="text" id="jamesInput" class="james-chat-input" placeholder="Pergunte a James..." autocomplete="off" />
+      </div>
+      <div class="james-stage__controls" style="margin-top: 15px; gap: 10px; flex-direction: row; justify-content: center;">
         <button type="button" class="james-stage__btn ghost" id="jamesSettingsBtn" title="Configurar IA (Nível 2)">⚙ IA</button>
         <button type="button" class="james-stage__btn ghost" id="jamesCloseBtn">Fechar</button>
       </div>
@@ -21964,11 +21965,11 @@
       today:    renderToday,
       war:      renderWar,
       sales:    () => renderEmpty('💸 Central de Vendas', 'Em construção — vai puxar vendas, leads, pacotes, comissões e jornada do cliente. (Formulário de venda já tem campo de documentação/passaporte no Plano WAR.)'),
-      customers:() => renderEmpty('👥 Central de Clientes / CRM', 'Em construção — vai cruzar leads, clientes Fly Cup, viajantes Dubai, score de venda e próxima ação.'),
+      customers:() => { if (typeof renderCRM === 'function') renderCRM(); else renderEmpty('👥 Central de Clientes / CRM', 'CRM carregando…'); },
       flycup:   () => renderEmpty('🏆 Central Fly Cup', 'Em construção — modalidades (futebol, futevôlei, tênis, kart, surf, basquete, skate, paintball, airsoft), polos, ranking, eventos, conversão Dubai.'),
-      projects: () => renderEmpty('📂 Central de Projetos', 'Em construção — projetos com meta, responsável, orçamento, lucro, timeline, incidentes/prejuízos e patrocinadores.'),
+      projects: () => { if (typeof renderProjects === 'function') renderProjects(); else renderEmpty('📂 Central de Projetos', 'Projetos carregando…'); },
       finance:  () => renderEmpty('💰 Central Financeira', 'Em construção — receita por vertical, lucro por pacote, fluxo de caixa, runway, projeção. Caixa privado dos sócios está no COFRE AEY (acesso oculto).'),
-      james:    () => renderEmpty('🤖 JAMES', 'JAMES está sempre ativo no botão flutuante. Fala "James" ou clica para chamá-lo. Nível 1 (lookup) já funciona, Níveis 2 e 3 (interpretação e execução) chegam em breve.')
+      james:    () => { if (typeof renderJamesDash === 'function') renderJamesDash(); else renderEmpty('🤖 JAMES', 'JAMES carregando…'); }
     };
 
     function activate(section) {
@@ -23412,9 +23413,8 @@
     const stage        = document.getElementById('jamesStage');
     const canvas       = document.getElementById('jamesOrbCanvas');
     const stateEl      = document.getElementById('jamesState');
-    const userTextEl   = document.getElementById('jamesUserText');
     const replyTextEl  = document.getElementById('jamesReplyText');
-    const pushBtn      = document.getElementById('jamesPushBtn');
+    const userTextEl   = document.getElementById('jamesUserText') || { textContent: '' };
     const closeBtn     = document.getElementById('jamesCloseBtn');
     const dot          = trigger.querySelector('.james-trigger__dot');
     if (!trigger || !stage || !canvas) return;
@@ -24003,14 +24003,55 @@
     /* -----------------------------------------------------------------
        7 · TRIGGERS
        ---------------------------------------------------------------*/
+    const jamesInput = document.getElementById('jamesInput');
+
+    function processQuery(text) {
+      const query = (text || '').trim();
+      if (!query) return;
+
+      setState('listening', 'Processando…');
+      userTextEl.textContent = query;
+      replyTextEl.textContent = '';
+      jamesInput.value = '';
+
+      setTimeout(async () => {
+        const localReply = answer(query);
+        const isFallback = localReply.startsWith('Ainda não tenho esse dado cadastrado');
+        let finalReply = localReply;
+
+        if (isFallback) {
+          const keys = getApiKey();
+          if (keys.openai || keys.anthropic) {
+            try {
+              setState('listening', 'Pensando…');
+              const llmReply = await callLLM(query);
+              if (llmReply) finalReply = llmReply;
+            } catch (e) {
+              console.warn('JAMES LLM error:', e);
+            }
+          }
+        }
+
+        replyTextEl.textContent = finalReply;
+        setState('idle', 'Pronto');
+        jamesInput.focus();
+      }, 200);
+    }
+
     trigger.addEventListener('click', () => {
-      if (stage.classList.contains('open')) {
-        startCapture();
-      } else {
-        activateJames();
+      if (!stage.classList.contains('open')) {
+        openStage();
+        setState('idle', 'Pronto para digitar');
+        setTimeout(() => jamesInput?.focus(), 100);
       }
     });
-    pushBtn.addEventListener('click', startCapture);
+
+    jamesInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        processQuery(jamesInput.value);
+      }
+    });
 
     // Settings (Nível 2 — API keys)
     const settingsPanel = document.getElementById('jamesSettings');
@@ -24065,5 +24106,7 @@
     }
   })();
   </script>
+  <script type="module" src="assets/fly-supabase-sync.js"></script>
+  <script src="assets/fly-expansoes.js"></script>
 </body>
 </html>

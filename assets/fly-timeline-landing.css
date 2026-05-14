@@ -1958,6 +1958,39 @@ body.james-active .james-trigger { display: none; }
   line-height: 1.5;
 }
 
+.james-stage__chat {
+  display: flex;
+  justify-content: center;
+  padding: 0 clamp(12px, 4vw, 48px);
+  margin-bottom: 12px;
+}
+
+.james-chat-input {
+  width: min(600px, 90vw);
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 216, 102, 0.45);
+  border-radius: 12px;
+  color: #fff;
+  font-family: inherit;
+  font-size: clamp(14px, 1.2vw, 16px);
+  letter-spacing: 0.5px;
+  outline: none;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.james-chat-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.5px;
+}
+
+.james-chat-input:focus {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: rgba(255, 216, 102, 0.8);
+  box-shadow: 0 0 20px rgba(255, 216, 102, 0.15);
+}
+
 .war-editor-layers {
   border: 1px solid rgba(255, 216, 102, 0.34);
   border-radius: 14px;
@@ -5741,3 +5774,123 @@ body.admin-mode .war-map-toolbar small {
 }
 .rel-empty { color: #555; font-style: italic; }
 
+
+/* ============================================================
+   FLY SUPABASE SYNC — indicador + modal
+   ============================================================ */
+.fly-sync-indicator {
+  position: fixed;
+  bottom: 18px;
+  left: 24px;
+  z-index: 95;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(245,184,66,0.35);
+  border-radius: 30px;
+  color: rgba(245,184,66,0.78);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 200ms ease;
+}
+.fly-sync-indicator:hover { background: rgba(245,184,66,0.12); color: var(--gold-bright); }
+.fly-sync-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #8a4040;
+  box-shadow: 0 0 8px #8a4040;
+}
+.fly-sync-indicator.online .fly-sync-dot {
+  background: #4caf50;
+  box-shadow: 0 0 8px #4caf50;
+  animation: flySyncPulse 1.6s ease-in-out infinite;
+}
+.fly-sync-meta { color: rgba(255,255,255,0.55); font-weight: 500; }
+@keyframes flySyncPulse {
+  0%,100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
+}
+
+.fly-sync-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1100;
+}
+.fly-sync-modal.hidden { display: none; }
+.fly-sync-modal__panel {
+  background: linear-gradient(180deg, #141414 0%, #0a0a0a 100%);
+  border: 1px solid rgba(245,184,66,0.35);
+  border-radius: 12px;
+  padding: 24px;
+  width: min(420px, 90vw);
+  display: flex; flex-direction: column; gap: 14px;
+  box-shadow: 0 18px 60px rgba(0,0,0,0.7), 0 0 30px rgba(245,184,66,0.18);
+}
+.fly-sync-modal__panel header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.fly-sync-modal__panel h3 {
+  color: var(--gold-bright);
+  font-size: 16px; letter-spacing: 2px;
+}
+.fly-sync-modal__close {
+  background: transparent; border: none; color: rgba(255,255,255,0.55);
+  font-size: 22px; cursor: pointer; padding: 0 4px;
+}
+.fly-sync-modal__panel label {
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 10px; letter-spacing: 2px; color: rgba(245,184,66,0.7);
+  text-transform: uppercase;
+}
+.fly-sync-modal__panel input {
+  padding: 10px 12px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.fly-sync-modal__panel input:focus {
+  outline: none;
+  border-color: rgba(245,184,66,0.6);
+  box-shadow: 0 0 0 2px rgba(245,184,66,0.18);
+}
+.fly-sync-modal__actions {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.fly-sync-modal__actions button {
+  padding: 10px 14px;
+  background: rgba(245,184,66,0.12);
+  border: 1px solid rgba(245,184,66,0.45);
+  border-radius: 8px;
+  color: var(--gold);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+.fly-sync-modal__actions button:hover { background: rgba(245,184,66,0.22); color: var(--gold-bright); }
+.fly-sync-modal__save { grid-column: 1 / -1; background: var(--gold) !important; color: #000 !important; }
+.fly-sync-modal__hint {
+  color: rgba(255,255,255,0.4);
+  font-size: 10px;
+}
+.fly-sync-modal__hint code {
+  background: rgba(245,184,66,0.1);
+  padding: 1px 5px; border-radius: 3px;
+  color: var(--gold);
+}
