@@ -22165,6 +22165,7 @@
           <button type="button" data-cofre-tab="moves" class="${active==='moves'?'active':''}">Lançamentos</button>
           <button type="button" data-cofre-tab="jarvis" class="${active==='jarvis'?'active':''}">Jarvis Finance</button>
           <button type="button" data-cofre-tab="audit" class="${active==='audit'?'active':''}">Auditoria</button>
+          <button type="button" data-cofre-tab="relatorios" class="${active==='relatorios'?'active':''}">Relatórios</button>
         </nav>
         <main class="cofre-body">${contentHTML}</main>`;
       document.getElementById('cofreCloseBtn').addEventListener('click', closeCofre);
@@ -22177,19 +22178,21 @@
           else if (active === 'partners') renderPartners();
           else if (active === 'wallets')  renderWallets();
           else if (active === 'moves')    renderMoves();
-          else if (active === 'jarvis')   renderJarvis();
-          else if (active === 'audit')    renderAudit();
+          else if (active === 'jarvis')    renderJarvis();
+          else if (active === 'audit')     renderAudit();
+          else if (active === 'relatorios') renderRelatorios();
         });
       });
       shell.querySelectorAll('[data-cofre-tab]').forEach(b => {
         b.addEventListener('click', () => {
           const tab = b.dataset.cofreTab;
           if (tab === 'dashboard') renderDashboard();
-          else if (tab === 'partners') renderPartners();
-          else if (tab === 'wallets')  renderWallets();
-          else if (tab === 'moves')    renderMoves();
-          else if (tab === 'jarvis')   renderJarvis();
-          else if (tab === 'audit')    renderAudit();
+          else if (tab === 'partners')   renderPartners();
+          else if (tab === 'wallets')    renderWallets();
+          else if (tab === 'moves')      renderMoves();
+          else if (tab === 'jarvis')     renderJarvis();
+          else if (tab === 'audit')      renderAudit();
+          else if (tab === 'relatorios') renderRelatorios();
         });
       });
     }
@@ -22428,7 +22431,7 @@
           </header>
           <div class="cofre-moves-table">
             <div class="cofre-moves-head">
-              <span>Tipo</span><span>Valor</span><span>Pessoa</span><span>Descrição</span><span>Data</span><span></span>
+              <span>Tipo</span><span>Valor</span><span>Pessoa</span><span>Descrição</span><span>Data</span><span>Comp.</span><span></span>
             </div>
             ${moves.length ? moves.map(m => `
               <div class="cofre-moves-row status-${m.status||'confirmed'}">
@@ -22437,6 +22440,7 @@
                 <span>${escHtml(m.movement_type==='internal_transfer' ? `${m.from_partner||'?'} → ${m.to_partner||'?'}` : (m.partner||'—'))}</span>
                 <span>${escHtml(m.description || m.category || '')}</span>
                 <span>${m.date ? new Date(m.date).toLocaleDateString('pt-BR') : ''}</span>
+                <span>${m.attachment ? `<button type="button" class="cofre-attach-btn" data-cofre-attach="${escHtml(m.id)}" title="${escHtml(m.attachment.name||'Comprovante')}">📎 Ver</button>` : '—'}</span>
                 <span><button type="button" data-cofre-reverse="${m.id}" ${m.status==='reversed'?'disabled':''}>${m.status==='reversed'?'Estornado':'Estornar'}</button></span>
               </div>
             `).join('') : '<p class="cofre-empty">Nenhum lançamento. Use o botão acima ou o Jarvis Finance para registrar.</p>'}
@@ -22457,6 +22461,25 @@
           write(modeKey(MOVES_KEY), arr);
           logAudit('move_reverse', { id, before: old.status, after: 'reversed' });
           renderMoves();
+        });
+      });
+      shell.querySelectorAll('.cofre-attach-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          const id = b.dataset.cofreAttach;
+          const move = readMoves().find(x => x.id === id);
+          if (!move?.attachment?.dataURL) return;
+          const ov = document.createElement('div');
+          ov.className = 'cofre-attach-modal';
+          ov.innerHTML = `<div class="cofre-attach-inner">
+            <button class="cofre-attach-close" type="button">✕ Fechar</button>
+            <p class="cofre-attach-filename">${escHtml(move.attachment.name||'Comprovante')}</p>
+            ${move.attachment.type === 'application/pdf'
+              ? `<iframe src="${move.attachment.dataURL}" style="width:100%;height:80vh;border:0"></iframe>`
+              : `<img src="${move.attachment.dataURL}" style="max-width:100%;max-height:80vh;object-fit:contain">`}
+          </div>`;
+          document.body.appendChild(ov);
+          ov.querySelector('.cofre-attach-close').addEventListener('click', () => ov.remove());
+          ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
         });
       });
     }
@@ -22509,6 +22532,7 @@
           <label>Categoria <input name="category" placeholder="uber, almoço, patrocínio, comissão…"></label>
           <label>Projeto vinculado <input name="project_id" placeholder="Fly Cup Futevôlei, Dubai Explorer…"></label>
           <label class="cofre-wide">Descrição <textarea name="description" placeholder="o que foi essa movimentação"></textarea></label>
+          <label class="cofre-wide">Comprovante (imagem ou PDF) <input type="file" name="attachment" accept="image/*,application/pdf"></label>
           <div class="cofre-modal-actions">
             <button type="submit">Salvar lançamento</button>
             <button type="button" class="ghost" id="cofreCancelMove">Cancelar</button>
@@ -22529,30 +22553,41 @@
       form.addEventListener('submit', e => {
         e.preventDefault();
         const fd = new FormData(form);
-        const m = {
-          id: uid('m'),
-          movement_type: fd.get('movement_type'),
-          amount: Number(fd.get('amount')) || 0,
-          date: fd.get('date') || new Date().toISOString().slice(0,10),
-          partner: fd.get('partner') || '',
-          from_partner: fd.get('from_partner') || '',
-          to_partner: fd.get('to_partner') || '',
-          from_wallet_id: fd.get('from_wallet_id') || '',
-          to_wallet_id: fd.get('to_wallet_id') || '',
-          money_owner: fd.get('money_owner') || 'fly',
-          category: fd.get('category') || '',
-          project_id: fd.get('project_id') || '',
-          description: fd.get('description') || '',
-          status: 'confirmed',
-          created_by: 'cofre-ui',
-          created_at: Date.now()
-        };
-        const arr = readMoves();
-        arr.push(m);
-        write(MOVES_KEY, arr);
-        logAudit('move_create', { id: m.id, type: m.movement_type, amount: m.amount });
-        modal.remove();
-        renderMoves();
+        const file = fd.get('attachment');
+        function saveMove(attachment) {
+          const m = {
+            id: uid('m'),
+            movement_type: fd.get('movement_type'),
+            amount: Number(fd.get('amount')) || 0,
+            date: fd.get('date') || new Date().toISOString().slice(0,10),
+            partner: fd.get('partner') || '',
+            from_partner: fd.get('from_partner') || '',
+            to_partner: fd.get('to_partner') || '',
+            from_wallet_id: fd.get('from_wallet_id') || '',
+            to_wallet_id: fd.get('to_wallet_id') || '',
+            money_owner: fd.get('money_owner') || 'fly',
+            category: fd.get('category') || '',
+            project_id: fd.get('project_id') || '',
+            description: fd.get('description') || '',
+            attachment: attachment || null,
+            status: 'confirmed',
+            created_by: 'cofre-ui',
+            created_at: Date.now()
+          };
+          const arr = readMoves();
+          arr.push(m);
+          write(modeKey(MOVES_KEY), arr);
+          logAudit('move_create', { id: m.id, type: m.movement_type, amount: m.amount });
+          modal.remove();
+          renderMoves();
+        }
+        if (file && file.size > 0) {
+          const reader = new FileReader();
+          reader.onload = ev => saveMove({ dataURL: ev.target.result, name: file.name, type: file.type, size: file.size });
+          reader.readAsDataURL(file);
+        } else {
+          saveMove(null);
+        }
       });
     }
 
@@ -22692,6 +22727,140 @@
           </div>
         </section>`;
       renderLayout('audit', html);
+    }
+
+    /* --------- Relatórios --------- */
+    function renderRelatorios() {
+      const moves = readMoves().filter(m => m.status !== 'reversed');
+      const now = new Date();
+
+      // Filtros padrão: últimos 12 meses
+      const catTotals = {};
+      const projTotals = {};
+      const partnerTotals = {};
+      const monthlyData = {};
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+        monthlyData[key] = { income: 0, expense: 0 };
+      }
+
+      moves.forEach(m => {
+        const isIn  = m.movement_type === 'income';
+        const isOut = ['expense','credit_card_expense','invoice_payment'].includes(m.movement_type);
+        const amt = Number(m.amount) || 0;
+        if (isOut) {
+          const cat = m.category || 'Sem categoria';
+          catTotals[cat] = (catTotals[cat] || 0) + amt;
+          const proj = m.project_id || 'Sem projeto';
+          projTotals[proj] = (projTotals[proj] || 0) + amt;
+        }
+        const partner = m.partner || m.from_partner || 'Fly';
+        if (!partnerTotals[partner]) partnerTotals[partner] = { income: 0, expense: 0 };
+        if (isIn)  partnerTotals[partner].income  += amt;
+        if (isOut) partnerTotals[partner].expense += amt;
+        const moveDate = m.date ? new Date(m.date) : new Date(m.created_at || 0);
+        const mKey = moveDate.getFullYear() + '-' + String(moveDate.getMonth()+1).padStart(2,'0');
+        if (monthlyData[mKey]) {
+          if (isIn)  monthlyData[mKey].income  += amt;
+          if (isOut) monthlyData[mKey].expense += amt;
+        }
+      });
+
+      const fmtM = n => 'R$ ' + (Number(n)||0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+      function bar(val, maxVal, color) {
+        const pct = maxVal > 0 ? Math.min(100, (val / maxVal) * 100) : 0;
+        return `<span class="rel-bar" style="width:${pct.toFixed(1)}%;background:${color}"></span>`;
+      }
+
+      const catEntries = Object.entries(catTotals).sort((a,b) => b[1]-a[1]);
+      const catMax = catEntries[0]?.[1] || 1;
+      const catTotal = catEntries.reduce((s,[,v]) => s+v, 0);
+
+      const projEntries = Object.entries(projTotals).sort((a,b) => b[1]-a[1]);
+      const projMax = projEntries[0]?.[1] || 1;
+
+      const partnerEntries = Object.entries(partnerTotals).sort((a,b) => (b[1].income+b[1].expense)-(a[1].income+a[1].expense));
+
+      const monthEntries = Object.entries(monthlyData);
+      const monthMax = Math.max(1, ...monthEntries.map(([,v]) => Math.max(v.income, v.expense)));
+
+      const html = `
+        <section class="cofre-section">
+          <header><h2>Relatórios</h2><small>Últimos 12 meses · modo ${escHtml(getMode())}</small></header>
+
+          <div class="rel-grid">
+            <div class="rel-card">
+              <h3>Gastos por Categoria</h3>
+              <table class="rel-table">
+                <thead><tr><th>Categoria</th><th>Total</th><th>%</th><th class="rel-bar-col"></th></tr></thead>
+                <tbody>
+                  ${catEntries.length ? catEntries.map(([cat, val]) => `
+                    <tr>
+                      <td>${escHtml(cat)}</td>
+                      <td>${fmtM(val)}</td>
+                      <td>${catTotal > 0 ? (val/catTotal*100).toFixed(1) : 0}%</td>
+                      <td class="rel-bar-col">${bar(val, catMax, '#e07b00')}</td>
+                    </tr>`).join('') : '<tr><td colspan="4" class="rel-empty">Sem saídas registradas</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="rel-card">
+              <h3>Gastos por Projeto</h3>
+              <table class="rel-table">
+                <thead><tr><th>Projeto</th><th>Total</th><th class="rel-bar-col"></th></tr></thead>
+                <tbody>
+                  ${projEntries.length ? projEntries.map(([proj, val]) => `
+                    <tr>
+                      <td>${escHtml(proj)}</td>
+                      <td>${fmtM(val)}</td>
+                      <td class="rel-bar-col">${bar(val, projMax, '#b0600a')}</td>
+                    </tr>`).join('') : '<tr><td colspan="3" class="rel-empty">Sem projetos registrados</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="rel-card">
+              <h3>Movimentações por Sócio</h3>
+              <table class="rel-table">
+                <thead><tr><th>Sócio</th><th>Entrada</th><th>Saída</th><th>Saldo</th></tr></thead>
+                <tbody>
+                  ${partnerEntries.length ? partnerEntries.map(([partner, v]) => `
+                    <tr>
+                      <td>${escHtml(partner)}</td>
+                      <td style="color:#6f9">${fmtM(v.income)}</td>
+                      <td style="color:#f88">${fmtM(v.expense)}</td>
+                      <td style="color:${v.income-v.expense>=0?'#6f9':'#f88'}">${fmtM(v.income-v.expense)}</td>
+                    </tr>`).join('') : '<tr><td colspan="4" class="rel-empty">Sem dados</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="rel-card rel-card--full">
+              <h3>Fluxo de Caixa Mensal</h3>
+              <table class="rel-table">
+                <thead><tr><th>Mês</th><th>Receita</th><th class="rel-bar-col"></th><th>Despesa</th><th class="rel-bar-col"></th><th>Saldo</th></tr></thead>
+                <tbody>
+                  ${monthEntries.map(([key, v]) => {
+                    const [y,m2] = key.split('-');
+                    const label = new Date(Number(y), Number(m2)-1, 1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});
+                    const saldo = v.income - v.expense;
+                    return `<tr>
+                      <td>${label}</td>
+                      <td style="color:#6f9">${fmtM(v.income)}</td>
+                      <td class="rel-bar-col">${bar(v.income, monthMax, '#2a7a3a')}</td>
+                      <td style="color:#f88">${fmtM(v.expense)}</td>
+                      <td class="rel-bar-col">${bar(v.expense, monthMax, '#8a2a2a')}</td>
+                      <td style="color:${saldo>=0?'#6f9':'#f88'}">${fmtM(saldo)}</td>
+                    </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>`;
+      renderLayout('relatorios', html);
     }
 
     /* --------- Abertura / fechamento --------- */
@@ -23539,6 +23708,64 @@
     /* -----------------------------------------------------------------
        5b · MOTOR DE RESPOSTA (Nível 1 — lookup determinístico)
        ---------------------------------------------------------------*/
+    function parseSaleCommand(raw) {
+      const text = (raw || '').toString();
+      const t = text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      // valor
+      let amount = 0;
+      const amtMatch = t.match(/r\$?\s*([\d\.\,]+)\s*(?:reais|de sinal|sinal)?|\b(\d{1,3}(?:[\.\,]\d{3})*(?:[\.\,]\d{2})?)\s*(?:reais|r\$|de sinal|sinal)?\b/);
+      if (amtMatch) {
+        const num = (amtMatch[1] || amtMatch[2] || '').replace(/\./g, '').replace(',', '.');
+        amount = Number(num) || 0;
+      }
+      // mil/k
+      const milMatch = t.match(/(\d+(?:[.,]\d+)?)\s*(mil|k|kilo)/);
+      if (milMatch) amount = (Number(milMatch[1].replace(',', '.')) || 0) * 1000;
+      // nome do cliente: "pro/para/do/da NOME"
+      let name = '';
+      const nameMatch = text.match(/(?:pro|pra|para|do|da|de|cliente|nome)\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][a-zá-ú]+(?:\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ][a-zá-ú]+){0,3})/);
+      if (nameMatch) name = nameMatch[1];
+      // produto/pacote
+      let product = '';
+      const products = [
+        'Dubai Explorer','Dubai Total','Dubai VIP','Dubai Premium','Dubai Light',
+        'Dubai 7','Dubai 10','Dubai Luxo','Dubai Família','Dubai Solo',
+        'Maldivas','Cancún','Cancun','Egito','Tailândia','Tailandia','Bali','Punta Cana'
+      ];
+      const prodFound = products.find(p => t.includes(p.toLowerCase()));
+      if (prodFound) product = prodFound;
+      // origem
+      let origin = '';
+      if (/instagram|insta|ig\b/.test(t))      origin = 'Instagram';
+      else if (/tiktok/.test(t))               origin = 'TikTok';
+      else if (/indica[cç][aã]o|indicado/.test(t)) origin = 'Indicação';
+      else if (/site|website|landing/.test(t)) origin = 'Site';
+      else if (/youtube|yt\b/.test(t))         origin = 'YouTube';
+      else if (/whatsapp|whats|zap/.test(t))   origin = 'WhatsApp';
+      else if (/facebook|fb\b/.test(t))        origin = 'Facebook';
+      // status
+      let status = 'sinal_pago';
+      if (/total pago|pago integral|pagou tudo|quitado/.test(t)) status = 'pago';
+      else if (/cancelad/.test(t))                                status = 'cancelado';
+      else if (/agendad|reserv/.test(t))                          status = 'agendado';
+      // pagamento
+      let payment_method = '';
+      if (/pix/.test(t))                       payment_method = 'PIX';
+      else if (/cart[aã]o|cred|debito|d[eé]bito/.test(t)) payment_method = 'Cartão';
+      else if (/dinheiro|esp[eé]cie|cash/.test(t))      payment_method = 'Dinheiro';
+      else if (/transfer[eê]ncia|ted|doc/.test(t))      payment_method = 'Transferência';
+      else if (/boleto/.test(t))                        payment_method = 'Boleto';
+      // telefone
+      let phone = '';
+      const phoneMatch = text.match(/(\+?\d{2}\s?\(?\d{2,3}\)?\s?\d{4,5}[-\s]?\d{4})/);
+      if (phoneMatch) phone = phoneMatch[1];
+      // instagram
+      let instagram = '';
+      const igMatch = text.match(/@([a-z0-9._]+)/i);
+      if (igMatch) instagram = '@' + igMatch[1];
+      return { name, phone, instagram, origin, product, amount, status, payment_method };
+    }
+
     function answer(query) {
       const q = (query || '').toLowerCase().trim();
       if (!q) return 'Pode repetir, chefe?';
@@ -23560,12 +23787,33 @@
         }
       }
 
-      // === Vendas (Nível 3) ===
-      if (window.__flySalesAPI && /(criar|cria|nova|registra|registrar).*(venda|vendi|vendido)/.test(q)) {
+      // === Vendas (Nível 3 — execução direta) ===
+      if (window.__flySalesAPI && /(criar|cria|nova|registra|registrar|lan[çc][ao]|cadastra|cadastrar).*(venda|vendi|vendido|pacote)/.test(q)) {
+        const parsed = parseSaleCommand(query);
+        if (parsed.amount > 0 || parsed.name) {
+          const sale = window.__flySalesAPI.record({
+            name: parsed.name || 'Cliente sem nome',
+            phone: parsed.phone || '',
+            instagram: parsed.instagram || '',
+            origin: parsed.origin || '',
+            product: parsed.product || 'Pacote Fly',
+            amount: parsed.amount || 0,
+            profit: 0,
+            commission: 0,
+            payment_method: parsed.payment_method || '',
+            travel_date: parsed.travel_date || '',
+            seller: '',
+            doc_status: '',
+            status: parsed.status || 'sinal_pago',
+            notes: 'Criada por JAMES'
+          });
+          return `Venda registrada, chefe. ${parsed.name || 'Cliente'} · ${parsed.product || 'Pacote Fly'} · ${parsed.amount ? 'R$ ' + parsed.amount.toLocaleString('pt-BR') : 'sem valor'}.`;
+        }
+        // sem dados claros: abre formulário
         window.__flyDashboardOpen?.();
         setTimeout(() => document.querySelector('[data-dash-section="sales"]')?.click(), 300);
         setTimeout(() => document.getElementById('flySalesAddBtn')?.click(), 600);
-        return 'Abrindo o formulário de nova venda.';
+        return 'Não captei os dados, chefe. Abri o formulário pra você preencher.';
       }
       if (window.__flySalesAPI && /(quantas vendas|total de vendas|vendas (de )?hoje|vendas (do |dessa )?(semana|mês|mes))/.test(q)) {
         const s = window.__flySalesAPI.stats(q);

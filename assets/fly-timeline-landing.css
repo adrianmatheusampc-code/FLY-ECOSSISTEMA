@@ -5667,3 +5667,77 @@ body.admin-mode .war-map-toolbar small {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* =====================================================================
+   FEATURE 1 · Comprovantes em Movimentações do Cofre
+   ===================================================================== */
+.cofre-attach-btn {
+  background: rgba(255,200,60,.12);
+  color: #ffd060;
+  border: 1px solid rgba(255,200,60,.3);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cofre-attach-btn:hover { background: rgba(255,200,60,.25); }
+.cofre-attach-modal {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0,0,0,.85);
+  display: flex; align-items: center; justify-content: center;
+}
+.cofre-attach-inner {
+  background: #111;
+  border: 1px solid rgba(255,200,60,.3);
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 90vw; max-height: 95vh;
+  overflow: auto;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.cofre-attach-close {
+  align-self: flex-end;
+  background: rgba(255,60,60,.15);
+  color: #ff8080;
+  border: 1px solid rgba(255,60,60,.3);
+  border-radius: 6px;
+  padding: 4px 14px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.cofre-attach-filename { color: #aaa; font-size: 12px; margin: 0; }
+
+
+/* =====================================================================
+   FEATURE 2 · Relatórios do Cofre
+   ===================================================================== */
+.rel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 700px) { .rel-grid { grid-template-columns: 1fr; } }
+.rel-card {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,200,60,.15);
+  border-radius: 10px;
+  padding: 16px;
+}
+.rel-card h3 { margin: 0 0 12px; color: #ffd060; font-size: 14px; }
+.rel-card--full { grid-column: 1 / -1; }
+.rel-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.rel-table th {
+  text-align: left; padding: 4px 8px;
+  color: #888; font-weight: 500;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.rel-table td { padding: 4px 8px; border-bottom: 1px solid rgba(255,255,255,.04); }
+.rel-bar-col { min-width: 80px; }
+.rel-bar {
+  display: inline-block; height: 8px;
+  border-radius: 4px; vertical-align: middle;
+  min-width: 2px; max-width: 100%;
+}
+.rel-empty { color: #555; font-style: italic; }
+
