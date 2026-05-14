@@ -1697,6 +1697,16 @@ body.james-active .dash-trigger { display: none; }
 /* ============================================================
    JAMES · IA da Fly  (botão flutuante + orbe animado fullscreen)
    ============================================================ */
+/* JAMES REMOVIDO — chefe vai refazer do zero */
+.james-trigger,
+.james-stage,
+#jamesTrigger,
+#jamesStage {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 .james-trigger {
   position: fixed;
   right: 22px;
