@@ -1747,18 +1747,151 @@ body.james-active .dash-trigger { display: none; }
 }
 .james-trigger__label { color: #ffe7a4; }
 .james-trigger__dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: rgba(255, 255, 255, 0.4);
+  width: 10px; height: 10px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
   transition: background 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+/* Verde pulsante = IA ativa/conectada */
+.james-trigger__dot.ai-online {
+  background: #6dffb0;
+  box-shadow: 0 0 10px #6dffb0, 0 0 18px rgba(109,255,176,0.5);
+  animation: jamesDotPulse 1.8s ease-in-out infinite;
+}
+@keyframes jamesDotPulse {
+  0%, 100% { box-shadow: 0 0 10px #6dffb0, 0 0 18px rgba(109,255,176,0.5); }
+  50%      { box-shadow: 0 0 14px #6dffb0, 0 0 30px rgba(109,255,176,0.9); }
 }
 .james-trigger__dot[data-state="listening"],
 .james-trigger__dot[data-state="capturing"] {
-  background: #6dffb0; box-shadow: 0 0 10px #6dffb0;
+  background: #6dffb0; box-shadow: 0 0 12px #6dffb0;
 }
 .james-trigger__dot[data-state="speaking"] {
-  background: #ffd770; box-shadow: 0 0 10px #ffd770;
+  background: #ffd770; box-shadow: 0 0 12px #ffd770;
 }
-body.james-active .james-trigger { display: none; }
+/* Vermelho = sem IA configurada */
+.james-trigger__dot.ai-offline {
+  background: #ff6b6b;
+  box-shadow: 0 0 10px rgba(255,107,107,0.5);
+}
+
+/* MANTEM o trigger visível mesmo com james ativo (mini-mode) */
+body.james-active.james-mini .james-trigger { display: flex; }
+body.james-active:not(.james-mini) .james-trigger { display: none; }
+
+/* ============================================================
+   MINI-MODE — JAMES flutuante no canto inferior direito
+   ============================================================ */
+.james-stage.mini {
+  position: fixed;
+  inset: auto 22px 80px auto;
+  width: 380px;
+  max-width: calc(100vw - 44px);
+  height: 480px;
+  max-height: calc(100vh - 120px);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(28, 18, 4, 0.95), rgba(0, 0, 0, 0.98) 70%);
+  border: 1px solid rgba(255, 216, 102, 0.25);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), 0 0 40px rgba(255, 184, 70, 0.15);
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.james-stage.mini .james-stage__overlay {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  grid-template-rows: none;
+}
+
+.james-stage.mini .james-stage__brand {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+}
+.james-stage.mini .james-stage__brand-pre { font-size: 9px; letter-spacing: 2px; }
+.james-stage.mini .james-stage__brand strong { font-size: 16px; letter-spacing: 4px; }
+.james-stage.mini .james-stage__brand small { font-size: 10px; }
+
+.james-stage.mini .james-orb-canvas {
+  position: relative;
+  inset: auto;
+  height: 130px;
+  width: 100%;
+  margin: 4px 0;
+}
+
+.james-stage.mini .james-stage__transcript {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 180px;
+}
+
+.james-stage.mini .james-stage__user-text {
+  font-size: 12px;
+}
+.james-stage.mini .james-stage__reply {
+  font-size: 13px;
+  line-height: 1.4;
+  min-height: 40px !important;
+  margin-bottom: 8px !important;
+}
+
+.james-stage.mini .james-stage__chat { margin-top: auto; }
+.james-stage.mini .james-chat-input {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.james-stage.mini .james-stage__controls {
+  margin-top: 8px !important;
+  gap: 6px !important;
+  flex-wrap: wrap;
+}
+
+.james-stage.mini .james-mic-btn {
+  padding: 8px 14px;
+  font-size: 11px;
+}
+.james-stage.mini .james-stage__btn {
+  padding: 8px 12px;
+  font-size: 11px;
+}
+
+.james-stage.mini .james-waveform { height: 30px; margin-top: 6px; }
+.james-stage.mini .james-waveform .wave-bar { width: 3px; }
+
+.james-stage.mini .james-stage__hint { display: none; }
+
+/* Botão de expandir (mini → full) */
+.james-expand-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 216, 102, 0.15);
+  border: 1px solid rgba(255, 216, 102, 0.3);
+  color: #ffd770;
+  font-size: 14px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 3;
+}
+.james-stage.mini .james-expand-btn { display: flex; }
+.james-expand-btn:hover {
+  background: rgba(255, 216, 102, 0.3);
+  border-color: #ffd770;
+}
 
 /* ---------- PALCO FULLSCREEN ---------- */
 .james-stage {

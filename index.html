@@ -21763,7 +21763,8 @@
     <span class="james-trigger__dot" data-state="idle"></span>
   </button>
 
-  <div id="jamesStage" class="james-stage" aria-hidden="true">
+  <div id="jamesStage" class="james-stage mini" aria-hidden="true">
+    <button type="button" class="james-expand-btn" id="jamesExpandBtn" title="Expandir / Recolher">⤢</button>
     <canvas id="jamesOrbCanvas" class="james-orb-canvas"></canvas>
     <div class="james-stage__overlay">
       <div class="james-stage__brand">
@@ -23576,16 +23577,50 @@
       stage.classList.add('open');
       stage.setAttribute('aria-hidden', 'false');
       document.body.classList.add('james-active');
+      if (stage.classList.contains('mini')) document.body.classList.add('james-mini');
+      else document.body.classList.remove('james-mini');
     }
     function closeStage() {
       stage.classList.remove('open');
       stage.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('james-active');
+      document.body.classList.remove('james-mini');
+      conversationMode = false;
       stopCapture();
       window.speechSynthesis?.cancel?.();
       setState('idle', 'Aguardando…');
     }
     closeBtn.addEventListener('click', closeStage);
+
+    // Botão expandir/recolher (mini ↔ full)
+    const expandBtn = document.getElementById('jamesExpandBtn');
+    if (expandBtn) {
+      expandBtn.addEventListener('click', () => {
+        if (stage.classList.contains('mini')) {
+          stage.classList.remove('mini');
+          document.body.classList.remove('james-mini');
+          expandBtn.textContent = '⤡';
+          expandBtn.title = 'Recolher';
+        } else {
+          stage.classList.add('mini');
+          document.body.classList.add('james-mini');
+          expandBtn.textContent = '⤢';
+          expandBtn.title = 'Expandir';
+        }
+      });
+    }
+
+    // Status dot — verde quando IA tá configurada
+    function updateAIStatusDot() {
+      const dot = document.querySelector('.james-trigger__dot');
+      if (!dot) return;
+      const hasKey = !!(localStorage.getItem('fly_james_openai_key') || localStorage.getItem('fly_james_anthropic_key'));
+      dot.classList.toggle('ai-online', hasKey);
+      dot.classList.toggle('ai-offline', !hasKey);
+    }
+    updateAIStatusDot();
+    // Re-verifica quando user salvar nova key
+    window.addEventListener('storage', updateAIStatusDot);
 
     /* -----------------------------------------------------------------
        3 · FALA (TTS)
@@ -24397,6 +24432,7 @@
       settingsPanel.classList.add('hidden');
       replyTextEl.textContent = 'Configurações salvas. JAMES Nível 2 ativado.';
       speak('Configurações salvas. Nível dois ativado.');
+      updateAIStatusDot();
     });
 
     // Cofre AEY trigger
