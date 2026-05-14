@@ -23956,26 +23956,38 @@
       captureRecog.onerror = () => stopCapture();
       captureRecog.onend = async () => {
         const text = finalText.trim() || userTextEl.textContent;
-        if (text) {
+        console.log('[JAMES VOZ] Texto capturado:', text);
+        if (text && text !== '…') {
           // Nível 3 primeiro (execução determinística — vendas, finanças)
           const localReply = answer(text);
           const isFallback = localReply.startsWith('Ainda não tenho esse dado cadastrado');
           let finalReply = localReply;
           if (isFallback) {
             const keys = getApiKey();
+            console.log('[JAMES VOZ] Tem chave?', { openai: !!keys.openai, anthropic: !!keys.anthropic });
             if (keys.openai || keys.anthropic) {
               try {
                 setState('listening', 'Pensando…');
+                console.log('[JAMES VOZ] Chamando IA…');
                 const llmReply = await callLLM(text);
-                if (llmReply) finalReply = llmReply;
+                console.log('[JAMES VOZ] Resposta IA:', llmReply);
+                if (llmReply) {
+                  finalReply = llmReply;
+                } else {
+                  finalReply = '⚠️ IA não retornou resposta.';
+                }
               } catch (e) {
-                console.warn('JAMES LLM error:', e);
+                console.error('[JAMES VOZ] ERRO IA:', e);
+                finalReply = '⚠️ Erro: ' + (e?.message || e);
               }
+            } else {
+              finalReply = '⚠️ Sem chave de IA configurada.';
             }
           }
           replyTextEl.textContent = finalReply;
           speak(finalReply);
         } else {
+          replyTextEl.textContent = '🎤 Não consegui ouvir, chefe. Fala mais perto do mic.';
           setState('idle', 'Não entendi…');
         }
         captureRecog = null;
