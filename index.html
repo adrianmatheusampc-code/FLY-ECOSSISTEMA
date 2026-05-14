@@ -23632,7 +23632,7 @@
        ---------------------------------------------------------------*/
     function getApiKey() {
       return {
-        openai:    localStorage.getItem('fly_james_openai_key') || '',
+        openai:    localStorage.getItem('fly_james_openai_key')    || '',
         anthropic: localStorage.getItem('fly_james_anthropic_key') || ''
       };
     }
@@ -24019,16 +24019,26 @@
         const isFallback = localReply.startsWith('Ainda não tenho esse dado cadastrado');
         let finalReply = localReply;
 
+        // SEMPRE tenta a IA quando o local não responde (com fallback hardcoded)
         if (isFallback) {
           const keys = getApiKey();
           if (keys.openai || keys.anthropic) {
             try {
               setState('listening', 'Pensando…');
+              console.log('[JAMES] Chamando IA com pergunta:', query);
               const llmReply = await callLLM(query);
-              if (llmReply) finalReply = llmReply;
+              console.log('[JAMES] Resposta IA:', llmReply);
+              if (llmReply) {
+                finalReply = llmReply;
+              } else {
+                finalReply = '⚠️ IA não retornou resposta. Tenta de novo, chefe.';
+              }
             } catch (e) {
-              console.warn('JAMES LLM error:', e);
+              console.error('[JAMES] ERRO IA:', e);
+              finalReply = '⚠️ Erro na IA: ' + (e?.message || e) + '. Veja o console (Cmd+Opt+I) pra detalhes.';
             }
+          } else {
+            finalReply = '⚠️ Sem chave de IA configurada. Configura no SETUP.';
           }
         }
 
