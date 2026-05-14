@@ -24274,7 +24274,11 @@
 -- =============================================================
 
 -- Modo de dados (DEMO / NORMAL / META) — espelha localStorage.
-create type if not exists fly_data_mode as enum ('demo', 'operational', 'goal');
+do $$ begin
+  create type fly_data_mode as enum ('demo', 'operational', 'goal');
+exception
+  when duplicate_object then null;
+end $$;
 
 -- =============================================================
 -- 1 · COFRE AEY (caixa privado dos sócios)
