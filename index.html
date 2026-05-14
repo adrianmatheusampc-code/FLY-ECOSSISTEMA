@@ -23596,19 +23596,88 @@
       if (!('speechSynthesis' in window)) return null;
       const voices = window.speechSynthesis.getVoices();
       if (!voices || !voices.length) return null;
-      const MALE_NAMES = /\b(felipe|ricardo|daniel|joaquim|luciano|paulo|jo[aã]o|antoni[oô]|f[aá]bio|eduardo|fernando|carlos|guilherme|gabriel|alex|aaron|fred|diogo|rafael|marcelo|thiago|tiago)\b/i;
-      const MALE_HINT  = /(male|homem|masculino|\bman\b|hombre)/i;
-      const FEMALE_HINT= /(female|woman|mulher|feminin|\bfem\b|maria|luciana|\bana\b|joana|beatriz|samantha|victoria|karen|tessa|monica|paulina|helena|francisca)/i;
+
+      // Vozes masculinas CONFIRMADAS (ordem de prioridade)
+      const PRIORITY = [
+        'Felipe',          // Mac pt-BR masculino — TOP escolha
+        'Luciano',         // Mac pt-BR masculino
+        'Joaquim',         // Mac pt-PT masculino
+        'Daniel',          // Mac/Win masculino
+        'Ricardo',         // Win pt-BR masculino
+        'Eduardo',         // Win/Linux masculino
+        'Fernando',
+        'Diego',
+        'Diogo',
+        'Microsoft Daniel',
+        'Microsoft Ricardo',
+        'Microsoft Eduardo',
+        'Google português do Brasil', // Chrome - pode ser masculina dependendo da versão
+      ];
+
+      const FEMALE_BLACKLIST = /\b(luciana|maria|paulina|monica|helena|samantha|victoria|karen|tessa|fiona|alice|joana|beatriz|francisca|alex.*?female|female|fem\b|woman|mulher|feminin)/i;
+
+      // 1) Tenta nomes prioritários (match exato/parcial)
+      for (const name of PRIORITY) {
+        const v = voices.find(x =>
+          (x.name || '').toLowerCase().includes(name.toLowerCase()) &&
+          !FEMALE_BLACKLIST.test(x.name || '')
+        );
+        if (v) {
+          _cachedMaleVoice = v;
+          console.log('[JAMES VOZ] Selecionada:', v.name, '(' + v.lang + ')');
+          return v;
+        }
+      }
+
+      // 2) Qualquer voz pt-* que NÃO seja conhecidamente feminina
       const isPt = v => /^pt(-|_)?/i.test(v.lang) || /portuguese|brasil|brazil|portugu[eê]s/i.test(v.name || '');
       const ptVoices = voices.filter(isPt);
-      let pick = ptVoices.find(v => MALE_NAMES.test((v.name || '') + ' ' + (v.voiceURI || '')));
-      if (!pick) pick = ptVoices.find(v => MALE_HINT.test((v.name || '') + ' ' + (v.voiceURI || '')));
-      if (!pick) pick = ptVoices.find(v => !FEMALE_HINT.test(v.name || ''));
+      let pick = ptVoices.find(v => !FEMALE_BLACKLIST.test(v.name || ''));
+
+      // 3) Última: primeira voz pt (mesmo que feminina)
       if (!pick) pick = ptVoices[0];
-      if (!pick) pick = voices.find(v => MALE_NAMES.test(v.name) || MALE_HINT.test(v.name));
-      _cachedMaleVoice = pick || voices[0] || null;
+
+      // 4) Pior cenário: primeira voz disponível
+      if (!pick) pick = voices[0];
+
+      _cachedMaleVoice = pick || null;
+      if (pick) console.log('[JAMES VOZ] Fallback:', pick.name, '(' + pick.lang + ')');
       return _cachedMaleVoice;
     }
+
+    // Permite override manual: __flySetVoice('Felipe') ou __flyListVoices()
+    window.__flyListVoices = () => {
+      const vs = window.speechSynthesis.getVoices();
+      console.table(vs.map(v => ({ name: v.name, lang: v.lang, local: v.localService })));
+      return vs;
+    };
+    window.__flySetVoice = (nameOrIdx) => {
+      const vs = window.speechSynthesis.getVoices();
+      const v = typeof nameOrIdx === 'number'
+        ? vs[nameOrIdx]
+        : vs.find(x => x.name.toLowerCase().includes(String(nameOrIdx).toLowerCase()));
+      if (v) {
+        _cachedMaleVoice = v;
+        localStorage.setItem('fly_james_voice_name', v.name);
+        console.log('[JAMES VOZ] Definida manualmente:', v.name);
+      } else {
+        console.warn('Voz não encontrada. Use __flyListVoices() pra ver as disponíveis.');
+      }
+      return v;
+    };
+
+    // Restaura voz salva no localStorage (se houver)
+    (function restoreVoicePref() {
+      const savedName = localStorage.getItem('fly_james_voice_name');
+      if (!savedName) return;
+      const tryRestore = () => {
+        const vs = window.speechSynthesis.getVoices();
+        const v = vs.find(x => x.name === savedName);
+        if (v) { _cachedMaleVoice = v; console.log('[JAMES VOZ] Restaurada do storage:', v.name); }
+      };
+      tryRestore();
+      window.speechSynthesis.addEventListener?.('voiceschanged', tryRestore);
+    })();
 
     // Modo conversa contínua — depois da 1ª pergunta, continua ouvindo automaticamente
     let conversationMode = false;
@@ -23618,8 +23687,8 @@
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'pt-BR';
-      u.rate = 1.15;   // + rápido (era 0.96)
-      u.pitch = 0.78;
+      u.rate = 1.12;   // + rápido
+      u.pitch = 0.65;  // + grave/masculino
       u.volume = 1;
       const v = pickMaleVoice();
       if (v) u.voice = v;
