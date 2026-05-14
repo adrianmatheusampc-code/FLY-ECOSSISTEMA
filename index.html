@@ -23959,19 +23959,48 @@
       wakeRecog = null;
     }
 
-    function startCapture() {
+    // Pede permissão de mic explicitamente — Safari/Chrome
+    async function ensureMicPermission() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Fechamos o stream — só queremos garantir permissão
+        stream.getTracks().forEach(t => t.stop());
+        return true;
+      } catch (e) {
+        console.error('[JAMES] Permissão de mic negada:', e);
+        return false;
+      }
+    }
+
+    async function startCapture() {
       if (!SR) {
-        const txt = 'Seu navegador não tem suporte a reconhecimento de voz. Use Chrome/Safari ou clique no botão Falar.';
+        const txt = '⚠️ Seu navegador não suporta voz. Use Chrome ou Safari atualizado.';
         replyTextEl.textContent = txt;
-        speak(txt);
         return;
       }
+
+      // 1) Para wake listener primeiro pra liberar o mic
       try { wakeRecog?.stop?.(); } catch (e) {}
+      wakeEnabled = false;
+
+      // 2) Garante permissão antes de iniciar SR
+      const ok = await ensureMicPermission();
+      if (!ok) {
+        replyTextEl.textContent = '⚠️ Permissão de microfone negada. Vai nas configurações do navegador e libera o mic pra este site.';
+        return;
+      }
+
+      // 3) Inicia SpeechRecognition
       captureRecog = new SR();
       captureRecog.lang = 'pt-BR';
       captureRecog.continuous = false;
       captureRecog.interimResults = true;
       let finalText = '';
+
+      captureRecog.onstart = () => {
+        console.log('[JAMES] Mic ATIVO');
+        setState('capturing', 'Ouvindo…');
+      };
       captureRecog.onresult = (e) => {
         let interim = '';
         for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -23982,7 +24011,15 @@
         userTextEl.textContent = (finalText + ' ' + interim).trim();
         orb.setAmplitude(0.5 + Math.min(1, (finalText + interim).length / 60));
       };
-      captureRecog.onerror = () => stopCapture();
+      captureRecog.onerror = (e) => {
+        console.error('[JAMES] Erro mic:', e.error);
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          replyTextEl.textContent = '⚠️ Mic bloqueado. Libera no navegador (Configurações → Microfone).';
+        } else if (e.error === 'no-speech') {
+          replyTextEl.textContent = '🎤 Não ouvi nada, chefe. Tenta de novo.';
+        }
+        stopCapture();
+      };
       captureRecog.onend = async () => {
         const text = finalText.trim() || userTextEl.textContent;
         console.log('[JAMES VOZ] Texto capturado:', text);
@@ -24034,11 +24071,24 @@
     function activateJames() {
       openStage();
       setState('listening', 'James online');
-      const greet = 'Pronto, chefe. Pode falar.';
+      const greet = 'Pronto, chefe.';
       replyTextEl.textContent = greet;
-      speak(greet);
-      // espera o TTS terminar antes de capturar
-      setTimeout(startCapture, 1100);
+      // Espera TTS terminar — usa onend do SpeechSynthesisUtterance
+      try {
+        const u = new SpeechSynthesisUtterance(greet);
+        const v = pickMaleVoice();
+        if (v) u.voice = v;
+        u.lang = 'pt-BR';
+        u.rate = 1.05;
+        u.onend = () => { setTimeout(() => startCapture(), 200); };
+        u.onerror = () => { setTimeout(() => startCapture(), 200); };
+        speechSynthesis.cancel();
+        speechSynthesis.speak(u);
+        // Fallback se onend não disparar (Safari bug)
+        setTimeout(() => { if (!captureRecog) startCapture(); }, 2500);
+      } catch (e) {
+        setTimeout(startCapture, 1500);
+      }
     }
 
     /* -----------------------------------------------------------------
@@ -24126,20 +24176,22 @@
           isMicRecording = false;
         }
 
-        micBtn.addEventListener('click', () => {
+        micBtn.addEventListener('click', async () => {
           if (isMicRecording) {
             try { captureRecog?.stop?.(); } catch (e) {}
             hideWaveform();
-            setState('idle', 'Processando…');
-          } else {
-            showWaveform();
-            try {
-              startCapture();
-            } catch (e) {
-              console.error('[JAMES] Erro ao iniciar microfone:', e);
-              if (replyTextEl) replyTextEl.textContent = '⚠️ Não consegui acessar o microfone.';
-              hideWaveform();
-            }
+            return;
+          }
+          // Inicia gravação direta (sem TTS de boas-vindas)
+          showWaveform();
+          replyTextEl.textContent = '';
+          userTextEl.textContent = '…';
+          try {
+            await startCapture();
+          } catch (e) {
+            console.error('[JAMES] Erro ao iniciar microfone:', e);
+            if (replyTextEl) replyTextEl.textContent = '⚠️ ' + (e?.message || 'Erro ao acessar microfone');
+            hideWaveform();
           }
         });
 
