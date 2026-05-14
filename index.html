@@ -24360,11 +24360,8 @@
     // Botão SETUP sempre abre o wizard
     setupBtn.addEventListener('click', openWizard);
 
-    // Auto-abre na primeira vez (se não tiver Supabase configurado)
-    const hasSupabase = localStorage.getItem('fly_supabase_config');
-    if (!hasSupabase && !localStorage.getItem(completionFlag)) {
-      wizard.classList.remove('hidden');
-    }
+    // Auto-marca como completo (não abre mais sozinho — só via botão SETUP)
+    localStorage.setItem(completionFlag, 'true');
 
     // Load schema.sql for display (embedded) — VERSION 4 (NO DO BLOCKS, NO ENUMS)
     const schemaSQL = `-- =============================================================
