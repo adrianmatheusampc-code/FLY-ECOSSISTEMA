@@ -24268,12 +24268,12 @@
 
     // Load schema.sql for display (embedded)
     const schemaSQL = `-- =============================================================
--- FLY ECOSSISTEMA · Esquema base Supabase
+-- FLY ECOSSISTEMA · Esquema base Supabase — VERSION 3 (FIXED)
+-- Se você ver "VERSION 3" aqui, tá com a versão certa!
 -- Rode esse arquivo no SQL editor do Supabase (uma vez).
--- Habilita RLS em todas as tabelas com policies básicas.
 -- =============================================================
 
--- Modo de dados (DEMO / NORMAL / META) — espelha localStorage.
+-- Modo de dados (DEMO / NORMAL / META)
 do $$ begin
   create type fly_data_mode as enum ('demo', 'operational', 'goal');
 exception
