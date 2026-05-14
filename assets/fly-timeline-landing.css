@@ -1780,31 +1780,78 @@ body.james-active .james-trigger { display: none; }
 /* Botão de expandir/mini (escondido por enquanto — feature futura) */
 .james-expand-btn { display: none; }
 
-/* ---------- PALCO FULLSCREEN ---------- */
+/* ---------- PALCO FULLSCREEN (padrão) ---------- */
 .james-stage {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
+  position: fixed;
+  inset: 0;
   z-index: 1020;
   display: none;
   background:
     radial-gradient(circle at 50% 50%, rgba(20, 12, 2, 0.86), rgba(0, 0, 0, 0.96) 65%, #000 100%);
   opacity: 0;
-  transition: opacity 0.32s ease;
-  border-radius: 0 !important;
-  border: none !important;
-  box-shadow: none !important;
+  transition: opacity 0.32s ease, inset 0.35s ease, border-radius 0.3s ease;
 }
-.james-stage.open { display: block !important; opacity: 1; }
-/* Bloqueia qualquer classe .mini que sobrar de cache */
+.james-stage.open { display: block; opacity: 1; }
+
+/* ---------- MINI-MODE (canto inferior direito) ---------- */
 .james-stage.mini {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  border-radius: 0 !important;
+  inset: auto 20px 80px auto;
+  width: 360px;
+  height: 460px;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 120px);
+  border-radius: 22px;
+  border: 1px solid rgba(255, 216, 102, 0.25);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), 0 0 50px rgba(255, 184, 70, 0.18);
+  overflow: hidden;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
+
+/* Mini: trigger continua visível pra reabrir caso feche */
+body.james-active.james-mini-active .james-trigger { display: flex; opacity: 0.6; }
+body.james-active:not(.james-mini-active) .james-trigger { display: none; }
+
+/* Mini: overlay compacto */
+.james-stage.mini .james-stage__overlay {
+  padding: 16px;
+  grid-template-rows: auto auto auto auto;
+  gap: 8px;
+}
+
+/* Mini: brand reduzido */
+.james-stage.mini .james-stage__brand-pre { font-size: 9px; letter-spacing: 2px; }
+.james-stage.mini .james-stage__brand strong { font-size: 14px; letter-spacing: 3px; }
+.james-stage.mini .james-stage__brand small { font-size: 9px; }
+
+/* Mini: orbe pequeno mas visível (canvas relative) */
+.james-stage.mini .james-orb-canvas {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 130px !important;
+  margin: 6px 0;
+}
+
+/* Mini: transcrição compacta */
+.james-stage.mini .james-stage__transcript { max-height: 100px; overflow-y: auto; }
+.james-stage.mini .james-stage__user-text { font-size: 11px; margin-bottom: 4px; }
+.james-stage.mini .james-stage__reply { font-size: 12px !important; line-height: 1.4; min-height: 30px !important; margin-bottom: 4px !important; }
+
+/* Mini: input + waveform + controles compactos */
+.james-stage.mini .james-chat-input { padding: 7px 11px; font-size: 12px; }
+.james-stage.mini .james-stage__controls { margin-top: 6px !important; gap: 6px !important; flex-wrap: wrap; }
+.james-stage.mini .james-mic-btn { padding: 7px 13px; font-size: 10px; gap: 6px; }
+.james-stage.mini .james-stage__btn { padding: 6px 10px; font-size: 10px; }
+.james-stage.mini .james-waveform { height: 26px; margin-top: 4px; gap: 3px; }
+.james-stage.mini .james-waveform .wave-bar { width: 3px; }
+.james-stage.mini .james-stage__hint { display: none; }
+.james-stage.mini .james-stage__settings { font-size: 12px; padding: 12px; }
+.james-stage.mini .james-stage__settings h3 { font-size: 13px; }
+
+/* Mini: orbe cursor pointer indicando que dá pra clicar pra expandir */
+.james-stage.mini .james-orb-canvas { cursor: zoom-in; }
+.james-stage:not(.mini) .james-orb-canvas { cursor: default; }
 
 .james-orb-canvas {
   position: absolute;

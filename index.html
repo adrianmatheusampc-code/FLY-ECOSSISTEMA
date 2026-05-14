@@ -23474,10 +23474,18 @@
       let raf = 0;
       let activeMode = 'idle'; // idle | listening | speaking
 
+      function getCanvasSize() {
+        // Em mini-mode, usa o tamanho real do canvas. Em fullscreen, usa o viewport.
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width > 10 && rect.height > 10 && rect.width < window.innerWidth * 0.9) {
+          return { w: rect.width, h: rect.height };
+        }
+        return { w: window.innerWidth, h: window.innerHeight };
+      }
+
       function resize() {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const w = window.innerWidth;
-        const h = window.innerHeight;
+        const { w, h } = getCanvasSize();
         canvas.width  = w * dpr;
         canvas.height = h * dpr;
         canvas.style.width  = w + 'px';
@@ -23486,8 +23494,7 @@
       }
 
       function frame() {
-        const w = window.innerWidth;
-        const h = window.innerHeight;
+        const { w, h } = getCanvasSize();
         const cx = w / 2;
         const cy = h / 2;
 
@@ -23581,23 +23588,51 @@
       orb.setMode(s === 'speaking' ? 'speaking' : s === 'listening' || s === 'capturing' ? 'listening' : 'idle');
     }
 
-    function openStage() {
+    function openStage(opts = {}) {
       stage.classList.add('open');
       stage.setAttribute('aria-hidden', 'false');
       document.body.classList.add('james-active');
-      // Força orbe redimensionar
+      if (opts.mini !== false) {
+        stage.classList.add('mini');
+        document.body.classList.add('james-mini-active');
+      } else {
+        stage.classList.remove('mini');
+        document.body.classList.remove('james-mini-active');
+      }
+      // Força orbe redimensionar com o novo tamanho do container
       requestAnimationFrame(() => { try { window.__flyOrbResize?.(); } catch (e) {} });
+      setTimeout(() => { try { window.__flyOrbResize?.(); } catch (e) {} }, 400);
     }
     function closeStage() {
       stage.classList.remove('open');
+      stage.classList.remove('mini');
       stage.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('james-active');
+      document.body.classList.remove('james-mini-active');
       conversationMode = false;
       stopCapture();
       window.speechSynthesis?.cancel?.();
       setState('idle', 'Aguardando…');
     }
     closeBtn.addEventListener('click', closeStage);
+
+    // Click no orbe (em mini) → expande pra fullscreen
+    if (canvas) {
+      canvas.addEventListener('click', () => {
+        if (stage.classList.contains('mini') && stage.classList.contains('open')) {
+          stage.classList.remove('mini');
+          document.body.classList.remove('james-mini-active');
+          requestAnimationFrame(() => { try { window.__flyOrbResize?.(); } catch (e) {} });
+          setTimeout(() => { try { window.__flyOrbResize?.(); } catch (e) {} }, 400);
+        } else if (!stage.classList.contains('mini') && stage.classList.contains('open')) {
+          // Click no orbe em fullscreen volta pra mini
+          stage.classList.add('mini');
+          document.body.classList.add('james-mini-active');
+          requestAnimationFrame(() => { try { window.__flyOrbResize?.(); } catch (e) {} });
+          setTimeout(() => { try { window.__flyOrbResize?.(); } catch (e) {} }, 400);
+        }
+      });
+    }
 
     // Status dot — verde quando IA tá configurada
     function updateAIStatusDot() {
