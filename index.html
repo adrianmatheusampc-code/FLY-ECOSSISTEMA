@@ -9911,13 +9911,18 @@
       return null;
     })();
     const FLY_SUPA_URL = _SUPA_OVERRIDE?.url    || 'https://ezfmvblirhmootdvqmsr.supabase.co';
-    // anon key (PÚBLICA — segura no frontend) — chefe autorizou
-    const FLY_SUPA_KEY = _SUPA_OVERRIDE?.anonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Zm12Ymxpcmhtb290ZHZxbXNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjM4MzIsImV4cCI6MjA5MzY5OTgzMn0.ODZsjH5n7RUs-hlwhTw8l9DOBoVXeUlqf-qXwLS3xQE';
+    // Publishable key NOVA (formato 2024+ Supabase, pública — segura no frontend)
+    const FLY_SUPA_KEY = _SUPA_OVERRIDE?.anonKey || 'sb_publishable_4OChxaBFpGLW8crLQJGzxQ_HiSPmJ6t';
 
-    // Garante que o sync.js (sistema novo) usa a mesma config — sincroniza os 2 sistemas
+    // FORÇA atualização do localStorage com a config nova (se a antiga era chave inválida)
     try {
-      if (!localStorage.getItem('fly_supabase_config')) {
+      const curCfg = JSON.parse(localStorage.getItem('fly_supabase_config') || 'null');
+      const needsUpdate = !curCfg
+        || curCfg.url !== FLY_SUPA_URL
+        || (curCfg.anonKey || '').startsWith('sb_publishable_5vVImnH7'); // antiga ruim
+      if (needsUpdate) {
         localStorage.setItem('fly_supabase_config', JSON.stringify({ url: FLY_SUPA_URL, anonKey: FLY_SUPA_KEY }));
+        console.log('[FLY] Atualizou config Supabase no localStorage');
       }
     } catch (e) {}
     if (_SUPA_OVERRIDE) console.log('[FLY] Usando Supabase config do localStorage:', _SUPA_OVERRIDE.url);
