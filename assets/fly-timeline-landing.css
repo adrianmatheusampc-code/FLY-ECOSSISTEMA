@@ -1141,7 +1141,7 @@ body.admin-mode .war-map-toolbar small {
 .dash-trigger {
   position: fixed;
   right: 22px;
-  bottom: 78px; /* acima do botão JAMES */
+  bottom: 22px; /* canto inferior direito, alinhado com James */
   z-index: 1014;
   display: flex;
   align-items: center;

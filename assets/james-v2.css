@@ -22,10 +22,10 @@
    ============================================================ */
 #jms-orb {
   position: fixed;
-  right: 130px;    /* desvia do COCKPIT no canto direito */
-  bottom: 18px;
-  width: 92px;
-  height: 92px;
+  right: 170px;    /* à esquerda do COCKPIT, alinhado horizontalmente */
+  bottom: 8px;
+  width: 78px;
+  height: 78px;
   border-radius: 50%;
   border: none;
   cursor: pointer;
@@ -54,15 +54,15 @@
 
 .jms-orb__label {
   position: absolute;
-  bottom: -20px;
+  bottom: -16px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 8.5px;
+  font-size: 7.5px;
   font-weight: 800;
-  letter-spacing: 2.6px;
+  letter-spacing: 2.4px;
   color: rgba(245, 182, 66, 0.9);
   text-transform: uppercase;
-  text-shadow: 0 0 8px rgba(0,0,0,0.75);
+  text-shadow: 0 0 8px rgba(0,0,0,0.85);
   pointer-events: none;
   white-space: nowrap;
 }
@@ -136,10 +136,10 @@
 #jms-panel {
   position: fixed;
   right: 24px;
-  bottom: 130px;
+  bottom: 100px;
   width: 380px;
   max-width: calc(100vw - 48px);
-  max-height: calc(100vh - 180px);
+  max-height: calc(100vh - 160px);
   background: linear-gradient(170deg, rgba(15, 12, 6, 0.96) 0%, rgba(5, 5, 5, 0.98) 100%);
   border: 1px solid rgba(245, 182, 66, 0.22);
   border-radius: 18px;
@@ -723,15 +723,15 @@
    ============================================================ */
 @media (max-width: 720px) {
   #jms-orb {
-    width: 72px;
-    height: 72px;
-    right: 92px;
-    bottom: 14px;
+    width: 64px;
+    height: 64px;
+    right: 130px;
+    bottom: 6px;
   }
   #jms-panel {
     right: 12px;
     left: 12px;
-    bottom: 100px;
+    bottom: 90px;
     width: auto;
     max-width: none;
   }
