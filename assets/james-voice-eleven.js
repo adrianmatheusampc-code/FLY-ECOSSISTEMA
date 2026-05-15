@@ -28,9 +28,19 @@
 
   /* ---------------------------------------------------------------
      CONFIG · chave + voice id (hardcoded com override via localStorage)
+
+     NOTA: vozes "professional" (como a Arnold-Br original) requerem
+     plano pago da ElevenLabs. No free tier só funcionam vozes premade.
+     A "George" (JBFqnCBsd6RMkjVDRZzb) é masculina mature britânica e
+     fala português via modelo multilingual_v2 com sotaque suave.
+
+     Pra trocar pra voz brasileira nativa (Arnold-Br) ou própria:
+       1) Upgrade ElevenLabs pra Starter ($5/mês), OU
+       2) Crie sua voz no Voice Lab e cole o ID via:
+          window.__jamesVoiceEleven.setKey(null, 'SEU_VOICE_ID')
   --------------------------------------------------------------- */
   const ELEVEN_API_KEY_DEFAULT  = 'sk_4a23b74a2d652a1c3caa7eddc81eff496eb361490022bc77';
-  const ELEVEN_VOICE_ID_DEFAULT = 'ZYCQDYoXnl78dNdU6JeG';
+  const ELEVEN_VOICE_ID_DEFAULT = 'JBFqnCBsd6RMkjVDRZzb'; // George — premade masculino mature
 
   function getKey()     { return localStorage.getItem('fly_eleven_key')      || ELEVEN_API_KEY_DEFAULT; }
   function getVoiceId() { return localStorage.getItem('fly_eleven_voice_id') || ELEVEN_VOICE_ID_DEFAULT; }
@@ -48,7 +58,9 @@
     `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`;
   const STT_URL = 'https://api.elevenlabs.io/v1/speech-to-text';
 
-  const DEFAULT_MODEL_TTS = 'eleven_flash_v2_5';
+  // Multilingual_v2 fala em português com qualquer voz (incluindo as premade
+  // em inglês). flash_v2_5 também aceita pt-BR mas tem qualidade menor.
+  const DEFAULT_MODEL_TTS = 'eleven_multilingual_v2';
   const DEFAULT_MODEL_STT = 'scribe_v1';
   const DEFAULT_LANGUAGE  = 'por'; // ISO 639-3 = pt-BR
 
