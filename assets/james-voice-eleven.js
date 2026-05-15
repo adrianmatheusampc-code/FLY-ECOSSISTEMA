@@ -29,18 +29,15 @@
   /* ---------------------------------------------------------------
      CONFIG · chave + voice id (hardcoded com override via localStorage)
 
-     NOTA: vozes "professional" (como a Arnold-Br original) requerem
-     plano pago da ElevenLabs. No free tier só funcionam vozes premade.
-     A "George" (JBFqnCBsd6RMkjVDRZzb) é masculina mature britânica e
-     fala português via modelo multilingual_v2 com sotaque suave.
+     Voice atual: voz própria criada via Instant Voice Clone no free tier
+     da ElevenLabs (My6nGPXbjD5XyteAZ4FM). Funciona via API gratuitamente
+     porque é IVC do próprio user (não é library/professional).
 
-     Pra trocar pra voz brasileira nativa (Arnold-Br) ou própria:
-       1) Upgrade ElevenLabs pra Starter ($5/mês), OU
-       2) Crie sua voz no Voice Lab e cole o ID via:
-          window.__jamesVoiceEleven.setKey(null, 'SEU_VOICE_ID')
+     Pra trocar a voz sem mexer no código:
+       window.__jamesVoiceEleven.setKey(null, 'NOVO_VOICE_ID')
   --------------------------------------------------------------- */
   const ELEVEN_API_KEY_DEFAULT  = 'sk_4a23b74a2d652a1c3caa7eddc81eff496eb361490022bc77';
-  const ELEVEN_VOICE_ID_DEFAULT = 'JBFqnCBsd6RMkjVDRZzb'; // George — premade masculino mature
+  const ELEVEN_VOICE_ID_DEFAULT = 'My6nGPXbjD5XyteAZ4FM'; // James Oficial (IVC própria)
 
   function getKey()     { return localStorage.getItem('fly_eleven_key')      || ELEVEN_API_KEY_DEFAULT; }
   function getVoiceId() { return localStorage.getItem('fly_eleven_voice_id') || ELEVEN_VOICE_ID_DEFAULT; }
