@@ -21642,7 +21642,7 @@
         }
 
         const formatRadio = modal.querySelector('input[name="m_format"]:checked');
-        const chosenFormat = ['default', 'pacotes', 'presskit'].includes(formatRadio?.value) ? formatRadio.value : 'default';
+        const chosenFormat = ['default', 'pacotes', 'presskit', 'hierarchy', 'bases'].includes(formatRadio?.value) ? formatRadio.value : 'default';
         const updated = {
           id: it.id,
           name: modal.querySelector('#m_name').value.trim(),
