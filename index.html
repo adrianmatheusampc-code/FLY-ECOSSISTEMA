@@ -17105,6 +17105,68 @@
     }
     function saveDubaiExplorer() { try { saveData(); } catch (e) {} }
 
+    /* ============================================================
+       API GLOBAL · PAINEL DE PACOTE (pra o James operar lá dentro)
+       Expõe find/load/save/refresh dos painéis formato 'pacotes'.
+       ============================================================ */
+    window.__flyPacoteAPI = {
+      // Lista todos os pacotes (format='pacotes' + legacy DUBAI EXPLORER)
+      list() {
+        try {
+          return flyCollectPacotes().map(p => ({ id: p.id, name: p.name, topicKey: p.topicKey }));
+        } catch (e) { return []; }
+      },
+      // Acha o item-pacote por nome (fuzzy, sem acento, case-insensitive)
+      find(name) {
+        if (!name) return null;
+        const norm = (s) => String(s || '').toLowerCase()
+          .normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+        const target = norm(name);
+        const all = flyCollectPacotes();
+        // match exato → contém → contido
+        return (all.find(p => norm(p.name) === target)
+             || all.find(p => norm(p.name).includes(target))
+             || all.find(p => target.includes(norm(p.name)))
+             || null)?.item || null;
+      },
+      // Retorna o objeto de dados do pacote (D) conforme o modo atual
+      load(item) {
+        if (!item) return null;
+        try { return loadDubaiExplorer(item); } catch (e) { return null; }
+      },
+      // Persiste e re-renderiza o painel se estiver aberto naquele item
+      save(item) {
+        try { saveData(); } catch (e) {}
+        try {
+          // currentItemRef = { topicData, kind, idx } — guardado por showItem()
+          const ref = currentItemRef;
+          if (ref && ref.topicData && Array.isArray(ref.topicData.items)) {
+            const openItem = ref.topicData.items[ref.idx];
+            if (openItem && item && openItem.id === item.id &&
+                typeof showItem === 'function') {
+              showItem(ref.topicData, ref.kind, ref.idx); // re-render in-place
+            }
+          }
+        } catch (e) { /* re-render best-effort */ }
+        window.dispatchEvent(new CustomEvent('fly:data-update', { detail: { entity: 'pacote', action: 'update', id: item?.id } }));
+        window.dispatchEvent(new CustomEvent('fly:panel-pulse', { detail: { panel: 'products' } }));
+      },
+      // Mês atual no formato '01'..'12' (pra metaReal.mensal)
+      currentMonthKey() {
+        return String(new Date().getMonth() + 1).padStart(2, '0');
+      },
+      // Item do pacote que está aberto agora (null se nenhum)
+      currentItem() {
+        try {
+          const ref = currentItemRef;
+          if (ref && ref.topicData && Array.isArray(ref.topicData.items)) {
+            return ref.topicData.items[ref.idx] || null;
+          }
+        } catch (e) {}
+        return null;
+      },
+    };
+
     function dbxFmtMoney(v) {
       v = Number(v) || 0;
       return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });

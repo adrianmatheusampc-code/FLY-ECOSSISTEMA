@@ -27,6 +27,166 @@
                        confidence base, requiresConfirmation
      ---------------------------------------------------------- */
   const PATTERNS = [
+    /* === PACOTES · ALTA PRIORIDADE (vem antes de tudo pra não cair em CRM/vendas genéricos) ===
+       Estes padrões só disparam quando há contexto claro de pacote/produto/passeio/passageiro
+       ou quando o nome de um pacote (ex: "dubai", "explorer") aparece no comando. */
+    {
+      // "lista os pacotes" / "que pacotes temos"
+      re: /\b(?:lista|liste|quais|que)\s+(?:os\s+|todos\s+os\s+)?pacotes?\b/i,
+      type: 'pacote', subtype: 'pacote_list', category: 'pacotes',
+      confidence: 0.97, requiresConfirmation: false,
+    },
+    {
+      // "resumo/dados/status do pacote X" / "como está o dubai"
+      re: /\b(?:resumo|resumo\s+geral|dados|status|como\s+(?:t[áa]|est[áa]))\s+(?:do\s+|da\s+|de\s+|no\s+)?(?:pacote\s+|produto\s+)?(?:dubai|explorer|maldivas|safari|aspen|paris|miami|jap[ãa]o|tail[âa]ndia|patag[ôo]nia|machu|fly\s+\w+)/i,
+      type: 'pacote', subtype: 'pacote_query', category: 'pacotes',
+      confidence: 0.96, requiresConfirmation: false,
+    },
+    {
+      // "edita/muda/atualiza o produto/nome/duração/descrição/banner do [pacote]"
+      re: /\b(?:edita|edit[ae]r|muda|altera|atualiza|seta|define)\s+(?:o\s+|a\s+)?(?:nome|titulo|t[íi]tulo|dura[cç][ãa]o|tipo|descri[cç][ãa]o|banner|produto)\b/i,
+      type: 'pacote', subtype: 'pacote_edit_produto', category: 'pacotes',
+      confidence: 0.95, requiresConfirmation: false,
+    },
+    {
+      // "adiciona/cria passeio/experiência [nome]"
+      re: /\b(?:adicion[ae]|cria|cadastra|inclui|p[ôo]e|coloca)\s+(?:um\s+|uma\s+|novo\s+|nova\s+)?(?:passeio|experiencia|experi[êe]ncia|atra[cç][ãa]o|tour)\b/i,
+      type: 'pacote', subtype: 'pacote_add_experiencia', category: 'pacotes',
+      confidence: 0.96, requiresConfirmation: false,
+    },
+    {
+      // "remove/exclui passeio/experiência"
+      re: /\b(?:remove|exclui|tira|apag[ae]|deleta)\s+(?:o\s+|a\s+)?(?:passeio|experiencia|experi[êe]ncia|atra[cç][ãa]o|tour)\b/i,
+      type: 'pacote', subtype: 'pacote_remove_experiencia', category: 'pacotes',
+      confidence: 0.97, requiresConfirmation: true,
+    },
+    {
+      // "adiciona [hospedagem/transporte/refeição/incluso] no pacote"
+      re: /\b(?:adicion[ae]|inclui|coloca)\s+(?:um\s+|uma\s+|no\s+)?(?:incluso|item\s+incluso|hospedagem|transporte|refei[cç][ãa]o|suporte|seguro)\b/i,
+      type: 'pacote', subtype: 'pacote_add_incluso', category: 'pacotes',
+      confidence: 0.94, requiresConfirmation: false,
+    },
+    {
+      // "adiciona custo [fixo/variavel]"
+      re: /\b(?:adicion[ae]|cria|cadastra|inclui|lan[cç][ae])\s+(?:um\s+|uma\s+|novo\s+|nova\s+)?custo\b/i,
+      type: 'pacote', subtype: 'pacote_add_custo', category: 'pacotes',
+      confidence: 0.95, requiresConfirmation: false,
+    },
+    {
+      // "remove custo X"
+      re: /\b(?:remove|exclui|tira|apag[ae]|deleta)\s+(?:o\s+|um\s+)?custo\b/i,
+      type: 'pacote', subtype: 'pacote_remove_custo', category: 'pacotes',
+      confidence: 0.97, requiresConfirmation: true,
+    },
+    {
+      // "edita hotel/localização/transporte base do pacote"
+      re: /\b(?:edita|edit[ae]r|muda|altera|atualiza|troca)\s+(?:o\s+|a\s+)?(?:hotel|localiza[cç][ãa]o|transporte\s+base|base\s+operacional)\b/i,
+      type: 'pacote', subtype: 'pacote_edit_base_operacional', category: 'pacotes',
+      confidence: 0.94, requiresConfirmation: false,
+    },
+    {
+      // "adiciona dia [N] ao roteiro" / "novo dia no roteiro"
+      re: /\b(?:adicion[ae]|cria|inclui|coloca|insere)\s+(?:um\s+)?(?:dia|roteiro)\b|\bnovo\s+dia\s+(?:no\s+)?roteiro\b/i,
+      type: 'pacote', subtype: 'pacote_add_roteiro_dia', category: 'pacotes',
+      confidence: 0.94, requiresConfirmation: false,
+    },
+    {
+      // "adiciona checklist [X]"
+      re: /\b(?:adicion[ae]|cria|inclui|coloca)\s+(?:um\s+|no\s+)?(?:checklist|check\s*list|item\s+(?:do\s+|no\s+)?checklist)\b/i,
+      type: 'pacote', subtype: 'pacote_add_checklist', category: 'pacotes',
+      confidence: 0.94, requiresConfirmation: false,
+    },
+    {
+      // "marca/finaliza/desmarca [X] no checklist" / "[X] está feito"
+      re: /\b(?:marca|finaliza|conclu[ií]|desmarca|risca)\s+(?:o\s+|a\s+)?(?:item\s+|checklist)|\bcheck(?:list)?\s+(?:do\s+|no\s+)/i,
+      type: 'pacote', subtype: 'pacote_toggle_checklist', category: 'pacotes',
+      confidence: 0.93, requiresConfirmation: false,
+    },
+    {
+      // "adiciona [função] [nome] na equipe do pacote" / "coloca X como guia"
+      re: /\b(?:adicion[ae]|cria|cadastra|inclui|coloca)\s+(?:.+?\s+)?(?:na\s+equipe|como\s+(?:l[íi]der|guia|motorista|suporte))\b|\b(?:adicion[ae]|cadastra)\s+(?:um\s+|uma\s+)?(?:l[íi]der|guia|motorista)\s+(?:de\s+viagem|local)?/i,
+      type: 'pacote', subtype: 'pacote_add_equipe', category: 'pacotes',
+      confidence: 0.94, requiresConfirmation: false,
+    },
+    {
+      // "remove [X] da equipe"
+      re: /\b(?:remove|exclui|tira|demite|desliga)\s+(?:.+?\s+)?da\s+equipe\b/i,
+      type: 'pacote', subtype: 'pacote_remove_equipe', category: 'pacotes',
+      confidence: 0.97, requiresConfirmation: true,
+    },
+    {
+      // "adiciona/cadastra passageiro [nome]" / "[nome] comprou o dubai"
+      re: /\b(?:adicion[ae]|cria|cadastra|registr[ae])\s+(?:um\s+|uma\s+|novo\s+|nova\s+)?(?:passageiro|comprador|viajante)\b/i,
+      type: 'pacote', subtype: 'pacote_add_cliente', category: 'pacotes',
+      confidence: 0.96, requiresConfirmation: false,
+    },
+    {
+      // "[nome] comprou o pacote/dubai/explorer X"
+      re: /\b\w[\w\s]*?\s+(?:comprou|fechou|levou|adquiriu)\s+(?:o\s+|a\s+|um\s+|uma\s+)?(?:pacote|dubai|explorer|maldivas|safari|aspen|paris|miami|jap[ãa]o|tail[âa]ndia|patag[ôo]nia|machu|fly\s+\w+)/i,
+      type: 'pacote', subtype: 'pacote_add_cliente', category: 'pacotes',
+      confidence: 0.95, requiresConfirmation: false,
+    },
+    {
+      // "atualiza ticket [médio] do pacote" / "muda preço do dubai pra R$"
+      re: /\b(?:atualiza|muda|altera|seta|define)\s+(?:o\s+)?(?:ticket(?:\s+m[ée]dio)?|pre[cç]o)\b/i,
+      type: 'pacote', subtype: 'pacote_update_ticket', category: 'pacotes',
+      confidence: 0.94, requiresConfirmation: false,
+    },
+    {
+      // "atualiza meta do pacote" / "define meta de clientes/receita/lucro do dubai"
+      re: /\b(?:atualiza|muda|altera|seta|define|ajusta)\s+(?:a\s+|as\s+)?metas?\s+(?:de\s+|do\s+|da\s+)?(?:clientes?|receita|lucro|pacote|produto|dubai|explorer)\b/i,
+      type: 'pacote', subtype: 'pacote_update_meta', category: 'pacotes',
+      confidence: 0.95, requiresConfirmation: false,
+    },
+    {
+      // "lança [N] clientes/R$ no mês [X]" / "registra realizado de maio"
+      re: /\b(?:lan[cç][ae]|registr[ae]|atualiza|fech[ae])\s+(?:o\s+)?(?:realizado|m[êe]s|fechamento)\b/i,
+      type: 'pacote', subtype: 'pacote_lancar_mensal', category: 'pacotes',
+      confidence: 0.93, requiresConfirmation: false,
+    },
+    {
+      // "adiciona influencer [nome] ao pacote"
+      re: /\b(?:adicion[ae]|cadastra|inclui|registr[ae])\s+(?:um\s+|uma\s+|novo\s+|nova\s+)?influencer\b/i,
+      type: 'pacote', subtype: 'pacote_add_influencer', category: 'pacotes',
+      confidence: 0.95, requiresConfirmation: false,
+    },
+    {
+      // "adiciona campanha [nome]"
+      re: /\b(?:adicion[ae]|cria|cadastra|lan[cç][ae])\s+(?:uma\s+|nova\s+)?campanha\b/i,
+      type: 'pacote', subtype: 'pacote_add_campanha', category: 'pacotes',
+      confidence: 0.94, requiresConfirmation: false,
+    },
+    {
+      // "adiciona upsell/extra [nome]" / "vende skydive"
+      re: /\b(?:adicion[ae]|cria|cadastra|inclui)\s+(?:um\s+|uma\s+|novo\s+|nova\s+)?(?:upsell|extra|adicional)\b/i,
+      type: 'pacote', subtype: 'pacote_add_upsell', category: 'pacotes',
+      confidence: 0.95, requiresConfirmation: false,
+    },
+    {
+      // "atualiza conteúdo/fotos/vídeos/reels do pacote"
+      re: /\b(?:atualiza|muda|altera|seta)\s+(?:o\s+|os\s+|as\s+)?(?:conteudo|conte[úu]do|fotos|videos|v[íi]deos|reels)\b/i,
+      type: 'pacote', subtype: 'pacote_update_conteudo', category: 'pacotes',
+      confidence: 0.93, requiresConfirmation: false,
+    },
+    {
+      // "atualiza retenção / recompra"
+      re: /\b(?:atualiza|muda|seta|define)\s+(?:a\s+)?(?:reten[cç][ãa]o|recompra)\b/i,
+      type: 'pacote', subtype: 'pacote_update_retencao', category: 'pacotes',
+      confidence: 0.94, requiresConfirmation: false,
+    },
+    {
+      // "atualiza forecast/conversão/leads/churn do pacote"
+      re: /\b(?:atualiza|muda|seta|define|ajusta)\s+(?:o\s+|a\s+|as\s+)?(?:forecast|premissa|taxa\s+de\s+convers[ãa]o|convers[ãa]o|leads\s+(?:por\s+m[êe]s|\/m[êe]s)|churn)\b/i,
+      type: 'pacote', subtype: 'pacote_update_forecast', category: 'pacotes',
+      confidence: 0.94, requiresConfirmation: false,
+    },
+    {
+      // "adiciona linha na DRE / custo direto / administrativo / DRE"
+      re: /\b(?:adicion[ae]|cria|inclui|lan[cç][ae])\s+(?:uma\s+|na\s+)?(?:linha\s+(?:na\s+|do\s+|da\s+)?dre|custo\s+direto|administrativo|marketing)\b|\bdre\s+(?:adiciona|atualiza|inclui)/i,
+      type: 'pacote', subtype: 'pacote_update_dre', category: 'pacotes',
+      confidence: 0.93, requiresConfirmation: false,
+    },
+
     /* === QUERIES (ALTA PRIORIDADE — vem antes de vendas para "qual produto vendeu mais" etc) === */
     {
       // "qual produto vendeu/vende/teve/tem mais"

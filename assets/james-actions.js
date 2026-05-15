@@ -549,9 +549,686 @@
   };
 
   /* ----------------------------------------------------------
+     AÇÕES — Painel de Pacotes (Dubai Explorer e demais format='pacotes')
+     Operam via window.__flyPacoteAPI exposto em index.html.
+     Cada ação resolve o pacote alvo (parâmetro `pacote` por nome, ou
+     o pacote aberto agora via currentItem()), carrega o D (referência
+     viva), modifica, e chama save() — que persiste e re-renderiza.
+     ---------------------------------------------------------- */
+  function _normName(s) {
+    return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  }
+
+  function _resolvePacote(p) {
+    const api = window.__flyPacoteAPI;
+    if (!api) return { err: 'Painel de Pacotes não disponível.' };
+    let item = null;
+    if (p && p.pacote) {
+      item = api.find(p.pacote);
+      if (!item) return { err: `Pacote "${p.pacote}" não encontrado. Pacotes disponíveis: ${api.list().map(x => x.name).join(', ') || '(nenhum)'}.` };
+    } else {
+      item = api.currentItem && api.currentItem();
+      if (!item) return { err: 'Nenhum pacote aberto. Diga o nome do pacote (ex: "Dubai Explorer") ou abra o painel.' };
+    }
+    const D = api.load(item);
+    if (!D) return { err: 'Erro ao carregar dados do pacote.' };
+    return { api, item, D };
+  }
+
+  function _findIndexByName(arr, nameField, query) {
+    if (!Array.isArray(arr)) return -1;
+    const target = _normName(query);
+    if (!target) return -1;
+    // exato → contém
+    let idx = arr.findIndex(x => _normName(x?.[nameField]) === target);
+    if (idx === -1) idx = arr.findIndex(x => _normName(x?.[nameField]).includes(target));
+    return idx;
+  }
+
+  const PACOTES = {
+    pacote_list: {
+      desc: 'Lista todos os pacotes disponíveis no sistema',
+      params: {},
+      run() {
+        const api = window.__flyPacoteAPI;
+        if (!api) return { ok: false, msg: 'Painel de Pacotes não disponível.' };
+        const list = api.list();
+        if (!list.length) return { ok: true, msg: 'Nenhum pacote cadastrado ainda.' };
+        const names = list.map(x => `"${x.name}"`).join(', ');
+        return { ok: true, msg: `${list.length} pacote(s): ${names}.` };
+      },
+    },
+
+    pacote_query: {
+      desc: 'Resumo geral de um pacote (clientes pagos, receita, custos, equipe, experiências)',
+      params: { pacote: 'nome do pacote (opcional se houver um aberto)' },
+      run(p) {
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { item, D } = r;
+        const clientes = D.clientes || [];
+        const pagos = clientes.filter(c => c.status === 'pago' || c.status === 'confirmado').length;
+        const cancelados = clientes.filter(c => c.status === 'cancelado').length;
+        const ticket = Number(D.vendas?.ticketMedio) || 0;
+        const receita = pagos * ticket;
+        const fixos = (D.custos?.fixos || []).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+        const variaveis = (D.custos?.variaveis || []).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+        const exps = (D.produto?.experiencias || []).length;
+        const equipe = (D.equipe || []).length;
+        const checklist = D.operacao?.checklist || [];
+        const feitos = checklist.filter(c => c.done).length;
+        const metaCli = D.metaReal?.clientes?.meta || 0;
+        const realCli = D.metaReal?.clientes?.real || 0;
+        const fmt = (v) => 'R$ ' + Number(v || 0).toLocaleString('pt-BR');
+        return {
+          ok: true,
+          msg: `📦 "${item.name}": ${pagos} cliente(s) pago(s)${cancelados ? `, ${cancelados} cancelado(s)` : ''} · receita ${fmt(receita)} · ticket ${fmt(ticket)} · custos ${fmt(fixos + variaveis)} (fixo ${fmt(fixos)} + variável ${fmt(variaveis)}) · ${exps} experiência(s) · ${equipe} pessoa(s) na equipe · checklist ${feitos}/${checklist.length} · meta clientes: ${realCli}/${metaCli}.`,
+        };
+      },
+    },
+
+    pacote_edit_produto: {
+      desc: 'Edita campos gerais do produto (nome, duração, tipo, descrição, banner)',
+      params: {
+        pacote: 'nome do pacote (opcional se houver um aberto)',
+        nome: 'novo nome do produto',
+        duracao: 'ex: "7 dias / 6 noites"',
+        tipo: 'ex: "Aventura · Premium"',
+        descricao: 'texto descritivo do pacote',
+        banner: 'URL ou dataURL da imagem do banner',
+      },
+      run(p) {
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.produto) D.produto = {};
+        const changes = [];
+        if (p.nome) { D.produto.nome = p.nome; changes.push(`nome="${p.nome}"`); }
+        if (p.duracao) { D.produto.duracao = p.duracao; changes.push(`duração="${p.duracao}"`); }
+        if (p.tipo) { D.produto.tipo = p.tipo; changes.push(`tipo="${p.tipo}"`); }
+        if (p.descricao) { D.produto.descricao = p.descricao; changes.push('descrição atualizada'); }
+        if (p.banner) { D.produto.banner = p.banner; changes.push('banner atualizado'); }
+        if (!changes.length) return { ok: false, msg: 'Nenhum campo informado para atualizar.' };
+        api.save(item);
+        return { ok: true, msg: `Produto "${item.name}" atualizado: ${changes.join(', ')}.` };
+      },
+    },
+
+    pacote_add_experiencia: {
+      desc: 'Adiciona experiência/passeio ao produto (ex: Burj Khalifa, Safari)',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        nome: 'nome do passeio (obrigatório)',
+        desc: 'descrição curta (opcional)',
+        icon: 'emoji do ícone (opcional, ex: 🏜️)',
+      },
+      run(p) {
+        if (!p.nome) return { ok: false, msg: 'Nome do passeio é obrigatório.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.produto) D.produto = {};
+        if (!Array.isArray(D.produto.experiencias)) D.produto.experiencias = [];
+        D.produto.experiencias.push({ nome: p.nome, desc: p.desc || '', icon: p.icon || '📍' });
+        api.save(item);
+        return { ok: true, msg: `Passeio "${p.nome}" adicionado ao ${item.name}.` };
+      },
+    },
+
+    pacote_remove_experiencia: {
+      desc: 'Remove experiência/passeio do pacote por nome (fuzzy)',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        nome: 'nome do passeio a remover (obrigatório)',
+      },
+      run(p) {
+        if (!p.nome) return { ok: false, msg: 'Nome do passeio é obrigatório.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        const arr = D.produto?.experiencias;
+        const idx = _findIndexByName(arr, 'nome', p.nome);
+        if (idx === -1) return { ok: false, msg: `Passeio "${p.nome}" não encontrado em ${item.name}.` };
+        const removed = arr.splice(idx, 1)[0];
+        api.save(item);
+        return { ok: true, msg: `Passeio "${removed.nome}" removido do ${item.name}.` };
+      },
+    },
+
+    pacote_add_incluso: {
+      desc: 'Adiciona item ao "O que está incluso" (ex: Hospedagem, Transporte, Refeições)',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        lbl: 'rótulo (ex: Hospedagem, Passagem aérea)',
+        val: 'detalhes (ex: "Atlantis · Suíte Ocean View · 6 noites")',
+      },
+      run(p) {
+        if (!p.lbl) return { ok: false, msg: 'Rótulo é obrigatório (ex: Hospedagem).' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.produto) D.produto = {};
+        if (!Array.isArray(D.produto.incluso)) D.produto.incluso = [];
+        D.produto.incluso.push({ lbl: p.lbl, val: p.val || '' });
+        api.save(item);
+        return { ok: true, msg: `Incluso "${p.lbl}${p.val ? `: ${p.val}` : ''}" adicionado ao ${item.name}.` };
+      },
+    },
+
+    pacote_remove_incluso: {
+      desc: 'Remove item do "O que está incluso" por rótulo (fuzzy)',
+      params: { pacote: 'nome do pacote (opcional)', lbl: 'rótulo a remover (obrigatório)' },
+      run(p) {
+        if (!p.lbl) return { ok: false, msg: 'Rótulo é obrigatório.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        const arr = D.produto?.incluso;
+        const idx = _findIndexByName(arr, 'lbl', p.lbl);
+        if (idx === -1) return { ok: false, msg: `Item "${p.lbl}" não encontrado.` };
+        const removed = arr.splice(idx, 1)[0];
+        api.save(item);
+        return { ok: true, msg: `Item incluso "${removed.lbl}" removido do ${item.name}.` };
+      },
+    },
+
+    pacote_add_custo: {
+      desc: 'Adiciona custo (fixo ou variável) ao pacote',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        nome: 'nome do custo (obrigatório, ex: Hotel, Passagem aérea)',
+        valor: 'valor R$ (obrigatório)',
+        tipo: 'fixo | variavel (default: fixo)',
+      },
+      run(p) {
+        if (!p.nome) return { ok: false, msg: 'Nome do custo é obrigatório.' };
+        const valor = parseValue(p.valor);
+        if (valor <= 0) return { ok: false, msg: 'Valor inválido.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.custos) D.custos = { fixos: [], variaveis: [] };
+        const isFix = !p.tipo || /fix/i.test(String(p.tipo));
+        const arr = isFix
+          ? (D.custos.fixos || (D.custos.fixos = []))
+          : (D.custos.variaveis || (D.custos.variaveis = []));
+        arr.push({ nome: p.nome, valor });
+        api.save(item);
+        return { ok: true, msg: `Custo ${isFix ? 'fixo' : 'variável'} "${p.nome}" (R$ ${valor.toLocaleString('pt-BR')}) adicionado ao ${item.name}.` };
+      },
+    },
+
+    pacote_remove_custo: {
+      desc: 'Remove custo do pacote por nome (busca em fixos e variáveis)',
+      params: { pacote: 'nome do pacote (opcional)', nome: 'nome do custo (obrigatório)' },
+      run(p) {
+        if (!p.nome) return { ok: false, msg: 'Nome do custo é obrigatório.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        let removed = null;
+        let tipo = '';
+        for (const k of ['fixos', 'variaveis']) {
+          const arr = D.custos?.[k];
+          const idx = _findIndexByName(arr, 'nome', p.nome);
+          if (idx !== -1) { removed = arr.splice(idx, 1)[0]; tipo = k === 'fixos' ? 'fixo' : 'variável'; break; }
+        }
+        if (!removed) return { ok: false, msg: `Custo "${p.nome}" não encontrado em ${item.name}.` };
+        api.save(item);
+        return { ok: true, msg: `Custo ${tipo} "${removed.nome}" removido do ${item.name}.` };
+      },
+    },
+
+    pacote_edit_base_operacional: {
+      desc: 'Edita a base operacional do pacote (hotel, localização, transporte base)',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        hotel: 'nome e endereço do hotel',
+        localizacao: 'descrição da localização',
+        transporteBase: 'descrição do transporte base',
+      },
+      run(p) {
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.operacao) D.operacao = {};
+        if (!D.operacao.base) D.operacao.base = {};
+        const changes = [];
+        if (p.hotel) { D.operacao.base.hotel = p.hotel; changes.push('hotel'); }
+        if (p.localizacao) { D.operacao.base.localizacao = p.localizacao; changes.push('localização'); }
+        if (p.transporteBase) { D.operacao.base.transporteBase = p.transporteBase; changes.push('transporte base'); }
+        if (!changes.length) return { ok: false, msg: 'Nenhum campo informado.' };
+        api.save(item);
+        return { ok: true, msg: `Base operacional do ${item.name} atualizada: ${changes.join(', ')}.` };
+      },
+    },
+
+    pacote_add_roteiro_dia: {
+      desc: 'Adiciona dia ao roteiro operacional do pacote',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        dia: 'número do dia (ex: 1, 2, 3) — opcional, usa próximo se omitir',
+        hora: 'horário (ex: 09h ou 14:00)',
+        titulo: 'título do dia (obrigatório, ex: "Chegada DXB")',
+        desc: 'descrição detalhada',
+      },
+      run(p) {
+        if (!p.titulo) return { ok: false, msg: 'Título do dia é obrigatório.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.operacao) D.operacao = {};
+        if (!Array.isArray(D.operacao.roteiro)) D.operacao.roteiro = [];
+        const proximo = D.operacao.roteiro.reduce((m, r) => Math.max(m, Number(r.dia) || 0), 0) + 1;
+        const dia = Number(p.dia) || proximo;
+        D.operacao.roteiro.push({ dia, hora: p.hora || '09h', titulo: p.titulo, desc: p.desc || '' });
+        D.operacao.roteiro.sort((a, b) => (Number(a.dia) || 0) - (Number(b.dia) || 0));
+        api.save(item);
+        return { ok: true, msg: `Dia ${dia} "${p.titulo}" adicionado ao roteiro do ${item.name}.` };
+      },
+    },
+
+    pacote_add_checklist: {
+      desc: 'Adiciona item ao checklist operacional do pacote',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        item: 'texto do item (obrigatório, ex: "Seguro viagem")',
+        done: 'true | false (default: false)',
+      },
+      run(p) {
+        if (!p.item) return { ok: false, msg: 'Texto do item é obrigatório.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.operacao) D.operacao = {};
+        if (!Array.isArray(D.operacao.checklist)) D.operacao.checklist = [];
+        D.operacao.checklist.push({ item: p.item, done: String(p.done) === 'true' });
+        api.save(item);
+        return { ok: true, msg: `Checklist "${p.item}" adicionado ao ${item.name}.` };
+      },
+    },
+
+    pacote_toggle_checklist: {
+      desc: 'Marca ou desmarca item do checklist operacional (fuzzy por texto)',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        item: 'texto do item a alternar (obrigatório, fuzzy)',
+        done: 'true | false (opcional — alterna se omitido)',
+      },
+      run(p) {
+        if (!p.item) return { ok: false, msg: 'Texto do item é obrigatório.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        const list = D.operacao?.checklist || [];
+        const idx = _findIndexByName(list, 'item', p.item);
+        if (idx === -1) return { ok: false, msg: `Item "${p.item}" não encontrado no checklist.` };
+        const c = list[idx];
+        c.done = (p.done === undefined || p.done === null) ? !c.done : (String(p.done) === 'true');
+        api.save(item);
+        return { ok: true, msg: `Checklist "${c.item}" marcado como ${c.done ? 'feito ✅' : 'pendente ⬜'}.` };
+      },
+    },
+
+    pacote_add_equipe: {
+      desc: 'Adiciona membro à equipe do pacote (líder, guia, motorista, suporte, etc)',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        nome: 'nome da pessoa (obrigatório)',
+        funcao: 'função (ex: Líder de viagem, Guia local, Motorista, Suporte BR)',
+        contato: 'telefone/WhatsApp',
+        status: 'confirmado | pendente (default: confirmado)',
+      },
+      run(p) {
+        if (!p.nome) return { ok: false, msg: 'Nome é obrigatório.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!Array.isArray(D.equipe)) D.equipe = [];
+        D.equipe.push({
+          nome: p.nome,
+          funcao: p.funcao || 'Suporte',
+          contato: p.contato || '',
+          status: p.status || 'confirmado',
+          foto: '',
+        });
+        api.save(item);
+        return { ok: true, msg: `${p.funcao || 'Membro'} "${p.nome}" adicionado à equipe do ${item.name}.` };
+      },
+    },
+
+    pacote_remove_equipe: {
+      desc: 'Remove membro da equipe por nome (fuzzy)',
+      params: { pacote: 'nome do pacote (opcional)', nome: 'nome da pessoa (obrigatório)' },
+      run(p) {
+        if (!p.nome) return { ok: false, msg: 'Nome é obrigatório.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        const arr = D.equipe;
+        const idx = _findIndexByName(arr, 'nome', p.nome);
+        if (idx === -1) return { ok: false, msg: `"${p.nome}" não está na equipe do ${item.name}.` };
+        const removed = arr.splice(idx, 1)[0];
+        api.save(item);
+        return { ok: true, msg: `${removed.funcao || 'Membro'} "${removed.nome}" removido da equipe do ${item.name}.` };
+      },
+    },
+
+    pacote_add_cliente: {
+      desc: 'Registra cliente/passageiro vendido no pacote',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        nome: 'nome do cliente (obrigatório)',
+        origem: 'origem (ex: Instagram, Tráfego Pago, Indicação, Influenciador, Orgânico)',
+        status: 'pago | pendente | cancelado (default: pago)',
+        tipoQuarto: 'tipo de quarto (ex: Ocean View, Suíte Royal)',
+        recorrente: 'true | false (cliente recorrente)',
+      },
+      run(p) {
+        if (!p.nome) return { ok: false, msg: 'Nome do cliente é obrigatório.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!Array.isArray(D.clientes)) D.clientes = [];
+        D.clientes.push({
+          nome: p.nome,
+          origem: p.origem || 'Orgânico',
+          status: p.status || 'pago',
+          tipoQuarto: p.tipoQuarto || '',
+          recorrente: String(p.recorrente) === 'true',
+        });
+        // Atualiza contagem de origem em vendas.origem
+        if (p.origem) {
+          if (!D.vendas) D.vendas = { ticketMedio: 0, origem: {} };
+          if (!D.vendas.origem) D.vendas.origem = {};
+          D.vendas.origem[p.origem] = (Number(D.vendas.origem[p.origem]) || 0) + 1;
+        }
+        api.save(item);
+        return { ok: true, msg: `Cliente "${p.nome}" registrado no ${item.name} (${p.status || 'pago'}${p.origem ? ' · ' + p.origem : ''}).` };
+      },
+    },
+
+    pacote_update_ticket: {
+      desc: 'Atualiza o ticket médio (preço de venda) do pacote',
+      params: { pacote: 'nome do pacote (opcional)', valor: 'novo ticket médio R$ (obrigatório)' },
+      run(p) {
+        const valor = parseValue(p.valor);
+        if (valor <= 0) return { ok: false, msg: 'Valor inválido.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.vendas) D.vendas = { origem: {} };
+        D.vendas.ticketMedio = valor;
+        api.save(item);
+        return { ok: true, msg: `Ticket médio do ${item.name} atualizado para R$ ${valor.toLocaleString('pt-BR')}.` };
+      },
+    },
+
+    pacote_update_meta: {
+      desc: 'Atualiza metas anuais do pacote (clientes, receita, lucro)',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        clientes: 'meta anual de clientes (número)',
+        receita: 'meta anual de receita R$',
+        lucro: 'meta anual de lucro R$',
+      },
+      run(p) {
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.metaReal) D.metaReal = { ano: new Date().getFullYear(), clientes: { mensal: {} }, receita: { mensal: {} }, lucro: { mensal: {} } };
+        const changes = [];
+        if (p.clientes !== undefined && p.clientes !== '') {
+          D.metaReal.clientes = D.metaReal.clientes || { mensal: {} };
+          D.metaReal.clientes.meta = Number(p.clientes) || 0;
+          changes.push(`clientes=${p.clientes}`);
+        }
+        if (p.receita !== undefined && p.receita !== '') {
+          D.metaReal.receita = D.metaReal.receita || { mensal: {} };
+          D.metaReal.receita.meta = parseValue(p.receita);
+          changes.push(`receita=R$${parseValue(p.receita).toLocaleString('pt-BR')}`);
+        }
+        if (p.lucro !== undefined && p.lucro !== '') {
+          D.metaReal.lucro = D.metaReal.lucro || { mensal: {} };
+          D.metaReal.lucro.meta = parseValue(p.lucro);
+          changes.push(`lucro=R$${parseValue(p.lucro).toLocaleString('pt-BR')}`);
+        }
+        if (!changes.length) return { ok: false, msg: 'Nenhuma meta informada.' };
+        api.save(item);
+        return { ok: true, msg: `Metas do ${item.name} atualizadas: ${changes.join(', ')}.` };
+      },
+    },
+
+    pacote_lancar_mensal: {
+      desc: 'Lança realizado mensal no pacote (clientes/receita/lucro de um mês específico)',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        mes: 'número do mês 1-12 (default: mês atual)',
+        clientes: 'clientes reais no mês',
+        receita: 'receita real no mês R$',
+        lucro: 'lucro real no mês R$',
+      },
+      run(p) {
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        const mesNum = p.mes ? Number(p.mes) : new Date().getMonth() + 1;
+        if (mesNum < 1 || mesNum > 12) return { ok: false, msg: 'Mês inválido (use 1-12).' };
+        const mk = String(mesNum).padStart(2, '0');
+        if (!D.metaReal) D.metaReal = { ano: new Date().getFullYear() };
+        for (const k of ['clientes', 'receita', 'lucro']) {
+          if (!D.metaReal[k]) D.metaReal[k] = { mensal: {} };
+          if (!D.metaReal[k].mensal) D.metaReal[k].mensal = {};
+        }
+        const changes = [];
+        const sumReal = (obj) => Object.values(obj).reduce((a, b) => a + (Number(b) || 0), 0);
+        if (p.clientes !== undefined && p.clientes !== '') {
+          D.metaReal.clientes.mensal[mk] = Number(p.clientes) || 0;
+          D.metaReal.clientes.real = sumReal(D.metaReal.clientes.mensal);
+          changes.push(`${p.clientes} cliente(s)`);
+        }
+        if (p.receita !== undefined && p.receita !== '') {
+          D.metaReal.receita.mensal[mk] = parseValue(p.receita);
+          D.metaReal.receita.real = sumReal(D.metaReal.receita.mensal);
+          changes.push(`R$${parseValue(p.receita).toLocaleString('pt-BR')} receita`);
+        }
+        if (p.lucro !== undefined && p.lucro !== '') {
+          D.metaReal.lucro.mensal[mk] = parseValue(p.lucro);
+          D.metaReal.lucro.real = sumReal(D.metaReal.lucro.mensal);
+          changes.push(`R$${parseValue(p.lucro).toLocaleString('pt-BR')} lucro`);
+        }
+        if (!changes.length) return { ok: false, msg: 'Nenhum valor mensal informado.' };
+        const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+        api.save(item);
+        return { ok: true, msg: `${meses[mesNum - 1]} do ${item.name}: ${changes.join(', ')}.` };
+      },
+    },
+
+    pacote_add_influencer: {
+      desc: 'Adiciona influencer ao marketing do pacote',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        nome: 'nome do influencer (obrigatório)',
+        instagram: '@usuario',
+        seguidores: 'número de seguidores',
+        leads: 'leads gerados',
+        vendas: 'vendas geradas',
+        receita: 'receita gerada R$',
+      },
+      run(p) {
+        if (!p.nome) return { ok: false, msg: 'Nome do influencer é obrigatório.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.marketing) D.marketing = {};
+        if (!Array.isArray(D.marketing.influencers)) D.marketing.influencers = [];
+        D.marketing.influencers.push({
+          nome: p.nome,
+          instagram: p.instagram || '',
+          seguidores: Number(p.seguidores) || 0,
+          leads: Number(p.leads) || 0,
+          vendas: Number(p.vendas) || 0,
+          receita: parseValue(p.receita),
+          foto: '',
+        });
+        api.save(item);
+        return { ok: true, msg: `Influencer "${p.nome}" adicionado ao marketing do ${item.name}.` };
+      },
+    },
+
+    pacote_add_campanha: {
+      desc: 'Adiciona campanha de marketing ao pacote',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        nome: 'nome da campanha (obrigatório)',
+        investido: 'valor investido R$',
+        retorno: 'retorno gerado R$',
+      },
+      run(p) {
+        if (!p.nome) return { ok: false, msg: 'Nome da campanha é obrigatório.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.marketing) D.marketing = {};
+        if (!Array.isArray(D.marketing.campanhas)) D.marketing.campanhas = [];
+        D.marketing.campanhas.push({
+          nome: p.nome,
+          investido: parseValue(p.investido),
+          retorno: parseValue(p.retorno),
+        });
+        api.save(item);
+        return { ok: true, msg: `Campanha "${p.nome}" adicionada ao ${item.name}.` };
+      },
+    },
+
+    pacote_add_upsell: {
+      desc: 'Adiciona extra/upsell ao pacote (ex: Yacht +1 dia, Skydive)',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        nome: 'nome do extra (obrigatório)',
+        preco: 'preço unitário R$',
+        vendidos: 'quantidade vendida',
+      },
+      run(p) {
+        if (!p.nome) return { ok: false, msg: 'Nome do extra é obrigatório.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.upsell) D.upsell = {};
+        if (!Array.isArray(D.upsell.extras)) D.upsell.extras = [];
+        const preco = parseValue(p.preco);
+        const vendidos = Number(p.vendidos) || 0;
+        D.upsell.extras.push({ nome: p.nome, preco, vendidos, receita: preco * vendidos });
+        api.save(item);
+        return { ok: true, msg: `Extra "${p.nome}" (R$ ${preco.toLocaleString('pt-BR')} × ${vendidos}) adicionado ao ${item.name}.` };
+      },
+    },
+
+    pacote_update_conteudo: {
+      desc: 'Atualiza números de conteúdo produzido (fotos, vídeos, reels) e melhor conteúdo',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        fotos: 'quantidade de fotos',
+        videos: 'quantidade de vídeos',
+        reels: 'quantidade de reels',
+        melhor: 'descrição do melhor conteúdo',
+      },
+      run(p) {
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.conteudo) D.conteudo = {};
+        const changes = [];
+        if (p.fotos !== undefined && p.fotos !== '') { D.conteudo.fotos = Number(p.fotos) || 0; changes.push(`${p.fotos} foto(s)`); }
+        if (p.videos !== undefined && p.videos !== '') { D.conteudo.videos = Number(p.videos) || 0; changes.push(`${p.videos} vídeo(s)`); }
+        if (p.reels !== undefined && p.reels !== '') { D.conteudo.reels = Number(p.reels) || 0; changes.push(`${p.reels} reel(s)`); }
+        if (p.melhor) { D.conteudo.melhorConteudo = p.melhor; changes.push('melhor conteúdo'); }
+        if (!changes.length) return { ok: false, msg: 'Nenhum dado de conteúdo informado.' };
+        api.save(item);
+        return { ok: true, msg: `Conteúdo do ${item.name} atualizado: ${changes.join(', ')}.` };
+      },
+    },
+
+    pacote_update_retencao: {
+      desc: 'Atualiza dados de retenção do pacote (recompra, upgrade)',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        voltaram: 'clientes que repetiram a compra',
+        novosCompraram: 'novos clientes que compraram outro pacote depois',
+        recompraOutroPacote: 'clientes que migraram para outro pacote',
+      },
+      run(p) {
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.retencao) D.retencao = {};
+        const changes = [];
+        if (p.voltaram !== undefined && p.voltaram !== '') { D.retencao.voltaram = Number(p.voltaram) || 0; changes.push(`voltaram=${p.voltaram}`); }
+        if (p.novosCompraram !== undefined && p.novosCompraram !== '') { D.retencao.novosCompraram = Number(p.novosCompraram) || 0; changes.push(`novosCompraram=${p.novosCompraram}`); }
+        if (p.recompraOutroPacote !== undefined && p.recompraOutroPacote !== '') { D.retencao.recompraOutroPacote = Number(p.recompraOutroPacote) || 0; changes.push(`recompraOutroPacote=${p.recompraOutroPacote}`); }
+        if (!changes.length) return { ok: false, msg: 'Nenhum dado de retenção informado.' };
+        api.save(item);
+        return { ok: true, msg: `Retenção do ${item.name} atualizada: ${changes.join(', ')}.` };
+      },
+    },
+
+    pacote_update_forecast: {
+      desc: 'Atualiza premissas do forecast (taxa conversão, leads/mês, aumento preço, churn)',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        taxa_conversao: 'taxa de conversão % (ex: 18)',
+        leads_mes: 'leads por mês',
+        aumento_preco: '% de aumento de preço',
+        churn: 'taxa de churn %',
+      },
+      run(p) {
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.forecast) D.forecast = {};
+        if (!D.forecast.premissas) D.forecast.premissas = {};
+        const changes = [];
+        if (p.taxa_conversao !== undefined && p.taxa_conversao !== '') { D.forecast.premissas.taxaConversao = Number(p.taxa_conversao) || 0; changes.push(`conversão ${p.taxa_conversao}%`); }
+        if (p.leads_mes !== undefined && p.leads_mes !== '') { D.forecast.premissas.leadsMes = Number(p.leads_mes) || 0; changes.push(`${p.leads_mes} leads/mês`); }
+        if (p.aumento_preco !== undefined && p.aumento_preco !== '') { D.forecast.premissas.aumentoPreco = Number(p.aumento_preco) || 0; changes.push(`+${p.aumento_preco}% preço`); }
+        if (p.churn !== undefined && p.churn !== '') { D.forecast.premissas.taxaChurn = Number(p.churn) || 0; changes.push(`churn ${p.churn}%`); }
+        if (!changes.length) return { ok: false, msg: 'Nenhuma premissa informada.' };
+        api.save(item);
+        return { ok: true, msg: `Forecast do ${item.name} atualizado: ${changes.join(', ')}.` };
+      },
+    },
+
+    pacote_update_dre: {
+      desc: 'Adiciona linha à DRE do pacote (custos diretos, marketing ou administrativo)',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        bloco: 'custosDiretos | marketing | administrativo (obrigatório)',
+        lbl: 'rótulo da linha (obrigatório)',
+        val: 'valor R$ (obrigatório)',
+      },
+      run(p) {
+        if (!p.bloco || !['custosDiretos', 'marketing', 'administrativo'].includes(p.bloco)) {
+          return { ok: false, msg: 'Bloco inválido. Use: custosDiretos, marketing ou administrativo.' };
+        }
+        if (!p.lbl) return { ok: false, msg: 'Rótulo é obrigatório.' };
+        const val = parseValue(p.val);
+        if (val <= 0) return { ok: false, msg: 'Valor inválido.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.dre) D.dre = { custosDiretos: [], marketing: [], administrativo: [] };
+        if (!Array.isArray(D.dre[p.bloco])) D.dre[p.bloco] = [];
+        D.dre[p.bloco].push({ lbl: p.lbl, val });
+        api.save(item);
+        return { ok: true, msg: `DRE/${p.bloco} do ${item.name}: linha "${p.lbl}" (R$ ${val.toLocaleString('pt-BR')}) adicionada.` };
+      },
+    },
+  };
+
+  /* ----------------------------------------------------------
      CATÁLOGO COMPLETO + RUNNER
      ---------------------------------------------------------- */
-  const ALL_ACTIONS = Object.assign({}, NAVIGATION, COFRE, VENDAS, FLY_CUP, WAR, PROJETOS, FASE3);
+  const ALL_ACTIONS = Object.assign({}, NAVIGATION, COFRE, VENDAS, FLY_CUP, WAR, PROJETOS, FASE3, PACOTES);
 
   function listActions() {
     return Object.entries(ALL_ACTIONS).map(([name, def]) => ({
