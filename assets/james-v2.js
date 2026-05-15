@@ -228,7 +228,46 @@
     }
 
     /* ----------------- TTS ----------------- */
+    /* TTS — tenta ElevenLabs (voz oficial do James) primeiro; cai pra
+       SpeechSynthesis do navegador como fallback se backend falhar.
+       Pode ser desabilitado via localStorage.fly_tts_force_browser='1' */
     function speak(text, onDone) {
+      if (!text) { onDone?.(); return; }
+      const forceBrowser = localStorage.getItem('fly_tts_force_browser') === '1';
+      const useEleven = !forceBrowser && window.__jamesVoiceEleven && window.__jamesVoiceEleven.speak;
+
+      if (useEleven) {
+        // Tenta ElevenLabs
+        setStatus(STATUS.SPEAKING);
+        handlers.onSpeakStart?.(text);
+        try { window.speechSynthesis?.cancel?.(); } catch (e) {}
+        const fallbackTimer = setTimeout(() => {
+          // Se demorar demais, libera (continua tocando em background mas reabre o ciclo)
+          handlers.onSpeakEnd?.(); onDone?.();
+        }, Math.max(8000, text.length * 100));
+        window.__jamesVoiceEleven.speak(text, {
+          onStart: () => { /* já chamamos onSpeakStart acima */ },
+          onEnd:   () => { clearTimeout(fallbackTimer); handlers.onSpeakEnd?.(); onDone?.(); },
+        }).then((audio) => {
+          if (audio === null) {
+            // ElevenLabs falhou — usa fallback navegador
+            clearTimeout(fallbackTimer);
+            console.warn('[James] ElevenLabs indisponível — caindo pro SpeechSynthesis');
+            speakBrowser(text, onDone);
+          }
+        }).catch((e) => {
+          clearTimeout(fallbackTimer);
+          console.warn('[James] ElevenLabs erro:', e?.message || e);
+          speakBrowser(text, onDone);
+        });
+        return;
+      }
+
+      // Browser-only
+      speakBrowser(text, onDone);
+    }
+
+    function speakBrowser(text, onDone) {
       if (!hasTTS) { onDone?.(); return; }
       try { window.speechSynthesis.cancel(); } catch (e) {}
       const u = new SpeechSynthesisUtterance(text);
@@ -243,7 +282,6 @@
       u.onend = () => { handlers.onSpeakEnd?.(); onDone?.(); };
       u.onerror = () => { handlers.onSpeakEnd?.(); onDone?.(); };
       window.speechSynthesis.speak(u);
-      // Fallback caso onend não dispare (Safari bug)
       const fallbackTimer = setTimeout(() => { handlers.onSpeakEnd?.(); onDone?.(); }, Math.max(2500, text.length * 70));
       u.addEventListener('end', () => clearTimeout(fallbackTimer));
     }
@@ -396,8 +434,89 @@
       return { reply, isStop: false, source: 'mock' };
     }
 
-    /* ----------------- Capture loop (escuta um comando) ----------------- */
-    function captureOnce() {
+    /* ----------------- PROCESSAMENTO PÓS-CAPTURA (compartilhado) ----------------- */
+    async function _handleUserText(rawText) {
+      state.isListening = false;
+      handlers.onListenEnd?.();
+      const userText = (rawText || '').trim();
+      if (!userText) {
+        if (state.isConversationActive) {
+          setTimeout(() => { if (state.isConversationActive) captureOnce(); }, 800);
+        } else {
+          setStatus(STATUS.IDLE);
+        }
+        return;
+      }
+      addMessage('user', userText);
+      handlers.onUserMessage?.(userText);
+      setStatus(STATUS.THINKING);
+      handlers.onThinkStart?.();
+      const result = await processCommand(userText);
+      const reply = result.reply;
+      state.lastResponse = reply;
+      addMessage('james', reply);
+      handlers.onJamesMessage?.(reply);
+      if (result.isStop) {
+        speak(reply, () => {
+          state.isConversationActive = false;
+          setStatus(STATUS.IDLE);
+          emitState();
+        });
+        return;
+      }
+      speak(reply, () => {
+        if (state.isConversationActive) {
+          setTimeout(() => { if (state.isConversationActive) captureOnce(); }, 250);
+        } else {
+          setStatus(STATUS.IDLE);
+        }
+      });
+    }
+
+    /* ----------------- Capture loop (escuta um comando) -----------------
+       Por padrão: Web Speech API do navegador.
+       Se localStorage.fly_stt_use_eleven === '1' E backend disponível:
+         Usa MediaRecorder + ElevenLabs Scribe (qualidade superior).
+    ----------------- */
+    async function captureOnceEleven() {
+      try { wakeRecog?.stop?.(); } catch (e) {}
+      state.transcript = '';
+      handlers.onTranscript?.('');
+      setStatus(STATUS.LISTENING);
+      state.isListening = true;
+      handlers.onListenStart?.();
+
+      try {
+        const result = await window.__jamesVoiceEleven.recordAndTranscribe({
+          maxMs: 30000,
+          silenceMs: 1500,
+          languageCode: 'por',
+          modelId: 'scribe_v1',
+          onLevel: (v) => {
+            // Atualiza transcript visual com indicador de volume
+            // (o orbe pulsa porque setStatus(LISTENING) já dispara amplitude)
+          },
+          onStatus: (s) => {
+            if (s === 'transcribing') {
+              setStatus(STATUS.THINKING);
+              handlers.onTranscript?.('Transcrevendo…');
+            }
+          },
+        });
+        const transcribed = (result?.text || '').trim();
+        if (transcribed) {
+          handlers.onTranscript?.(transcribed);
+          state.transcript = transcribed;
+        }
+        await _handleUserText(transcribed);
+      } catch (e) {
+        console.warn('[James] Eleven STT falhou — caindo pro Web Speech:', e?.message || e);
+        // Fallback: tenta Web Speech
+        captureOnceBrowser();
+      }
+    }
+
+    function captureOnceBrowser() {
       if (!hasSR) {
         setError('Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge para melhor experiência.');
         return;
@@ -410,51 +529,16 @@
       handlers.onListenStart?.();
 
       recog = buildRecognizer(async (text) => {
-        state.isListening = false;
-        handlers.onListenEnd?.();
-        const userText = text.trim();
-        if (!userText) {
-          if (state.isConversationActive) {
-            // Sem fala — tenta de novo após pequeno delay
-            setTimeout(() => { if (state.isConversationActive) captureOnce(); }, 800);
-          } else {
-            setStatus(STATUS.IDLE);
-          }
-          return;
-        }
-
-        addMessage('user', userText);
-        handlers.onUserMessage?.(userText);
-
-        // Pensando
-        setStatus(STATUS.THINKING);
-        handlers.onThinkStart?.();
-
-        // Processa comando (real ou mock)
-        const result = await processCommand(userText);
-        const reply = result.reply;
-        state.lastResponse = reply;
-        addMessage('james', reply);
-        handlers.onJamesMessage?.(reply);
-
-        if (result.isStop) {
-          speak(reply, () => {
-            state.isConversationActive = false;
-            setStatus(STATUS.IDLE);
-            emitState();
-          });
-          return;
-        }
-
-        speak(reply, () => {
-          if (state.isConversationActive) {
-            setTimeout(() => { if (state.isConversationActive) captureOnce(); }, 250);
-          } else {
-            setStatus(STATUS.IDLE);
-          }
-        });
+        await _handleUserText(text);
       });
       try { recog.start(); } catch (e) { /* ignored */ }
+    }
+
+    function captureOnce() {
+      const useEleven = localStorage.getItem('fly_stt_use_eleven') === '1' &&
+                        window.__jamesVoiceEleven?.recordAndTranscribe;
+      if (useEleven) return captureOnceEleven();
+      return captureOnceBrowser();
     }
 
     /* ----------------- API pública ----------------- */
@@ -873,6 +957,24 @@
 
       <!-- Mini-form de configuração de IA (escondido por padrão) -->
       <div class="jms-config" id="jms-config-form" style="display:none;">
+        <h4>🎙️ Voz Oficial do James (ElevenLabs)</h4>
+        <small>Configurada no servidor (Vercel env vars). Botões abaixo testam.</small>
+        <div class="jms-config__actions" style="margin-top:8px;">
+          <button class="jms-btn jms-btn--primary" id="jms-test-voice" type="button">🔊 Testar Voz (TTS)</button>
+          <button class="jms-btn jms-btn--ghost" id="jms-test-stt" type="button">🎤 Testar Microfone (STT)</button>
+        </div>
+        <div style="margin-top:8px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-size:11px;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="jms-stt-eleven-toggle" /> Usar ElevenLabs Scribe pra ouvir (melhor qualidade)
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="jms-tts-browser-toggle" /> Forçar voz do navegador (fallback)
+          </label>
+        </div>
+        <div class="jms-config__status" id="jms-voice-status" style="margin-top:6px;"></div>
+
+        <hr style="border:none; border-top:1px solid rgba(245,182,66,0.12); margin:14px 0 10px;">
+
         <h4>🧠 Conectar IA Real</h4>
         <small>Cole sua chave do Anthropic (Claude) — preferencial — ou OpenAI:</small>
         <input type="password" id="jms-key-anthropic" placeholder="sk-ant-..." autocomplete="off" />
@@ -1517,6 +1619,77 @@
         keyAnth.value = k.anthropic || '';
         keyOA.value = k.openai || '';
       }
+      // Sincroniza toggles de voz com localStorage
+      const sttToggle = $('jms-stt-eleven-toggle');
+      const ttsToggle = $('jms-tts-browser-toggle');
+      if (sttToggle) sttToggle.checked = localStorage.getItem('fly_stt_use_eleven') === '1';
+      if (ttsToggle) ttsToggle.checked = localStorage.getItem('fly_tts_force_browser') === '1';
+    });
+
+    /* ----- Voz oficial do James (ElevenLabs) ----- */
+    const testVoiceBtn = $('jms-test-voice');
+    const testSttBtn   = $('jms-test-stt');
+    const sttToggle    = $('jms-stt-eleven-toggle');
+    const ttsToggleBr  = $('jms-tts-browser-toggle');
+    const voiceStatus  = $('jms-voice-status');
+
+    function setVoiceStatus(html, color) {
+      if (!voiceStatus) return;
+      voiceStatus.innerHTML = `<span style="color:${color || '#ffd770'}">${html}</span>`;
+    }
+
+    testVoiceBtn?.addEventListener('click', async () => {
+      if (!window.__jamesVoiceEleven) {
+        setVoiceStatus('⚠ Cliente ElevenLabs não carregado.', '#ff6464');
+        return;
+      }
+      setVoiceStatus('🔊 Tocando teste pela voz oficial do James...');
+      const text = 'Fale comigo, Chefe. James está online.';
+      const audio = await window.__jamesVoiceEleven.speak(text, {
+        onEnd: () => setVoiceStatus('✓ Voz oficial funcionando perfeitamente.', '#6dffb0'),
+      });
+      if (audio === null) {
+        setVoiceStatus('⚠ ElevenLabs falhou — verifique env vars no Vercel (ELEVENLABS_API_KEY + ELEVENLABS_VOICE_ID). Fallback: voz do navegador.', '#ff9b3a');
+        // Tenta browser como fallback no teste
+        speakBrowser(text);
+      }
+    });
+
+    testSttBtn?.addEventListener('click', async () => {
+      if (!window.__jamesVoiceEleven) {
+        setVoiceStatus('⚠ Cliente ElevenLabs não carregado.', '#ff6464');
+        return;
+      }
+      setVoiceStatus('🎤 Fale alguma coisa pro James (até 30s, ou pare em silêncio)...');
+      try {
+        const result = await window.__jamesVoiceEleven.recordAndTranscribe({
+          maxMs: 30000, silenceMs: 1500, languageCode: 'por', modelId: 'scribe_v1',
+          onStatus: (s) => {
+            if (s === 'recording')      setVoiceStatus('🔴 Gravando... fale agora.', '#ff6464');
+            if (s === 'transcribing')   setVoiceStatus('💭 Transcrevendo via ElevenLabs Scribe...', '#40b4ff');
+          },
+        });
+        const txt = (result?.text || '').trim() || '(silêncio)';
+        setVoiceStatus(`✓ Você disse: "${txt}"`, '#6dffb0');
+      } catch (e) {
+        setVoiceStatus(`⚠ STT falhou: ${e?.message || e}`, '#ff6464');
+      }
+    });
+
+    sttToggle?.addEventListener('change', () => {
+      if (sttToggle.checked) localStorage.setItem('fly_stt_use_eleven', '1');
+      else localStorage.removeItem('fly_stt_use_eleven');
+      setVoiceStatus(sttToggle.checked
+        ? '✓ STT via ElevenLabs Scribe ativado (qualidade superior).'
+        : 'STT via ElevenLabs desativado — usando Web Speech API do navegador.', '#ffd770');
+    });
+
+    ttsToggleBr?.addEventListener('change', () => {
+      if (ttsToggleBr.checked) localStorage.setItem('fly_tts_force_browser', '1');
+      else localStorage.removeItem('fly_tts_force_browser');
+      setVoiceStatus(ttsToggleBr.checked
+        ? 'Voz do navegador FORÇADA (ignora ElevenLabs).'
+        : '✓ Voz oficial ElevenLabs ativada (com fallback para navegador).', '#ffd770');
     });
 
     cancelKeysBtn?.addEventListener('click', () => {

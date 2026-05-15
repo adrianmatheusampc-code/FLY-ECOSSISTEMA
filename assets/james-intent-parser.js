@@ -144,6 +144,14 @@
       confidence: 0.95, requiresConfirmation: false,
     },
 
+    /* === VOZ · teste / status === */
+    {
+      // "testa sua voz" / "testar voz" / "fala alguma coisa"
+      re: /\b(?:test[ae]r?|provar?)\s+(?:a\s+)?(?:sua\s+)?voz\b|\bfala\s+(?:alguma\s+coisa|qualquer\s+coisa|teste)/i,
+      type: 'voice', subtype: 'test_voice', category: 'admin',
+      confidence: 0.95, requiresConfirmation: false,
+    },
+
     /* === RECONCILE · importar dados legados / reconciliar vendas === */
     {
       // "preview reconcile" / "simular reconcile" / "preview da importação"

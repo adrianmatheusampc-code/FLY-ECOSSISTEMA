@@ -770,6 +770,14 @@
       },
     },
 
+    /* ── Voz / teste ── */
+    test_voice: {
+      requiresConfirmation: false, riskLevel: 'safe',
+      getSteps() {
+        return [{ id: 't', label: 'Testando voz oficial', action: '__test_voice', getParams: () => ({}) }];
+      },
+    },
+
     /* ── Reconcile ── */
     preview_reconcile: {
       requiresConfirmation: false, riskLevel: 'safe',
@@ -1435,6 +1443,11 @@
       result = projectMeta(params, entities);
     } else if (action === '__query_meta_progress') {
       result = queryMetaProgress(params, entities);
+
+    /* ── Voz teste ── */
+    } else if (action === '__test_voice') {
+      const provider = window.__jamesVoiceEleven ? 'ElevenLabs (voz oficial)' : 'navegador (fallback)';
+      result = { ok: true, msg: `Fale comigo, Chefe. James está online. Voz: ${provider}.` };
 
     /* ── Reconcile handlers ── */
     } else if (action === '__preview_reconcile') {
