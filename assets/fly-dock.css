@@ -1,2 +1,65 @@
-/* fly-dock.css — DESABILITADO (chefe pediu pra remover) */
+/* =====================================================================
+   FLY DOCK — overrides de posição dos controles flutuantes
+   ===================================================================== */
+
+/* MEMÓRIA — topo direito, ao lado do botão ADMIN */
+.fly-mem-bar {
+  position: fixed !important;
+  top: 28px !important;
+  right: 130px !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 100 !important;
+}
+
+/* COCKPIT dentro do utility-dock central — esconde o flutuante antigo */
+.dash-trigger.in-utility-dock {
+  position: static !important;
+  inset: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 9px 14px !important;
+  border-radius: 999px !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  border: 1px solid rgba(245, 184, 66, 0.35) !important;
+  color: rgba(255, 227, 170, 0.92) !important;
+  font-family: inherit !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 2.4px !important;
+  text-transform: uppercase !important;
+  cursor: pointer !important;
+  backdrop-filter: blur(8px) !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  white-space: nowrap;
+}
+.dash-trigger.in-utility-dock:hover {
+  background: rgba(245, 184, 66, 0.14) !important;
+  border-color: rgba(245, 184, 66, 0.65) !important;
+  color: #ffe7a4 !important;
+}
+.dash-trigger.in-utility-dock .dash-trigger__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6dffb0;
+  box-shadow: 0 0 8px #6dffb0;
+}
+
+/* Mobile: mem-bar acima do admin (não fica do lado, falta espaço) */
+@media (max-width: 720px) {
+  .fly-mem-bar {
+    top: 70px !important;
+    right: 16px !important;
+  }
+  .dash-trigger.in-utility-dock {
+    padding: 7px 11px !important;
+    font-size: 9px !important;
+    letter-spacing: 1.6px !important;
+  }
+}
+
+/* Esconde o dock antigo (caso ainda exista no DOM por inércia) */
 .fly-dock { display: none !important; }
