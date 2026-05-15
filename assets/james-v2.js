@@ -822,15 +822,27 @@
 
       <!-- Mini-form de configuração de IA (escondido por padrão) -->
       <div class="jms-config" id="jms-config-form" style="display:none;">
-        <h4>Conectar IA Real</h4>
+        <h4>🧠 Conectar IA Real</h4>
         <small>Cole sua chave do Anthropic (Claude) — preferencial — ou OpenAI:</small>
         <input type="password" id="jms-key-anthropic" placeholder="sk-ant-..." autocomplete="off" />
-        <input type="password" id="jms-key-openai" placeholder="sk-... (opcional)" autocomplete="off" />
+        <input type="password" id="jms-key-openai" placeholder="sk-... (opcional, usado como fallback)" autocomplete="off" />
         <div class="jms-config__actions">
           <button class="jms-btn jms-btn--primary" id="jms-save-keys" type="button">Salvar e Testar</button>
           <button class="jms-btn jms-btn--ghost" id="jms-cancel-keys" type="button">Cancelar</button>
         </div>
         <div class="jms-config__status" id="jms-config-status"></div>
+
+        <hr style="border:none; border-top:1px solid rgba(245,182,66,0.12); margin:14px 0 10px;">
+
+        <h4>☁️ Conectar Supabase</h4>
+        <small>Sincronizar dados entre dispositivos (opcional):</small>
+        <input type="url" id="jms-sb-url" placeholder="https://xxxxx.supabase.co" autocomplete="off" />
+        <input type="password" id="jms-sb-key" placeholder="anon key (eyJhbGc...)" autocomplete="off" />
+        <div class="jms-config__actions">
+          <button class="jms-btn jms-btn--primary" id="jms-save-sb" type="button">Conectar Supabase</button>
+          <button class="jms-btn jms-btn--danger" id="jms-disconnect-sb" type="button">Desconectar</button>
+        </div>
+        <div class="jms-config__status" id="jms-sb-status"></div>
       </div>
     `;
     container.appendChild(panel);
@@ -1188,9 +1200,8 @@
         if (ko) localStorage.setItem('fly_james_openai_key', ko);
       }
       configStatus.innerHTML = '<span style="color:#ffd770">Testando chave...</span>';
-      // Faz um teste rápido com pergunta simples
       try {
-        const result = await window.__jamesBrain.generateRealResponse('responda apenas "ok" se você está online');
+        const result = await window.__jamesBrain.generateRealResponse('Responda apenas "ok" se está online');
         if (result && result.text) {
           configStatus.innerHTML = '<span style="color:#6dffb0">✓ IA conectada! Resposta: "' + result.text.slice(0, 60) + '"</span>';
           updateAIBadge();
@@ -1199,7 +1210,70 @@
           configStatus.innerHTML = '<span style="color:#ff8a8a">Resposta vazia. Verifique a chave.</span>';
         }
       } catch (e) {
-        configStatus.innerHTML = '<span style="color:#ff8a8a">Erro: ' + (e.message || e) + '</span>';
+        const msg = e?.message || String(e);
+        if (msg.includes('sobrecarregada') || msg.includes('529')) {
+          configStatus.innerHTML = '<span style="color:#ffd770">⚠ Anthropic sobrecarregada agora. A chave foi salva — vai funcionar quando descongestionar. Cola uma OpenAI key como fallback se quiser.</span>';
+          updateAIBadge();
+        } else {
+          configStatus.innerHTML = '<span style="color:#ff8a8a">Erro: ' + msg + '</span>';
+        }
+      }
+    });
+
+    /* ----- Conectar Supabase pelo painel do James ----- */
+    const sbUrlInput = $('jms-sb-url');
+    const sbKeyInput = $('jms-sb-key');
+    const sbSaveBtn = $('jms-save-sb');
+    const sbDisconnectBtn = $('jms-disconnect-sb');
+    const sbStatus = $('jms-sb-status');
+
+    // Carrega config existente
+    try {
+      const sbCfg = JSON.parse(localStorage.getItem('fly_supabase_config') || 'null');
+      if (sbCfg) {
+        sbUrlInput.value = sbCfg.url || '';
+        sbKeyInput.value = sbCfg.anonKey || '';
+      }
+    } catch (e) {}
+
+    sbSaveBtn?.addEventListener('click', async () => {
+      const url = sbUrlInput.value.trim();
+      const k = sbKeyInput.value.trim();
+      if (!url || !k) {
+        sbStatus.innerHTML = '<span style="color:#ff8a8a">Preencha URL e Anon Key</span>';
+        return;
+      }
+      if (!/\.supabase\.co/i.test(url)) {
+        sbStatus.innerHTML = '<span style="color:#ff8a8a">URL deve terminar em .supabase.co (não .supabase.com/dashboard/...)</span>';
+        return;
+      }
+      sbStatus.innerHTML = '<span style="color:#ffd770">Conectando…</span>';
+      try {
+        if (window.__flySync && typeof window.__flySync.init === 'function') {
+          const ok = await window.__flySync.init({ url, anonKey: k });
+          if (ok) {
+            sbStatus.innerHTML = '<span style="color:#6dffb0">✓ Supabase conectado!</span>';
+          } else {
+            sbStatus.innerHTML = '<span style="color:#ff8a8a">Falha. Verifique URL e Key.</span>';
+          }
+        } else {
+          // Fallback: salva config e recarrega
+          localStorage.setItem('fly_supabase_config', JSON.stringify({ url, anonKey: k }));
+          sbStatus.innerHTML = '<span style="color:#ffd770">Config salva. Recarregando…</span>';
+          setTimeout(() => location.reload(), 1200);
+        }
+      } catch (e) {
+        sbStatus.innerHTML = '<span style="color:#ff8a8a">Erro: ' + (e.message || e) + '</span>';
+      }
+    });
+
+    sbDisconnectBtn?.addEventListener('click', () => {
+      if (confirm('Desconectar Supabase? Dados continuam salvos localmente.')) {
+        localStorage.removeItem('fly_supabase_config');
+        sbUrlInput.value = '';
+        sbKeyInput.value = '';
+        sbStatus.innerHTML = '<span style="color:#ffd770">Desconectado. Recarregando…</span>';
+        setTimeout(() => location.reload(), 800);
       }
     });
 

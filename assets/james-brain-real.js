@@ -191,7 +191,7 @@ Modo de dados: ${context.mode}`;
      ---------------------------------------------------------- */
   let conversationHistory = []; // multi-turn
 
-  async function callAnthropic(userText, systemPrompt, key) {
+  async function callAnthropic(userText, systemPrompt, key, attempt = 1) {
     // Mantém últimas 6 mensagens pra contexto
     const recent = conversationHistory.slice(-6);
     const messages = recent.concat([{ role: 'user', content: userText }]);
@@ -211,10 +211,26 @@ Modo de dados: ${context.mode}`;
         messages,
       }),
     });
+
     if (!r.ok) {
-      const err = await r.text().catch(() => '');
-      throw new Error(`Anthropic ${r.status}: ${err.slice(0, 200)}`);
+      const errText = await r.text().catch(() => '');
+
+      // 529 = overloaded, 429 = rate limit, 503 = unavailable → RETRY
+      if ((r.status === 529 || r.status === 429 || r.status === 503) && attempt < 3) {
+        const delay = attempt === 1 ? 1500 : 4000;
+        console.warn(`[JAMES Brain] Anthropic ${r.status} (sobrecarregado). Tentativa ${attempt + 1}/3 em ${delay}ms...`);
+        await new Promise(rs => setTimeout(rs, delay));
+        return callAnthropic(userText, systemPrompt, key, attempt + 1);
+      }
+
+      // Erro detalhado pro usuário
+      let msg = `Anthropic ${r.status}`;
+      if (r.status === 529) msg = 'Anthropic está sobrecarregada agora. Tente em alguns segundos.';
+      else if (r.status === 401) msg = 'Chave Anthropic inválida. Verifique.';
+      else if (r.status === 400) msg = 'Requisição inválida ao Anthropic.';
+      throw new Error(msg + ' — ' + errText.slice(0, 150));
     }
+
     const j = await r.json();
     return j.content?.[0]?.text?.trim() || '';
   }
@@ -259,15 +275,36 @@ Modo de dados: ${context.mode}`;
     const sys = buildSystemPrompt(ctx);
 
     let replyRaw;
-    try {
-      if (keys.anthropic) {
+    let lastError = null;
+
+    // Tenta Anthropic primeiro
+    if (keys.anthropic) {
+      try {
         replyRaw = await callAnthropic(userText, sys, keys.anthropic);
-      } else {
-        replyRaw = await callOpenAI(userText, sys, keys.openai);
+      } catch (e) {
+        console.warn('[JAMES Brain] Anthropic falhou:', e.message);
+        lastError = e;
+        replyRaw = null;
       }
-    } catch (e) {
-      console.error('[JAMES Brain Real] Erro:', e);
-      throw e;
+    }
+
+    // Fallback: OpenAI se Anthropic falhou e tem chave OA
+    if (!replyRaw && keys.openai) {
+      try {
+        console.log('[JAMES Brain] Tentando fallback OpenAI...');
+        replyRaw = await callOpenAI(userText, sys, keys.openai);
+        lastError = null;
+      } catch (e) {
+        console.error('[JAMES Brain] OpenAI também falhou:', e.message);
+        lastError = e;
+        replyRaw = null;
+      }
+    }
+
+    // Se ambas falharam, propaga o erro
+    if (!replyRaw) {
+      if (lastError) throw lastError;
+      throw new Error('Sem resposta da IA');
     }
 
     // Parseia e executa ações
