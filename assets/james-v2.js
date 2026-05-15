@@ -856,7 +856,10 @@
       <div class="jms-suggestions-section" id="jms-suggestions-section">
         <div class="jms-suggestions-header">
           <span class="jms-suggestions-title">💡 SUGESTÕES PRO CHEFE</span>
-          <button class="jms-suggestions-refresh" id="jms-suggestions-refresh" type="button" title="Atualizar">⟳</button>
+          <div style="display:flex; gap:6px;">
+            <button class="jms-suggestions-refresh jms-reconcile-btn" id="jms-reconcile-btn" type="button" title="Importar dados legados de produtos para painéis novos" style="font-size:10px; width:auto; padding:0 9px; border-radius:11px;">🌐 Reconciliar</button>
+            <button class="jms-suggestions-refresh" id="jms-suggestions-refresh" type="button" title="Atualizar sugestões">⟳</button>
+          </div>
         </div>
         <div class="jms-suggestions-host" id="jms-suggestions-host"></div>
       </div>
@@ -1720,6 +1723,45 @@
       window.__flySuggestions.render(host);
     }
     document.getElementById('jms-suggestions-refresh')?.addEventListener('click', refreshSuggestions);
+
+    // 🌐 Botão Reconciliar — preview + confirmação + execução
+    document.getElementById('jms-reconcile-btn')?.addEventListener('click', () => {
+      if (!window.__flyReconcile) { alert('Reconciliador não disponível.'); return; }
+      const dry = window.__flyReconcile.reconcileEverything({ dryRun: true });
+      const legacy = dry.legacy || {};
+      const sel = dry.sellers || {};
+      const inf = dry.influencers || {};
+      const lines = [
+        `🔍 SIMULAÇÃO DE RECONCILIAÇÃO`,
+        ``,
+        `Importação de produtos legados (fly_7anos_data_v1):`,
+        `  • ${legacy.products_scanned || 0} produto(s) varridos`,
+        `  • ${legacy.sellers_created || 0} vendedor(es) novos`,
+        `  • ${legacy.influencers_created || 0} influencer(s) novos`,
+        `  • ${legacy.customers_created || 0} cliente(s) novos`,
+        `  • ${legacy.metas_created || 0} meta(s) novas`,
+        `  • ${legacy.product_metrics_updated || 0} produto(s) com métricas atualizadas`,
+        ``,
+        `Atribuição de vendas existentes:`,
+        `  • ${sel.matched || 0} venda(s) → ${sel.sellersUpdated || 0} vendedor(es)`,
+        `  • ${inf.matched || 0} venda(s) → ${inf.influencersUpdated || 0} influencer(s)`,
+        ``,
+        `Confirmar a execução?`,
+      ].join('\n');
+      if (!confirm(lines)) return;
+      const result = window.__flyReconcile.reconcileEverything();
+      const r = result.legacy || {};
+      const s = result.sellers || {};
+      const i = result.influencers || {};
+      const m = result.metas || {};
+      alert(
+        `✓ RECONCILIAÇÃO CONCLUÍDA\n\n` +
+        `Importados: ${r.sellers_created || 0} vendedor(es), ${r.influencers_created || 0} influencer(s), ${r.customers_created || 0} cliente(s), ${r.metas_created || 0} meta(s).\n` +
+        `Atribuições: ${s.matched || 0} vendas→vendedores, ${i.matched || 0} vendas→influencers.\n` +
+        `Metas recalculadas: ${m.metasUpdated || 0}.`
+      );
+      refreshSuggestions();
+    });
     // Render inicial após pequeno delay (pra dar tempo dos modules carregarem)
     setTimeout(refreshSuggestions, 500);
     // Refresh quando painel é aberto

@@ -769,6 +769,35 @@
         return [{ id: 'q', label: 'Consultando progresso', action: '__query_meta_progress', getParams: (e) => ({ name: e.meta_name }) }];
       },
     },
+
+    /* ── Reconcile ── */
+    preview_reconcile: {
+      requiresConfirmation: false, riskLevel: 'safe',
+      getSteps() {
+        return [{ id: 'pr', label: 'Simulando reconciliação (dry run)', action: '__preview_reconcile', getParams: () => ({}) }];
+      },
+    },
+    reconcile_all: {
+      requiresConfirmation: true, riskLevel: 'medium',
+      getSteps() {
+        return [
+          { id: 'r1', label: 'Importando produtos legados',           action: '__reconcile_legacy',     getParams: () => ({}) },
+          { id: 'r2', label: 'Atribuindo vendas a vendedores',        action: '__reconcile_sellers',    getParams: () => ({}) },
+          { id: 'r3', label: 'Atribuindo vendas a influencers',       action: '__reconcile_influencers',getParams: () => ({}) },
+          { id: 'r4', label: 'Recalculando metas',                    action: '__reconcile_metas',      getParams: () => ({}) },
+        ];
+      },
+    },
+    reconcile_sales: {
+      requiresConfirmation: true, riskLevel: 'medium',
+      getSteps() {
+        return [
+          { id: 'r1', label: 'Atribuindo vendas a vendedores',        action: '__reconcile_sellers',    getParams: () => ({}) },
+          { id: 'r2', label: 'Atribuindo vendas a influencers',       action: '__reconcile_influencers',getParams: () => ({}) },
+          { id: 'r3', label: 'Recalculando metas',                    action: '__reconcile_metas',      getParams: () => ({}) },
+        ];
+      },
+    },
   };
 
   function planActions(parsed, entities) {
@@ -1406,6 +1435,29 @@
       result = projectMeta(params, entities);
     } else if (action === '__query_meta_progress') {
       result = queryMetaProgress(params, entities);
+
+    /* ── Reconcile handlers ── */
+    } else if (action === '__preview_reconcile') {
+      const dry = window.__flyReconcile?.reconcileEverything?.({ dryRun: true });
+      const legacy = dry?.legacy || { products_scanned: 0 };
+      const sel = dry?.sellers || {}, inf = dry?.influencers || {};
+      result = { ok: true, msg: `Chefe, simulação: ${legacy.products_scanned} produto(s) varridos. Importaria ${legacy.sellers_created || 0} vendedor(es), ${legacy.influencers_created || 0} influencer(s), ${legacy.customers_created || 0} cliente(s), ${legacy.metas_created || 0} meta(s). Reconciliação atribuiria ${sel.matched || 0} vendas a vendedores e ${inf.matched || 0} vendas a influencers. Quer que eu execute? Diga "reconcilia tudo".`, data: dry };
+    } else if (action === '__reconcile_legacy') {
+      result = window.__flyReconcile?.reconcileLegacyProducts?.() || { ok: false, msg: 'Reconciliador não disponível.' };
+      if (!result.ok && !result.products_scanned) {
+        result = { ok: true, msg: 'Sem dados legados pra importar.' };
+      } else {
+        result = { ok: true, msg: `Importação: +${result.sellers_created || 0} vendedor(es), +${result.influencers_created || 0} influencer(s), +${result.customers_created || 0} cliente(s), +${result.metas_created || 0} meta(s).`, data: result };
+      }
+    } else if (action === '__reconcile_sellers') {
+      const r = window.__flyReconcile?.reconcileSellers?.() || {};
+      result = { ok: true, msg: `${r.matched || 0} venda(s) atribuída(s) a ${r.sellersUpdated || 0} vendedor(es).`, data: r };
+    } else if (action === '__reconcile_influencers') {
+      const r = window.__flyReconcile?.reconcileInfluencers?.() || {};
+      result = { ok: true, msg: `${r.matched || 0} venda(s) atribuída(s) a ${r.influencersUpdated || 0} influencer(s).`, data: r };
+    } else if (action === '__reconcile_metas') {
+      const r = window.__flyReconcile?.reconcileMetas?.() || {};
+      result = { ok: true, msg: `${r.metasUpdated || 0} meta(s) recalculada(s).`, data: r };
 
     } else if (window.__jamesActions?.execute) {
       // Delega para o catálogo de ações existente

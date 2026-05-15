@@ -144,6 +144,26 @@
       confidence: 0.95, requiresConfirmation: false,
     },
 
+    /* === RECONCILE · importar dados legados / reconciliar vendas === */
+    {
+      // "preview reconcile" / "simular reconcile" / "preview da importação"
+      re: /\b(?:preview|simul[ae]|dry\s*run|simulacao)\s+(?:do?\s+|da\s+)?(?:reconcile|reconciliar|reconcilia[cç][ãa]o|import)/i,
+      type: 'reconcile', subtype: 'preview_reconcile', category: 'admin',
+      confidence: 0.95, requiresConfirmation: false,
+    },
+    {
+      // "reconcilia tudo" / "importa dados antigos" / "reconcilia produtos legados"
+      re: /\b(?:reconcilia|reconciliar|importa|import[ae]r|sincroniza)\s+(?:tudo|todos|dados|produtos|pacotes|legad[oa]s?|antigos?|hist[óo]ricos?)/i,
+      type: 'reconcile', subtype: 'reconcile_all', category: 'admin',
+      confidence: 0.94, requiresConfirmation: true,
+    },
+    {
+      // "reconcilia vendas" / "atribui vendas aos vendedores"
+      re: /\b(?:reconcilia|atribui|matche?ia)\s+(?:as\s+)?vendas/i,
+      type: 'reconcile', subtype: 'reconcile_sales', category: 'admin',
+      confidence: 0.92, requiresConfirmation: true,
+    },
+
     /* === CONNECTION REGISTRY · "o que X afeta?", "quem alimenta X?" === */
     {
       // "o que [painel] afeta", "o que [painel] atualiza", "o que sai de [painel]"
