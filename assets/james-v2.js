@@ -854,6 +854,7 @@
 
       <div class="jms-fs__status">
         <span class="jms-fs__status-big" id="jms-fs-status">Aguardando comando</span>
+        <span class="jms-panel__ai-badge" id="jms-fs-ai-badge" style="margin-left:14px;">MOCK</span>
       </div>
 
       <div class="jms-fs__grid">
@@ -1039,17 +1040,32 @@
       orbEl.classList.toggle('is-on', on);
     }
 
-    // Atualiza badge IA conforme disponibilidade de chaves
+    // Atualiza badge IA conforme disponibilidade de chaves (panel + fullscreen)
     function updateAIBadge() {
-      const badge = $('jms-ai-badge');
-      if (!badge) return;
       const has = !!(window.__jamesBrain && window.__jamesBrain.isAvailable());
-      badge.textContent = has ? 'IA REAL' : 'MOCK';
-      badge.classList.toggle('is-real', has);
-      badge.classList.toggle('is-mock', !has);
+      ['jms-ai-badge', 'jms-fs-ai-badge'].forEach(id => {
+        const badge = $(id);
+        if (!badge) return;
+        if (!badge.classList.contains('is-thinking-frozen')) {
+          badge.textContent = has ? 'IA REAL ✓' : 'MOCK';
+          badge.classList.toggle('is-real', has);
+          badge.classList.toggle('is-mock', !has);
+        }
+      });
     }
     updateAIBadge();
     setInterval(updateAIBadge, 2000);
+
+    // Helper pra atualizar ambos
+    function setAIBadge(text, isReal) {
+      ['jms-ai-badge', 'jms-fs-ai-badge'].forEach(id => {
+        const b = $(id);
+        if (!b) return;
+        b.textContent = text;
+        b.classList.toggle('is-real', isReal);
+        b.classList.toggle('is-mock', !isReal);
+      });
+    }
 
     // Cria o voice hook com handlers
     const voice = createJamesVoice({
@@ -1065,11 +1081,9 @@
       onError:        setError,
       onIAError:      (msg) => { setError('IA real falhou: ' + msg + ' (usando modo simulado)'); },
       onSourceChange: (src) => {
-        const badge = $('jms-ai-badge');
-        if (!badge) return;
-        if (src === 'thinking-real') { badge.textContent = 'PENSANDO…'; badge.classList.add('is-real'); }
-        else if (src === 'real') { badge.textContent = 'IA REAL ✓'; badge.classList.add('is-real'); }
-        else if (src === 'mock') { badge.textContent = 'MOCK'; badge.classList.remove('is-real'); badge.classList.add('is-mock'); }
+        if (src === 'thinking-real') setAIBadge('PENSANDO…', true);
+        else if (src === 'real') setAIBadge('IA REAL ✓', true);
+        else if (src === 'mock') setAIBadge('MOCK', false);
       },
       onWakeWord:     () => { setPanelOpen(true); },
       onStart:        () => {
