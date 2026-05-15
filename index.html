@@ -9911,7 +9911,15 @@
       return null;
     })();
     const FLY_SUPA_URL = _SUPA_OVERRIDE?.url    || 'https://ezfmvblirhmootdvqmsr.supabase.co';
-    const FLY_SUPA_KEY = _SUPA_OVERRIDE?.anonKey || 'sb_publishable_5vVImnH7PBHM0E5jDP1bAA_CiHZz6jt';
+    // anon key (PÚBLICA — segura no frontend) — chefe autorizou
+    const FLY_SUPA_KEY = _SUPA_OVERRIDE?.anonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Zm12Ymxpcmhtb290ZHZxbXNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjM4MzIsImV4cCI6MjA5MzY5OTgzMn0.ODZsjH5n7RUs-hlwhTw8l9DOBoVXeUlqf-qXwLS3xQE';
+
+    // Garante que o sync.js (sistema novo) usa a mesma config — sincroniza os 2 sistemas
+    try {
+      if (!localStorage.getItem('fly_supabase_config')) {
+        localStorage.setItem('fly_supabase_config', JSON.stringify({ url: FLY_SUPA_URL, anonKey: FLY_SUPA_KEY }));
+      }
+    } catch (e) {}
     if (_SUPA_OVERRIDE) console.log('[FLY] Usando Supabase config do localStorage:', _SUPA_OVERRIDE.url);
     const _BASE_SYNCED_KEYS = [
       'fly_7anos_data_v1',
