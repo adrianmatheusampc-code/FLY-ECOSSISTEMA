@@ -91,6 +91,10 @@
      3 · SYSTEM PROMPT
      ---------------------------------------------------------- */
   function buildSystemPrompt(context) {
+    const actionsPrompt = (window.__jamesActions && typeof window.__jamesActions.promptSection === 'function')
+      ? window.__jamesActions.promptSection()
+      : '';
+
     return `Você é JAMES, assistente de IA do Ecossistema Fly (turismo de luxo focado em Dubai, com Plano WAR de expansão, Cofre AEY financeiro entre sócios, Fly Cup de eventos esportivos, Central de Vendas e CRM).
 
 PERSONALIDADE:
@@ -101,20 +105,13 @@ PERSONALIDADE:
 - Quando tiver dado real, CITE o número. Quando não tiver, diga "não tenho esse dado cadastrado".
 - NUNCA invente dados.
 
-CAPACIDADES DE EXECUÇÃO:
-Quando o Chefe pedir pra ABRIR alguma tela, você PODE responder com um comando especial no final da resposta no formato:
-[ACTION:nome_da_acao]
-
-Ações disponíveis:
-- [ACTION:open_cofre]      — abre o Cofre AEY
-- [ACTION:open_war]        — abre o Plano WAR
-- [ACTION:open_dashboard]  — abre o Dashboard Supremo
-- [ACTION:open_expansoes]  — abre painel de Expansões (CRM, Projetos, Ranking, etc)
-- [ACTION:close_all]       — fecha overlays abertos
-
-Exemplo:
-Usuário: "James, abre o cofre"
-Você: "Abrindo o Cofre AEY agora, Chefe. [ACTION:open_cofre]"
+REGRA CRÍTICA DE EXECUÇÃO:
+- Quando o Chefe pedir pra CADASTRAR, LANÇAR, ADICIONAR, CRIAR, ABRIR, MUDAR algo no painel,
+  você DEVE executar a ação correspondente usando o formato [ACTION:nome]{json_params}.
+- SEMPRE confirme a ação no texto ANTES de emitir o ACTION.
+- Se faltar dado essencial (nome, valor), PERGUNTE primeiro. Não invente.
+- Você pode emitir múltiplas ACTIONs em sequência se precisar.
+${actionsPrompt}
 
 DADOS ATUAIS DO ECOSSISTEMA (JSON):
 ${JSON.stringify(context, null, 2)}
@@ -162,28 +159,47 @@ Modo de dados: ${context.mode}`;
   };
 
   function parseAndExecuteActions(text) {
-    if (!text) return { cleanText: '', actions: [] };
-    const actionRegex = /\[ACTION:([a-z_]+)\]/gi;
+    if (!text) return { cleanText: '', actions: [], results: [] };
+    // Regex: captura [ACTION:nome]{json_params_opcional}
+    // Aceita JSON com chaves dentro (pra params aninhados)
+    const actionRegex = /\[ACTION:([a-z_]+)\](\s*\{[\s\S]*?\})?/gi;
     const actions = [];
-    const cleanText = text.replace(actionRegex, (_, name) => {
-      actions.push(name.toLowerCase());
+    const results = [];
+
+    const cleanText = text.replace(actionRegex, (match, name, jsonStr) => {
+      const actionName = name.toLowerCase();
+      let params = {};
+      if (jsonStr) {
+        try {
+          params = JSON.parse(jsonStr.trim());
+        } catch (e) {
+          console.warn('[JAMES Brain] JSON inválido em', actionName, ':', jsonStr);
+        }
+      }
+      actions.push({ name: actionName, params });
       return '';
     }).trim();
-    // Executa
+
+    // Executa usando o novo sistema __jamesActions (FASE 3) ou fallback ACTIONS antigo
     for (const a of actions) {
       try {
-        const fn = ACTIONS[a];
-        if (fn) {
-          const ok = fn();
-          console.log('[JAMES Brain] Ação:', a, ok ? '✓ executada' : '⚠ não disponível');
+        let result = null;
+        if (window.__jamesActions && typeof window.__jamesActions.execute === 'function') {
+          result = window.__jamesActions.execute(a.name, a.params);
+        } else if (ACTIONS[a.name]) {
+          const ok = ACTIONS[a.name](a.params);
+          result = { ok: !!ok, msg: ok ? 'Executado.' : 'Não disponível.' };
         } else {
-          console.warn('[JAMES Brain] Ação desconhecida:', a);
+          result = { ok: false, msg: 'Ação desconhecida: ' + a.name };
         }
+        results.push({ name: a.name, params: a.params, result });
+        console.log('[JAMES Brain] Ação:', a.name, a.params, '→', result);
       } catch (e) {
-        console.error('[JAMES Brain] Erro ao executar', a, e);
+        console.error('[JAMES Brain] Erro ao executar', a.name, e);
+        results.push({ name: a.name, params: a.params, result: { ok: false, msg: 'Erro: ' + e.message } });
       }
     }
-    return { cleanText, actions };
+    return { cleanText, actions: actions.map(a => a.name), results };
   }
 
   /* ----------------------------------------------------------
@@ -308,14 +324,26 @@ Modo de dados: ${context.mode}`;
     }
 
     // Parseia e executa ações
-    const { cleanText, actions } = parseAndExecuteActions(replyRaw);
+    const { cleanText, actions, results } = parseAndExecuteActions(replyRaw);
 
-    // Salva no histórico (sem ACTION tags)
+    // Append feedback das ações executadas no texto final (pro user ver/ouvir)
+    let finalText = cleanText;
+    if (results && results.length) {
+      const feedback = results
+        .filter(r => r.result && r.result.msg)
+        .map(r => (r.result.ok ? '✓ ' : '⚠ ') + r.result.msg)
+        .join(' ');
+      if (feedback) {
+        finalText = (cleanText ? cleanText + ' ' : '') + feedback;
+      }
+    }
+
+    // Salva no histórico (sem ACTION tags, com feedback)
     conversationHistory.push({ role: 'user', content: userText });
-    conversationHistory.push({ role: 'assistant', content: cleanText });
+    conversationHistory.push({ role: 'assistant', content: finalText });
     if (conversationHistory.length > 14) conversationHistory = conversationHistory.slice(-14);
 
-    return { text: cleanText, actions };
+    return { text: finalText, actions, results };
   }
 
   function clearHistory() {
