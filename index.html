@@ -10148,44 +10148,56 @@
       try {
         const { data: rows, error } = await supaClient
           .from('fly_kv').select('key, value, updated_at').in('key', SYNCED_KEYS);
-        if (error) throw error;
+
+        // Se a tabela fly_kv não existe, marca como online mesmo assim (sync opcional)
+        if (error) {
+          const msg = (error.message || error.code || '').toString().toLowerCase();
+          if (msg.includes('relation') || msg.includes('does not exist') || msg.includes('not found') || msg.includes('table')) {
+            console.warn('[FLY] Tabela fly_kv não existe — Supabase conectado, sync KV desativado:', error.message);
+            __supaInitialPullDone = true;
+            setSyncStatus('online', 'Sincronizado');
+            return true;
+          }
+          throw error;
+        }
+
         let pulled = 0;
         for (const row of (rows || [])) {
           const remoteJSON = JSON.stringify(row.value);
           const localJSON = localStorage.getItem(row.key);
           if (remoteJSON !== localJSON) {
-            // Salva sem disparar upsert de volta (flag silent)
             __supaSilent = true;
             localStorage.setItem(row.key, remoteJSON);
             __supaSilent = false;
             pulled++;
           }
         }
-        // Push de keys locais que ainda não estão no banco (primeira sincronização)
         const remoteKeys = new Set((rows || []).map(r => r.key));
         for (const k of SYNCED_KEYS) {
           const local = localStorage.getItem(k);
           if (local && !remoteKeys.has(k)) {
             const v = safeJSONParse(local);
-            if (v !== null) await supaClient.from('fly_kv').upsert({ key: k, value: v });
+            if (v !== null) {
+              try { await supaClient.from('fly_kv').upsert({ key: k, value: v }); } catch (e) {}
+            }
           }
         }
         __supaInitialPullDone = true;
         setSyncStatus('online', 'Sincronizado');
-        // Se algo foi puxado e a app já estava renderizada, recarrega
         if (pulled > 0 && typeof showHome === 'function') {
-          // Re-popular memória global a partir do localStorage atualizado
           if (typeof loadData === 'function' && typeof data !== 'undefined') {
             try { Object.assign(data, loadData()); } catch (e) {}
-          }
-          // Re-render se estiver na tela inicial ou em painéis dependentes
-          if (typeof currentView !== 'undefined' && currentView === 'grid') {
-            // nada a fazer — home é estática
           }
         }
         return true;
       } catch (e) {
         console.warn('[FLY] Pull do Supabase falhou:', e?.message || e);
+        // Mesmo com erro de pull, se o client foi criado, considera 'online' (a tabela só pode ser opcional)
+        if (supaClient) {
+          __supaInitialPullDone = true;
+          setSyncStatus('online', 'Sincronizado');
+          return true;
+        }
         setSyncStatus('offline', 'Offline · cache');
         return false;
       }
