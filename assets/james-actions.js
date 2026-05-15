@@ -434,9 +434,124 @@
   };
 
   /* ----------------------------------------------------------
+     AÇÕES — Tarefas, Métricas, Relatórios, Logs (FASE 2+3)
+     ---------------------------------------------------------- */
+  const FASE3 = {
+    create_task: {
+      desc: 'Cria tarefa ou lembrete',
+      params: { title: 'título (obrigatório)', client: 'cliente', product: 'produto', date: 'YYYY-MM-DD', type: 'task | reminder | followup | contract' },
+      run(p) {
+        if (!p.title) return { ok: false, msg: 'Título obrigatório.' };
+        const key = `fly_tasks_v1_${getMode()}`;
+        const tasks = readJSON(key, []);
+        const task = {
+          id: uuid(), title: p.title, client: p.client || null, product: p.product || null,
+          date: p.date || new Date().toISOString().slice(0, 10),
+          type: p.type || 'task', status: 'pending',
+          created_at: new Date().toISOString(), created_by: 'james',
+        };
+        tasks.unshift(task);
+        if (tasks.length > 200) tasks.splice(200);
+        writeJSON(key, tasks);
+        dispatchUpdate({ entity: 'task', action: 'add', data: task });
+        return { ok: true, msg: `Tarefa "${task.title}" criada.` };
+      },
+    },
+
+    update_product_metrics: {
+      desc: 'Atualiza métricas de um produto (vendas + faturamento)',
+      params: { product: 'nome do produto (obrigatório)', sale_value: 'valor (R$)', sales_delta: 'incremento de vendas (default 1)' },
+      run(p) {
+        if (!p.product) return { ok: true, msg: 'Produto não informado.' };
+        const key = `fly_product_metrics_v1_${getMode()}`;
+        const metrics = readJSON(key, {});
+        if (!metrics[p.product]) metrics[p.product] = { sales: 0, revenue: 0 };
+        metrics[p.product].sales += (p.sales_delta || 1);
+        metrics[p.product].revenue += parseValue(p.sale_value);
+        metrics[p.product].updated_at = new Date().toISOString();
+        writeJSON(key, metrics);
+        dispatchUpdate({ entity: 'product_metrics', product: p.product });
+        return { ok: true, msg: `Produto ${p.product} atualizado: ${metrics[p.product].sales} venda(s), R$ ${metrics[p.product].revenue.toFixed(2)} em receita.` };
+      },
+    },
+
+    update_cockpit_metrics: {
+      desc: 'Atualiza métricas do Cockpit (receita, despesas, vendas)',
+      params: { revenue_delta: 'incremento receita', expense_delta: 'incremento despesa', sales_delta: 'incremento de vendas' },
+      run(p) {
+        const key = `fly_cockpit_metrics_v1_${getMode()}`;
+        const c = readJSON(key, { total_revenue: 0, total_expenses: 0, sales_count: 0 });
+        if (p.revenue_delta) c.total_revenue += parseValue(p.revenue_delta);
+        if (p.expense_delta) c.total_expenses += parseValue(p.expense_delta);
+        if (p.sales_delta) c.sales_count += Number(p.sales_delta) || 0;
+        c.total_profit = c.total_revenue - c.total_expenses;
+        c.updated_at = new Date().toISOString();
+        writeJSON(key, c);
+        dispatchUpdate({ entity: 'cockpit' });
+        window.dispatchEvent(new CustomEvent('fly:cockpit-update', { detail: c }));
+        return { ok: true, msg: `Cockpit: receita R$ ${c.total_revenue.toFixed(2)}, lucro R$ ${c.total_profit.toFixed(2)}.` };
+      },
+    },
+
+    get_cockpit_metrics: {
+      desc: 'Consulta métricas do Cockpit',
+      params: {},
+      run() {
+        const key = `fly_cockpit_metrics_v1_${getMode()}`;
+        const c = readJSON(key, { total_revenue: 0, total_expenses: 0, sales_count: 0, total_profit: 0 });
+        return {
+          ok: true,
+          msg: `Cockpit: receita total R$ ${(c.total_revenue || 0).toFixed(2)}, despesas R$ ${(c.total_expenses || 0).toFixed(2)}, lucro R$ ${(c.total_profit || 0).toFixed(2)}, ${c.sales_count || 0} venda(s).`,
+        };
+      },
+    },
+
+    navigate_to: {
+      desc: 'Navega para um módulo do painel (cofre, war, dashboard, crm, fly cup...)',
+      params: { module: 'nome do módulo' },
+      run(p) {
+        if (!p.module) return { ok: false, msg: 'Módulo não especificado.' };
+        if (window.__jamesEngine?.process) return { ok: true, msg: 'Delegando ao engine.' };
+        return { ok: false, msg: 'Engine não disponível.' };
+      },
+    },
+
+    list_tasks: {
+      desc: 'Lista tarefas pendentes',
+      params: { client: 'filtro por cliente (opcional)', type: 'filtro por tipo (opcional)', limit: 'quantidade (default 10)' },
+      run(p) {
+        const key = `fly_tasks_v1_${getMode()}`;
+        const tasks = readJSON(key, []);
+        let list = tasks.filter(t => t.status === 'pending');
+        if (p.client) list = list.filter(t => (t.client || '').toLowerCase().includes(p.client.toLowerCase()));
+        if (p.type) list = list.filter(t => t.type === p.type);
+        const lim = Math.min(p.limit || 10, 30);
+        const names = list.slice(0, lim).map(t => `"${t.title}"`).join(', ');
+        return { ok: true, msg: `${list.length} tarefa(s) pendente(s). ${names ? 'Próximas: ' + names : ''}` };
+      },
+    },
+
+    create_james_log: {
+      desc: 'Registra operação no histórico do James',
+      params: { command: 'comando original', summary: 'resumo da operação' },
+      run(p) {
+        const key = 'fly_james_logs_v1';
+        const logs = readJSON(key, []);
+        logs.unshift({
+          id: uuid(), command: p.command || '', summary: p.summary || 'Operação registrada',
+          timestamp: new Date().toISOString(), created_by: 'james',
+        });
+        if (logs.length > 150) logs.splice(150);
+        writeJSON(key, logs);
+        return { ok: true, msg: 'Log salvo.' };
+      },
+    },
+  };
+
+  /* ----------------------------------------------------------
      CATÁLOGO COMPLETO + RUNNER
      ---------------------------------------------------------- */
-  const ALL_ACTIONS = Object.assign({}, NAVIGATION, COFRE, VENDAS, FLY_CUP, WAR, PROJETOS);
+  const ALL_ACTIONS = Object.assign({}, NAVIGATION, COFRE, VENDAS, FLY_CUP, WAR, PROJETOS, FASE3);
 
   function listActions() {
     return Object.entries(ALL_ACTIONS).map(([name, def]) => ({

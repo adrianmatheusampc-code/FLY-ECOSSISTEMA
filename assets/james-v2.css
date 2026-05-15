@@ -747,3 +747,239 @@
   .jms-fs__title { font-size: 22px; letter-spacing: 4px; }
   .jms-panel__actions { grid-template-columns: 1fr; }
 }
+
+/* =====================================================================
+   ENGINE UI — FASE 2+3
+   Confirmação, Timeline, Entity Chips, Sugestões, Histórico de Ops
+   ===================================================================== */
+
+/* Wrapper do engine UI no painel compacto */
+.jms-engine-ui {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px 6px;
+}
+.jms-engine-ui.has-content { display: flex; }
+
+/* Chips de entidades detectadas */
+.jms-engine-detected {
+  display: none;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.jms-engine-detected.active { display: flex; }
+
+.jms-entity-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 20px;
+  background: rgba(245, 182, 66, 0.08);
+  border: 1px solid rgba(245, 182, 66, 0.25);
+  font-size: 10.5px;
+  color: var(--jms-white);
+  white-space: nowrap;
+}
+.jms-entity-chip em {
+  font-style: normal;
+  color: var(--jms-gold);
+  font-weight: 600;
+}
+
+/* Card de confirmação */
+.jms-engine-confirm {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(245, 182, 66, 0.06);
+  border: 1px solid rgba(245, 182, 66, 0.28);
+  border-radius: 10px;
+  animation: jmsSlideIn 0.22s ease;
+}
+.jms-engine-confirm.active { display: flex; }
+
+@keyframes jmsSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.jms-engine-confirm__text {
+  font-size: 12px;
+  line-height: 1.55;
+  color: rgba(245, 245, 245, 0.88);
+  margin: 0;
+}
+
+.jms-engine-confirm__btns {
+  display: flex;
+  gap: 8px;
+}
+
+.jms-btn--sm {
+  padding: 6px 16px;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  border-radius: 6px;
+}
+
+/* Timeline de execução */
+.jms-engine-timeline {
+  display: none;
+}
+.jms-engine-timeline.active { display: block; }
+
+.jms-timeline-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.jms-timeline-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: rgba(245, 245, 245, 0.55);
+  transition: color 0.2s ease;
+}
+
+.jms-step-icon {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.jms-step-label { flex: 1; }
+
+.jms-step-detail {
+  font-size: 10px;
+  color: rgba(245, 245, 245, 0.35);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+/* Estados dos steps */
+.jms-step--pending .jms-step-icon  { color: rgba(245, 245, 245, 0.3); }
+.jms-step--running                  { color: rgba(245, 182, 66, 0.9); }
+.jms-step--running .jms-step-icon  {
+  color: var(--jms-gold);
+  animation: jmsSpinIcon 0.8s linear infinite;
+}
+@keyframes jmsSpinIcon {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.jms-step--success                  { color: rgba(109, 255, 176, 0.85); }
+.jms-step--success .jms-step-icon  { color: #6dffb0; }
+.jms-step--error                    { color: rgba(255, 100, 100, 0.85); }
+.jms-step--error .jms-step-icon    { color: #ff6464; }
+
+/* Sugestões pós-ação */
+.jms-engine-suggestions {
+  display: none;
+}
+.jms-engine-suggestions.active { display: block; }
+
+.jms-suggestions-label {
+  font-size: 9.5px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(245, 182, 66, 0.55);
+  margin: 0 0 6px;
+}
+
+.jms-suggestions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.jms-suggestion-btn {
+  padding: 5px 12px;
+  background: rgba(245, 182, 66, 0.06);
+  border: 1px solid rgba(245, 182, 66, 0.2);
+  border-radius: 16px;
+  color: rgba(245, 245, 245, 0.75);
+  font-size: 10.5px;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+}
+.jms-suggestion-btn:hover {
+  background: rgba(245, 182, 66, 0.14);
+  color: var(--jms-white);
+  border-color: rgba(245, 182, 66, 0.4);
+}
+
+/* Fullscreen engine section */
+.jms-fs-engine-ui {
+  min-height: 36px;
+}
+.jms-fs-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+/* Histórico de operações James */
+.jms-ops-history {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.jms-ops-item {
+  display: grid;
+  grid-template-columns: 38px 1fr 2fr;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 2px solid transparent;
+  font-size: 10.5px;
+}
+.jms-ops-item--ok  { border-left-color: #6dffb0; }
+.jms-ops-item--err { border-left-color: #ff6464; }
+
+.jms-ops-time {
+  color: rgba(245, 182, 66, 0.6);
+  font-size: 10px;
+}
+.jms-ops-intent {
+  color: var(--jms-gold);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jms-ops-cmd {
+  color: rgba(245, 245, 245, 0.55);
+  font-size: 10.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jms-ops-empty {
+  color: rgba(245, 245, 245, 0.3);
+  font-size: 11px;
+  text-align: center;
+  padding: 12px 0;
+  margin: 0;
+}

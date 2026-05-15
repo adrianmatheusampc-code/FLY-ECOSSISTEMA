@@ -8797,6 +8797,28 @@
     background: linear-gradient(135deg, rgba(111,227,168,.14), rgba(245,184,66,.06));
     box-shadow: 0 6px 22px -8px rgba(111,227,168,.42);
   }
+  .format-card.hierarchy {
+    background: linear-gradient(135deg, rgba(168,140,255,.08), rgba(245,184,66,.04));
+    border-color: rgba(168,140,255,.26);
+  }
+  .format-opt.active .format-card.hierarchy,
+  .format-opt input:checked ~ .format-card.hierarchy,
+  .format-opt:has(input:checked) .format-card.hierarchy {
+    border-color: rgba(168,140,255,.7);
+    background: linear-gradient(135deg, rgba(168,140,255,.18), rgba(245,184,66,.06));
+    box-shadow: 0 6px 22px -8px rgba(168,140,255,.45);
+  }
+  .format-card.bases {
+    background: linear-gradient(135deg, rgba(64,180,255,.08), rgba(245,184,66,.04));
+    border-color: rgba(64,180,255,.26);
+  }
+  .format-opt.active .format-card.bases,
+  .format-opt input:checked ~ .format-card.bases,
+  .format-opt:has(input:checked) .format-card.bases {
+    border-color: rgba(64,180,255,.7);
+    background: linear-gradient(135deg, rgba(64,180,255,.18), rgba(245,184,66,.06));
+    box-shadow: 0 6px 22px -8px rgba(64,180,255,.45);
+  }
   @container fly-vp (max-width: 640px) {
     .format-picker { grid-template-columns: 1fr; gap: 8px; }
     .format-card { padding: 12px; }
@@ -13509,11 +13531,13 @@
     }
 
     /* HIERARQUIA item view — renders the hierarchy module inside the item route */
+    /* Reutilizável em qualquer tópico via it.format='hierarchy' */
     function renderHierarchyItemView(item, topicData, idx) {
       itemView.innerHTML = '';
+      const topicName = (currentTopic && currentTopic.name) || 'tópico';
       const back = document.createElement('div');
       back.className = 'hier-back-bar';
-      back.innerHTML = `<button class="apple-btn" id="hier-item-back"><span class="apple-icon">←</span><span>Voltar para ESTRUTURA CORPORATIVA</span></button>`;
+      back.innerHTML = `<button class="apple-btn" id="hier-item-back"><span class="apple-icon">←</span><span>Voltar para ${escapeHtml(topicName)}</span></button>`;
       itemView.appendChild(back);
       back.querySelector('#hier-item-back').addEventListener('click', () => {
         switchTo('topic');
@@ -13656,9 +13680,10 @@
 
     function renderBasesFlyItemView(item, topicData, idx) {
       itemView.innerHTML = '';
+      const topicName = (currentTopic && currentTopic.name) || 'tópico';
       const back = document.createElement('div');
       back.className = 'hier-back-bar';
-      back.innerHTML = `<button class="apple-btn" id="bases-back"><span class="apple-icon">←</span><span>Voltar para ESTRUTURA CORPORATIVA</span></button>`;
+      back.innerHTML = `<button class="apple-btn" id="bases-back"><span class="apple-icon">←</span><span>Voltar para ${escapeHtml(topicName)}</span></button>`;
       itemView.appendChild(back);
       back.querySelector('#bases-back').addEventListener('click', () => {
         switchTo('topic');
@@ -16183,7 +16208,7 @@
       it.id = it.id || base.id;
       it.categoria = it.categoria || '';
       it.folder = it.folder || '';
-      it.format = (it.format === 'pacotes' || it.format === 'presskit' || it.format === 'default') ? it.format : 'default';
+      it.format = ['pacotes', 'presskit', 'hierarchy', 'bases', 'default'].includes(it.format) ? it.format : 'default';
       it.descricao = it.descricao || '';
       it.inclui = Array.isArray(it.inclui) ? it.inclui : [];
       it.publico = it.publico || '';
@@ -20472,33 +20497,32 @@
       list[idx] = it;
       itemView.innerHTML = '';
 
-      // Premium item modules — detect special items inside ESTRUTURA CORPORATIVA
-      if (currentTopic && currentTopic.key === 'ESTRUTURA CORPORATIVA' && kind === 'item') {
+      // ── Dispatcher de RENDER por it.format (template do painel) ──
+      // Aplicável a qualquer tópico. Mantém compat com nomes legados.
+      if (kind === 'item') {
         const upper = (it.name || '').toUpperCase();
-        if (upper === 'HIERARQUIA') {
+        const isLegacyDubai      = (currentTopic && currentTopic.key === 'PRODUTOS' && upper === 'DUBAI EXPLORER');
+        const isPressKitProduct  = (currentTopic && currentTopic.key === 'PRODUTOS' && (upper.includes('PRESS KIT') || upper.includes('PRESSKIT')));
+        const isLegacyHierarchy  = (currentTopic && currentTopic.key === 'ESTRUTURA CORPORATIVA' && upper === 'HIERARQUIA');
+        const isLegacyBases      = (currentTopic && currentTopic.key === 'ESTRUTURA CORPORATIVA' && (upper.includes('BASES FLY') || upper === 'ESTRUTURA DAS BASES FLY'));
+
+        // Auto-corrige format pra itens legados (sem perder dados)
+        if (isPressKitProduct  && it.format !== 'presskit')  { it.format = 'presskit';  try { saveData(); } catch (e) {} }
+        if (isLegacyHierarchy  && it.format !== 'hierarchy') { it.format = 'hierarchy'; try { saveData(); } catch (e) {} }
+        if (isLegacyBases      && it.format !== 'bases')     { it.format = 'bases';     try { saveData(); } catch (e) {} }
+
+        // Despacho por format
+        if (it.format === 'hierarchy' || isLegacyHierarchy) {
           renderHierarchyItemView(it, topicData, idx);
           switchTo('item');
           return;
         }
-        if (upper.includes('BASES FLY') || upper === 'ESTRUTURA DAS BASES FLY' || upper === 'BASES FLY') {
+        if (it.format === 'bases' || isLegacyBases) {
           renderBasesFlyItemView(it, topicData, idx);
           switchTo('item');
           return;
         }
-      }
-      // Premium item modules — formato PACOTES (Dubai Explorer-style)
-      // Aplica-se a:
-      //   1. Itens com format === 'pacotes' (qualquer tópico)
-      //   2. Item legado "DUBAI EXPLORER" dentro de PRODUTOS (compatibilidade)
-      if (kind === 'item') {
-        const upper = (it.name || '').toUpperCase();
-        const isLegacyDubai = (currentTopic && currentTopic.key === 'PRODUTOS' && upper === 'DUBAI EXPLORER');
-        const isPressKitProduct = currentTopic && currentTopic.key === 'PRODUTOS' && (upper.includes('PRESS KIT') || upper.includes('PRESSKIT'));
         if (it.format === 'presskit' || isPressKitProduct) {
-          if (it.format !== 'presskit') {
-            it.format = 'presskit';
-            try { saveData(); } catch (e) {}
-          }
           renderPressKitItemView(it, topicData, idx);
           switchTo('item');
           return;
@@ -21275,6 +21299,22 @@
                 <div class="format-ico">🎁</div>
                 <div class="format-name">Press Kit <span class="format-badge">OPS</span></div>
                 <div class="format-desc">Operação completa · fotos dos itens · origem/destino · bases de entrega · estoque · fornecedores · mídia/NPS</div>
+              </div>
+            </label>
+            <label class="format-opt ${it.format === 'hierarchy' ? 'active' : ''}">
+              <input type="radio" name="m_format" value="hierarchy" ${it.format === 'hierarchy' ? 'checked' : ''}>
+              <div class="format-card hierarchy">
+                <div class="format-ico">👥</div>
+                <div class="format-name">Hierarquia <span class="format-badge">RH</span></div>
+                <div class="format-desc">Organograma · funcionários · folha mensal · setores · contratações · performance · 6 abas</div>
+              </div>
+            </label>
+            <label class="format-opt ${it.format === 'bases' ? 'active' : ''}">
+              <input type="radio" name="m_format" value="bases" ${it.format === 'bases' ? 'checked' : ''}>
+              <div class="format-card bases">
+                <div class="format-ico">📍</div>
+                <div class="format-name">Bases <span class="format-badge">OPERAÇÃO</span></div>
+                <div class="format-desc">Mapa interativo · países · cidades · equipe · custo de implantação · operacional mensal · experiência visual</div>
               </div>
             </label>
           </div>
@@ -23581,7 +23621,11 @@
 
   <script type="module" src="assets/fly-supabase-sync.js"></script>
   <script src="assets/fly-expansoes.js"></script>
+  <script src="assets/james-intent-parser.js"></script>
   <script src="assets/james-actions.js"></script>
+  <script src="assets/james-panels.js"></script>
+  <script src="assets/james-cascade.js"></script>
+  <script src="assets/james-engine.js"></script>
   <script src="assets/james-brain-real.js"></script>
   <script src="assets/james-v2.js"></script>
   <script src="assets/fly-dock.js"></script>

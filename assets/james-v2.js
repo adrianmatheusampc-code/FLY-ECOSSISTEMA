@@ -356,27 +356,38 @@
         return { reply, isStop: true, source: 'stop' };
       }
 
+      // ── FASE 2+3: Engine local primeiro ───────────────────────
+      if (window.__jamesEngine) {
+        try {
+          const er = await window.__jamesEngine.process(userText);
+          if (er !== null && er !== undefined) {
+            handlers.onEngineResult?.(er);
+            // Engine é autoridade para todos os tipos exceto null (passthrough para IA)
+            return { reply: er.text || '…', isStop: false, source: 'engine', engineResult: er };
+          }
+          // er === null → engine delegou para IA (intenção desconhecida / pergunta livre)
+        } catch (e) {
+          console.warn('[JAMES Engine] Erro:', e?.message || e);
+        }
+      }
+      // ──────────────────────────────────────────────────────────
+
       const hasBrain = !!window.__jamesBrain;
       const hasKeys  = hasBrain && window.__jamesBrain.isAvailable();
-      console.log('[JAMES] processCommand:', { userText, hasBrain, hasKeys });
 
-      // Tenta IA real primeiro (Fase 2)
+      // Tenta IA real (Fase 2)
       if (hasKeys) {
         try {
           handlers.onSourceChange?.('thinking-real');
           const result = await window.__jamesBrain.generateRealResponse(userText);
           if (result && result.text) {
-            console.log('[JAMES] ✓ Resposta IA REAL:', result.text, 'Ações:', result.actions);
             handlers.onSourceChange?.('real');
             return { reply: result.text, isStop: false, source: 'real', actions: result.actions };
           }
-          console.warn('[JAMES] IA retornou vazio, usando mock');
         } catch (e) {
           console.error('[JAMES] ERRO IA real:', e?.message || e);
           handlers.onIAError?.(e?.message || String(e));
         }
-      } else {
-        console.log('[JAMES] Sem chaves de IA — usando MOCK');
       }
 
       // Fallback: mock brain
@@ -529,6 +540,7 @@
       sendTextCommand, speak,
       enableWakeWord, disableWakeWord,
       clearMessages,
+      speakText: (text, onDone) => speak(text, onDone),
       // re-export
       generateResponse: jamesMockBrain.generateJamesResponse,
     };
@@ -819,6 +831,27 @@
         <button class="jms-btn jms-btn--primary jms-send-btn" id="jms-text-send" type="button" aria-label="Enviar">↑</button>
       </div>
 
+      <!-- Engine UI: detecção, confirmação, timeline, sugestões -->
+      <div class="jms-engine-ui" id="jms-engine-ui">
+        <div class="jms-engine-detected" id="jms-engine-detected">
+          <div class="jms-engine-entities" id="jms-engine-entities"></div>
+        </div>
+        <div class="jms-engine-confirm" id="jms-engine-confirm">
+          <p class="jms-engine-confirm__text" id="jms-engine-confirm-text"></p>
+          <div class="jms-engine-confirm__btns">
+            <button class="jms-btn jms-btn--primary jms-btn--sm" id="jms-confirm-yes" type="button">Confirmar</button>
+            <button class="jms-btn jms-btn--ghost  jms-btn--sm" id="jms-confirm-no"  type="button">Cancelar</button>
+          </div>
+        </div>
+        <div class="jms-engine-timeline" id="jms-engine-timeline">
+          <ul class="jms-timeline-list" id="jms-timeline-list"></ul>
+        </div>
+        <div class="jms-engine-suggestions" id="jms-engine-suggestions">
+          <p class="jms-suggestions-label">Próximos passos:</p>
+          <div class="jms-suggestions-list" id="jms-suggestions-list"></div>
+        </div>
+      </div>
+
       <div class="jms-panel__actions">
         <button class="jms-btn jms-btn--primary" id="jms-activate" type="button">🎤 Ativar Voz</button>
         <button class="jms-btn jms-btn--danger" id="jms-stop" type="button">Encerrar</button>
@@ -904,13 +937,29 @@
         </div>
 
         <div class="jms-card" style="grid-column: 1 / -1;">
+          <h3>Execução James</h3>
+          <div class="jms-fs-engine-ui" id="jms-fs-engine-ui">
+            <ul class="jms-timeline-list" id="jms-fs-timeline-list"></ul>
+            <div class="jms-fs-suggestions" id="jms-fs-suggestions"></div>
+          </div>
+        </div>
+
+        <div class="jms-card" style="grid-column: 1 / -1;">
+          <h3>Histórico de Operações James</h3>
+          <div class="jms-ops-history" id="jms-ops-history">Carregando…</div>
+        </div>
+
+        <div class="jms-card" style="grid-column: 1 / -1;">
           <h3>Comandos rápidos</h3>
           <div class="jms-quick">
-            <button class="jms-quick__btn" data-cmd="Abrir Plano WAR">▸ Abrir Plano WAR</button>
-            <button class="jms-quick__btn" data-cmd="Ver Fly Cup">▸ Ver Fly Cup</button>
-            <button class="jms-quick__btn" data-cmd="Gerar relatório">▸ Gerar Relatório</button>
-            <button class="jms-quick__btn" data-cmd="Consultar caixa">▸ Consultar Caixa</button>
-            <button class="jms-quick__btn" data-cmd="Modo descanso">▸ Modo Descanso</button>
+            <button class="jms-quick__btn" data-cmd="Abrir Plano WAR">▸ Plano WAR</button>
+            <button class="jms-quick__btn" data-cmd="Abrir Fly Cup">▸ Fly Cup</button>
+            <button class="jms-quick__btn" data-cmd="Gerar relatório do mês">▸ Relatório do Mês</button>
+            <button class="jms-quick__btn" data-cmd="Quanto faturamos esse mês">▸ Faturamento</button>
+            <button class="jms-quick__btn" data-cmd="Qual produto vendeu mais">▸ Top Produto</button>
+            <button class="jms-quick__btn" data-cmd="Quantas vendas tivemos">▸ Total de Vendas</button>
+            <button class="jms-quick__btn" data-cmd="Abrir cockpit">▸ Cockpit</button>
+            <button class="jms-quick__btn" data-cmd="Modo descanso">▸ Descanso</button>
           </div>
         </div>
       </div>
@@ -1090,13 +1139,238 @@
       });
     }
 
+    /* =====================================================================
+       ENGINE UI — helpers de confirmação, timeline e sugestões
+    ===================================================================== */
+    const $e = (id) => document.getElementById(id);
+
+    function clearEngineUI() {
+      $e('jms-engine-ui')?.classList.remove('has-content');
+      [$e('jms-engine-detected'), $e('jms-engine-confirm'),
+       $e('jms-engine-timeline'), $e('jms-engine-suggestions')].forEach(el => {
+        el?.classList.remove('active');
+      });
+      const fsSug = $e('jms-fs-suggestions');
+      if (fsSug) fsSug.innerHTML = '';
+    }
+
+    // Escape HTML para evitar XSS via texto extraído pelo engine
+    function escHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function showEntityChips(entities) {
+      const el = $e('jms-engine-entities');
+      const section = $e('jms-engine-detected');
+      if (!el || !section || !entities) return;
+      const chips = [];
+      if (entities.client_name)    chips.push({ k: 'Cliente',   v: entities.client_name });
+      if (entities.product_name)   chips.push({ k: 'Produto',   v: entities.product_name });
+      if (entities.sale_value)     chips.push({ k: 'Valor',     v: 'R$ ' + entities.sale_value.toLocaleString('pt-BR') });
+      if (entities.payment_method) chips.push({ k: 'Pagamento', v: entities.payment_method });
+      if (entities.lead_source)    chips.push({ k: 'Origem',    v: entities.lead_source });
+      if (entities.package_type)   chips.push({ k: 'Tipo',      v: entities.package_type });
+      if (entities.date)           chips.push({ k: 'Data',      v: entities.date });
+      if (!chips.length) { section.classList.remove('active'); return; }
+      el.innerHTML = chips.map(c =>
+        `<span class="jms-entity-chip"><em>${escHtml(c.k)}:</em> ${escHtml(c.v)}</span>`
+      ).join('');
+      section.classList.add('active');
+      $e('jms-engine-ui')?.classList.add('has-content');
+    }
+
+    function showConfirmCard(text, entities) {
+      clearEngineUI();
+      showEntityChips(entities || {});
+      const ct = $e('jms-engine-confirm-text');
+      if (ct) ct.textContent = text;
+      $e('jms-engine-confirm')?.classList.add('active');
+      $e('jms-engine-ui')?.classList.add('has-content');
+      setPanelOpen(true);
+    }
+
+    function hideConfirmCard() {
+      $e('jms-engine-confirm')?.classList.remove('active');
+    }
+
+    function buildStepLi(step, prefix) {
+      return `<li class="jms-timeline-step jms-step--pending" id="${prefix}step-${escHtml(step.id)}">
+        <span class="jms-step-icon">◯</span>
+        <span class="jms-step-label">${escHtml(step.label)}</span>
+      </li>`;
+    }
+
+    function showTimeline(steps) {
+      const list = $e('jms-timeline-list');
+      const section = $e('jms-engine-timeline');
+      const fsList = $e('jms-fs-timeline-list');
+      if (!steps || !steps.length) return;
+      const panelHTML = steps.map(s => buildStepLi(s, 'jms-')).join('');
+      const fsHTML    = steps.map(s => buildStepLi(s, 'jms-fs-')).join('');
+      if (list) list.innerHTML = panelHTML;
+      if (fsList) fsList.innerHTML = fsHTML;
+      section?.classList.add('active');
+      $e('jms-engine-ui')?.classList.add('has-content');
+    }
+
+    function updateTimelineStep(stepId, status, detail) {
+      const icons = { pending: '◯', running: '⟳', success: '✓', error: '✗' };
+      [`jms-step-${stepId}`, `jms-fs-step-${stepId}`].forEach(id => {
+        const el = $e(id);
+        if (!el) return;
+        el.className = `jms-timeline-step jms-step--${status}`;
+        const icon = el.querySelector('.jms-step-icon');
+        if (icon) icon.textContent = icons[status] || '◯';
+        if (detail) {
+          let d = el.querySelector('.jms-step-detail');
+          if (!d) { d = document.createElement('span'); d.className = 'jms-step-detail'; el.appendChild(d); }
+          d.textContent = detail;
+        }
+      });
+    }
+
+    function showSuggestions(suggestions) {
+      const list   = $e('jms-suggestions-list');
+      const section = $e('jms-engine-suggestions');
+      const fsSug  = $e('jms-fs-suggestions');
+      if (!suggestions || !suggestions.length) return;
+      const makeHtml = () => suggestions.map(s =>
+        `<button class="jms-suggestion-btn" type="button" data-cmd="${escHtml(s)}">▸ ${escHtml(s)}</button>`
+      ).join('');
+      if (list)  { list.innerHTML = makeHtml(); section?.classList.add('active'); }
+      if (fsSug) { fsSug.innerHTML = makeHtml(); }
+      $e('jms-engine-ui')?.classList.add('has-content');
+      // Botões são re-renderizados; binds vão por delegação no boot (handler no document)
+    }
+
+    // Delegação global de cliques em botões de sugestão (evita re-bind ao re-renderizar)
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest?.('.jms-suggestion-btn');
+      if (!btn) return;
+      e.preventDefault();
+      const cmd = btn.dataset.cmd || btn.textContent.replace(/^▸\s*/, '').trim();
+      clearEngineUI();
+      voice.sendTextCommand(cmd);
+    });
+
+    function renderOpsHistory() {
+      const el = $e('jms-ops-history');
+      if (!el || !window.__jamesEngine) return;
+      const logs = window.__jamesEngine.getHistory(15);
+      if (!logs.length) {
+        el.innerHTML = '<p class="jms-ops-empty">Nenhuma operação ainda.</p>';
+        return;
+      }
+      el.innerHTML = logs.map(log => {
+        const t = new Date(log.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const cls = log.status === 'completed' ? 'ok' : 'err';
+        return `<div class="jms-ops-item jms-ops-item--${cls}">
+          <span class="jms-ops-time">${t}</span>
+          <span class="jms-ops-intent">${(log.intent || '?').split('/')[1] || log.intent}</span>
+          <span class="jms-ops-cmd">${(log.command || '').slice(0, 55)}</span>
+        </div>`;
+      }).join('');
+    }
+
+    function onEngineResult(er) {
+      if (!er) return;
+
+      if (er.type === 'confirmation_request') {
+        showConfirmCard(er.text, er.entities);
+        return;
+      }
+
+      if (er.type === 'needs_info') {
+        // Mostra entidades parciais já capturadas + a pergunta
+        clearEngineUI();
+        if (er.entities) showEntityChips(er.entities);
+        const ct = $e('jms-engine-confirm-text');
+        if (ct) {
+          ct.textContent = er.text;
+          $e('jms-engine-confirm')?.classList.add('active');
+          // Esconde botões de confirmar/cancelar quando é needs_info (responde por voz/texto)
+          const btns = document.querySelector('.jms-engine-confirm__btns');
+          if (btns) btns.style.display = 'none';
+          $e('jms-engine-ui')?.classList.add('has-content');
+          setPanelOpen(true);
+        }
+        return;
+      }
+
+      if (er.type === 'executed') {
+        hideConfirmCard();
+        // Reabilita botões caso tenham sido escondidos no needs_info anterior
+        const btns = document.querySelector('.jms-engine-confirm__btns');
+        if (btns) btns.style.display = '';
+
+        // Mostra chips se houver entidades extraídas
+        const ctx = window.__jamesEngine?.getContext?.() || {};
+        if (Object.keys(ctx).length > 1) showEntityChips(ctx);
+
+        if (er.steps && er.steps.length) {
+          showTimeline(er.steps);
+          // Pequeno delay escalonado pra dar sensação de "rodando"
+          er.steps.forEach((s, i) => {
+            setTimeout(() => updateTimelineStep(s.id, s.status || 'success', null), 80 * i);
+          });
+        }
+        if (er.suggestions && er.suggestions.length) {
+          setTimeout(() => showSuggestions(er.suggestions), 600);
+        }
+        setTimeout(renderOpsHistory, 800);
+        return;
+      }
+
+      if (er.type === 'cancelled') {
+        clearEngineUI();
+        return;
+      }
+    }
+
+    // Subscreve step listener do engine — atualiza timeline em tempo real
+    if (window.__jamesEngine) {
+      window.__jamesEngine.onStep(({ step, status, detail }) => {
+        if (status === 'pending') {
+          // Cria elemento se não existir (timeline incremental)
+          [
+            { listId: 'jms-timeline-list',    section: 'jms-engine-timeline', prefix: 'jms-' },
+            { listId: 'jms-fs-timeline-list', section: null,                  prefix: 'jms-fs-' },
+          ].forEach(({ listId, section, prefix }) => {
+            const list = $e(listId);
+            const stepId = `${prefix}step-${step.id}`;
+            if (list && !$e(stepId)) {
+              const li = document.createElement('li');
+              li.id = stepId;
+              li.className = 'jms-timeline-step jms-step--pending';
+              li.innerHTML = `<span class="jms-step-icon">◯</span><span class="jms-step-label">${escHtml(step.label)}</span>`;
+              list.appendChild(li);
+            }
+            if (section) $e(section)?.classList.add('active');
+          });
+          $e('jms-engine-ui')?.classList.add('has-content');
+        }
+        updateTimelineStep(step.id, status, detail);
+      });
+    }
+
+    // Atualiza histórico quando engine cria um log (real-time)
+    window.addEventListener('fly:data-update', (e) => {
+      if (e?.detail?.entity === 'james_log') {
+        renderOpsHistory();
+      }
+    });
+
+    /* ===================================================================== */
+
     // Cria o voice hook com handlers
     const voice = createJamesVoice({
       onStatusChange: updateStatusUI,
       onTranscript:   updateTranscript,
       onJamesMessage: (txt) => { updateReply(txt); },
       onMessage:      appendMessage,
-      onUserMessage:  () => {},
+      onUserMessage:  () => { clearEngineUI(); },
       onListenStart:  () => { vizPanel.start(); vizFS.start(); },
       onListenEnd:    () => { /* fake/stop tratado em status */ },
       onSpeakStart:   () => {},
@@ -1107,7 +1381,9 @@
         if (src === 'thinking-real') setAIBadge('PENSANDO…', true);
         else if (src === 'real') setAIBadge('IA REAL ✓', true);
         else if (src === 'mock') setAIBadge('MOCK', false);
+        else if (src === 'engine') setAIBadge('ENGINE ✓', true);
       },
+      onEngineResult,
       onWakeWord:     () => { setPanelOpen(true); },
       onStart:        () => {
         setError(null);
@@ -1127,6 +1403,27 @@
     // ----- Bindings -----
     orbEl.addEventListener('click', () => {
       setPanelOpen(!panelOpen);
+      if (!panelOpen) setTimeout(renderOpsHistory, 300);
+    });
+
+    // Confirma operação pendente (botão)
+    $e('jms-confirm-yes')?.addEventListener('click', async () => {
+      if (!window.__jamesEngine?.hasPendingOp()) return;
+      hideConfirmCard();
+      const er = await window.__jamesEngine.confirm();
+      if (!er) return;
+      onEngineResult(er);
+      updateReply(er.text || 'Operação concluída, Chefe.');
+      voice.speakText(er.text || 'Operação concluída.');
+    });
+
+    // Cancela operação pendente (botão)
+    $e('jms-confirm-no')?.addEventListener('click', () => {
+      window.__jamesEngine?.cancel();
+      clearEngineUI();
+      const msg = 'Certo, Chefe. Operação cancelada.';
+      updateReply(msg);
+      voice.speakText(msg);
     });
 
     ui.close.addEventListener('click', () => setPanelOpen(false));
@@ -1378,17 +1675,34 @@
       setError('Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge para melhor experiência.');
     }
 
-    // Expor pra debug
+    // Expor pra debug e integrações externas
     window.__james = {
       voice,
-      open: () => setPanelOpen(true),
+      open: () => { setPanelOpen(true); setTimeout(renderOpsHistory, 300); },
       close: () => setPanelOpen(false),
       fullscreen: () => setFullscreen(true),
       start: () => voice.startJames(),
       stop: () => voice.stopJames(),
       state: () => voice.getState(),
       messages: () => voice.getMessages(),
+      engine: window.__jamesEngine,
+      send: (txt) => { setPanelOpen(true); voice.sendTextCommand(txt); },
     };
+
+    // Renderiza histórico ao abrir o fullscreen
+    fsEl.addEventListener('transitionend', () => {
+      if (fsEl.classList.contains('open')) renderOpsHistory();
+    });
+
+    // Atualiza ops history periodicamente quando painel ou fullscreen estiver aberto
+    setInterval(() => {
+      if (panelEl.classList.contains('open') || fsEl.classList.contains('open')) {
+        renderOpsHistory();
+      }
+    }, 8000);
+
+    // Renderiza o histórico no boot para mostrar logs anteriores
+    renderOpsHistory();
   }
 
   // ----------------- Boot quando DOM pronto -----------------
