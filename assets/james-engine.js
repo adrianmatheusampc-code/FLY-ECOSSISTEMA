@@ -358,6 +358,18 @@
     if (date) entities.date = date;
     const period = extractPeriod(text);
     if (period) entities.period = period;
+    // Para queries de Connection Registry: nome do painel referenciado
+    // ("o que vendedores afeta?" → panel_name='sellers')
+    if (parsed && (parsed.type === 'connection' || parsed.subtype?.startsWith?.('query_panel'))) {
+      const panel = extractPanelName(text);
+      if (panel) entities.panel_name = panel;
+    }
+    // Para metas: nome da meta ou escopo referenciado
+    if (parsed && parsed.type === 'metas') {
+      // Tenta capturar nome da meta após "meta de [X]" ou "meta [X]"
+      const m = String(text || '').match(/\bmeta(?:\s+de)?\s+([a-zà-úA-ZÀ-Ú\s]{3,30}?)(?=\s+(?:pra|para|em|de\s+\d|$|,|\.))/i);
+      if (m) entities.meta_name = m[1].trim();
+    }
     entities.raw = text;
     return entities;
   }
@@ -699,6 +711,64 @@
       requiresConfirmation: true, riskLevel: 'critical',
       getSteps() { return []; },
     },
+
+    /* ── Connection Registry queries ── */
+    query_panel_outgoing: {
+      requiresConfirmation: false, riskLevel: 'safe',
+      getSteps(e) {
+        return [{ id: 'q', label: 'Consultando conexões de saída', action: '__query_panel_outgoing', getParams: (e) => ({ panel: e.panel_name }) }];
+      },
+    },
+    query_panel_incoming: {
+      requiresConfirmation: false, riskLevel: 'safe',
+      getSteps(e) {
+        return [{ id: 'q', label: 'Consultando conexões de entrada', action: '__query_panel_incoming', getParams: (e) => ({ panel: e.panel_name }) }];
+      },
+    },
+    query_panel_connections: {
+      requiresConfirmation: false, riskLevel: 'safe',
+      getSteps(e) {
+        return [{ id: 'q', label: 'Mapeando conexões', action: '__query_panel_connections', getParams: (e) => ({ panel: e.panel_name }) }];
+      },
+    },
+    query_panel_suggestions: {
+      requiresConfirmation: false, riskLevel: 'safe',
+      getSteps(e) {
+        return [{ id: 'q', label: 'Sugerindo painéis combinados', action: '__query_panel_suggestions', getParams: (e) => ({ panel: e.panel_name }) }];
+      },
+    },
+
+    /* ── Manipulação de Metas ── */
+    update_meta: {
+      requiresConfirmation: true, riskLevel: 'medium',
+      getSteps(e) {
+        return [{ id: 'u', label: 'Atualizando meta', action: '__update_meta', getParams: (e) => ({ name: e.meta_name, alvo: e.sale_value, escopo_nome: e.product_name || e.client_name }) }];
+      },
+    },
+    adjust_meta: {
+      requiresConfirmation: true, riskLevel: 'medium',
+      getSteps(e) {
+        return [{ id: 'a', label: 'Ajustando meta', action: '__adjust_meta', getParams: (e) => ({ name: e.meta_name, delta_pct: e.delta_pct, delta_value: e.sale_value, direction: e.direction, escopo_nome: e.product_name || e.client_name }) }];
+      },
+    },
+    pause_meta: {
+      requiresConfirmation: true, riskLevel: 'medium',
+      getSteps(e) {
+        return [{ id: 'p', label: 'Pausando/arquivando meta', action: '__pause_meta', getParams: (e) => ({ name: e.meta_name, action: e.meta_action }) }];
+      },
+    },
+    project_meta: {
+      requiresConfirmation: false, riskLevel: 'safe',
+      getSteps(e) {
+        return [{ id: 'p', label: 'Projetando meta (run rate)', action: '__project_meta', getParams: (e) => ({ name: e.meta_name }) }];
+      },
+    },
+    query_meta_progress: {
+      requiresConfirmation: false, riskLevel: 'safe',
+      getSteps(e) {
+        return [{ id: 'q', label: 'Consultando progresso', action: '__query_meta_progress', getParams: (e) => ({ name: e.meta_name }) }];
+      },
+    },
   };
 
   function planActions(parsed, entities) {
@@ -1030,6 +1100,239 @@
   }
 
   /* ---------------------------------------------------------------
+     CONNECTION REGISTRY · queries
+  --------------------------------------------------------------- */
+  // Mapa de aliases pra traduzir o que o usuário fala → panel id do Registry
+  const PANEL_ALIASES = {
+    cockpit: 'cockpit', cockpits: 'cockpit', dashboard: 'cockpit',
+    cofre: 'cofre', financeiro: 'cofre', caixa: 'cofre', aey: 'cofre',
+    war: 'war', territorio: 'war', territorios: 'war', 'plano war': 'war',
+    cup: 'flycup', flycup: 'flycup', 'fly cup': 'flycup', copa: 'flycup',
+    crm: 'crm', clientes: 'customers', cliente: 'customers',
+    venda: 'sales', vendas: 'sales',
+    produto: 'products', produtos: 'products', pacote: 'products', pacotes: 'products',
+    hierarquia: 'hierarchy', funcionario: 'hierarchy', funcionarios: 'hierarchy',
+    base: 'bases', bases: 'bases',
+    vendedor: 'sellers', vendedores: 'sellers', sellers: 'sellers',
+    influencer: 'influencers', influenciador: 'influencers', influenciadores: 'influencers',
+    meta: 'metas', metas: 'metas',
+    tarefa: 'tasks', tarefas: 'tasks',
+    projeto: 'projects', projetos: 'projects',
+    marketing: 'marketing', campanha: 'marketing', campanhas: 'marketing',
+  };
+
+  function extractPanelName(text) {
+    const t = normalizeText(text || '');
+    // Tenta achar palavra-chave conhecida
+    for (const [alias, panelId] of Object.entries(PANEL_ALIASES).sort((a, b) => b[0].length - a[0].length)) {
+      if (new RegExp(`\\b${alias}\\b`, 'i').test(t)) return panelId;
+    }
+    return null;
+  }
+
+  function _conMeta(id) {
+    return window.__flyConnections?.panelMeta?.[id] || { name: id, icon: '📋' };
+  }
+
+  function describeOutgoing(panelId) {
+    if (!panelId) return { ok: false, msg: 'Chefe, qual painel você quer consultar? Ex: vendas, cofre, vendedores.' };
+    const meta = _conMeta(panelId);
+    const out = window.__flyConnections?.getOutgoing?.(panelId) || [];
+    if (!out.length) return { ok: true, msg: `Chefe, ${meta.name} ${meta.icon} não tem conexões de saída registradas (ainda).` };
+    const linhas = out.map(c => {
+      const targetMeta = _conMeta(c.to);
+      return `→ ${targetMeta.icon} ${targetMeta.name}: ${c.hint}`;
+    }).join('\n');
+    return {
+      ok: true,
+      msg: `Chefe, ${meta.icon} ${meta.name} afeta ${out.length} painel(éis):\n${linhas}`,
+      data: { panelId, outgoing: out },
+    };
+  }
+
+  function describeIncoming(panelId) {
+    if (!panelId) return { ok: false, msg: 'Chefe, qual painel?' };
+    const meta = _conMeta(panelId);
+    const inc = window.__flyConnections?.getIncoming?.(panelId) || [];
+    if (!inc.length) return { ok: true, msg: `Chefe, ${meta.name} ${meta.icon} não recebe dados de outros painéis (ainda).` };
+    const linhas = inc.map(c => {
+      const fromMeta = _conMeta(c.from);
+      return `← ${fromMeta.icon} ${fromMeta.name}: ${c.hint}`;
+    }).join('\n');
+    return {
+      ok: true,
+      msg: `Chefe, ${meta.icon} ${meta.name} recebe dados de ${inc.length} painel(éis):\n${linhas}`,
+      data: { panelId, incoming: inc },
+    };
+  }
+
+  function describeConnections(panelId) {
+    if (!panelId) return { ok: false, msg: 'Chefe, qual painel?' };
+    const meta = _conMeta(panelId);
+    const out = window.__flyConnections?.getOutgoing?.(panelId) || [];
+    const inc = window.__flyConnections?.getIncoming?.(panelId) || [];
+    if (!out.length && !inc.length) return { ok: true, msg: `Chefe, ${meta.name} ainda não tem conexões registradas.` };
+    return {
+      ok: true,
+      msg: `Chefe, ${meta.icon} ${meta.name}: ${inc.length} entrada(s), ${out.length} saída(s). Use "o que ${meta.name} afeta" pra ver detalhes.`,
+      data: { panelId, incoming: inc, outgoing: out },
+    };
+  }
+
+  function describeSuggestions(panelId) {
+    if (!panelId) return { ok: false, msg: 'Chefe, qual painel?' };
+    const meta = _conMeta(panelId);
+    const sugg = window.__flyConnections?.suggestPanelsFor?.(panelId) || [];
+    if (!sugg.length) return { ok: true, msg: `Chefe, sem sugestões registradas pra ${meta.name}.` };
+    return {
+      ok: true,
+      msg: `Chefe, painéis que combinam com ${meta.icon} ${meta.name}: ${sugg.map(s => `${s.meta.icon} ${s.meta.name}`).join(', ')}.`,
+      data: { panelId, suggestions: sugg },
+    };
+  }
+
+  /* ---------------------------------------------------------------
+     METAS · alterar, ajustar, pausar, projetar
+  --------------------------------------------------------------- */
+  function _findMeta(name, escopo_nome) {
+    const list = readJSON(modeKey('fly_metas_v1'), []);
+    const n = normalizeText(name || escopo_nome || '');
+    if (!n) return list[0] || null; // se não especificou, pega a primeira ativa
+    return list.find(m =>
+      normalizeText(m.nome).includes(n) ||
+      normalizeText(m.escopo_nome || '').includes(n)
+    ) || list.find(m => m.status === 'ativa') || null;
+  }
+
+  function _saveMetas(arr) {
+    writeJSON(modeKey('fly_metas_v1'), arr);
+    dispatchUpdate({ entity: 'meta', action: 'update' });
+  }
+
+  function updateMeta(params, entities) {
+    const list = readJSON(modeKey('fly_metas_v1'), []);
+    const meta = _findMeta(params.name, params.escopo_nome);
+    if (!meta) return { ok: false, msg: 'Chefe, não encontrei a meta. Crie uma primeiro.' };
+    const novoAlvo = Number(params.alvo);
+    if (!novoAlvo || novoAlvo <= 0) return { ok: false, msg: 'Chefe, qual o novo valor da meta?' };
+    const idx = list.findIndex(m => m.id === meta.id);
+    const oldAlvo = list[idx].alvo;
+    list[idx].alvo = novoAlvo;
+    list[idx].updated_at = new Date().toISOString();
+    // Re-checa se ficou batida com novo alvo
+    if (novoAlvo > 0 && list[idx].realizado >= novoAlvo && list[idx].status === 'ativa') {
+      list[idx].status = 'batida';
+    }
+    _saveMetas(list);
+    const fmt = list[idx].unidade === 'BRL' ? `R$ ${novoAlvo.toLocaleString('pt-BR')}` : novoAlvo;
+    return { ok: true, msg: `Meta "${list[idx].nome}" ajustada de ${list[idx].unidade === 'BRL' ? 'R$ ' + oldAlvo.toLocaleString('pt-BR') : oldAlvo} → ${fmt}.`, data: list[idx] };
+  }
+
+  function adjustMeta(params, entities) {
+    const list = readJSON(modeKey('fly_metas_v1'), []);
+    const meta = _findMeta(params.name, params.escopo_nome);
+    if (!meta) return { ok: false, msg: 'Chefe, não encontrei a meta.' };
+    const idx = list.findIndex(m => m.id === meta.id);
+
+    // Detecta direção pelo comando (entities.raw)
+    const raw = normalizeText(entities.raw || '');
+    const isUp   = /\b(aumenta|sobe|cresce|incrementa)\b/.test(raw);
+    const isDown = /\b(diminui|reduz|baixa|corta)\b/.test(raw);
+    const direction = params.direction || (isUp ? 'up' : (isDown ? 'down' : 'up'));
+
+    // Detecta % no texto cru
+    const pctMatch = raw.match(/(\d+(?:[.,]\d+)?)\s*%/);
+    const valorMatch = raw.match(/(?:em|por|de|pra)\s+(\d+(?:[.,]\d{3})*(?:[.,]\d+)?)\s*(?:mil|k\b)?/);
+
+    let novoAlvo;
+    if (pctMatch) {
+      const pct = parseFloat(pctMatch[1].replace(',', '.')) / 100;
+      novoAlvo = direction === 'up' ? meta.alvo * (1 + pct) : meta.alvo * (1 - pct);
+    } else if (params.sale_value) {
+      novoAlvo = direction === 'up' ? meta.alvo + params.sale_value : meta.alvo - params.sale_value;
+    } else {
+      return { ok: false, msg: 'Chefe, em quanto ajustar? (Ex: "aumenta em 20%" ou "aumenta em 100 mil")' };
+    }
+    novoAlvo = Math.max(0, Math.round(novoAlvo));
+    const oldAlvo = list[idx].alvo;
+    list[idx].alvo = novoAlvo;
+    list[idx].updated_at = new Date().toISOString();
+    if (novoAlvo > 0 && list[idx].realizado >= novoAlvo && list[idx].status === 'ativa') list[idx].status = 'batida';
+    _saveMetas(list);
+    const fmt = list[idx].unidade === 'BRL' ? `R$ ${novoAlvo.toLocaleString('pt-BR')}` : novoAlvo;
+    const oldFmt = list[idx].unidade === 'BRL' ? `R$ ${oldAlvo.toLocaleString('pt-BR')}` : oldAlvo;
+    return { ok: true, msg: `Meta "${list[idx].nome}" ${direction === 'up' ? 'aumentada' : 'reduzida'}: ${oldFmt} → ${fmt}.`, data: list[idx] };
+  }
+
+  function pauseMeta(params, entities) {
+    const list = readJSON(modeKey('fly_metas_v1'), []);
+    const raw = normalizeText(entities.raw || '');
+    // Special case: "arquiva metas batidas"
+    if (/arquiv.*batida|batidas.*arquiv/.test(raw)) {
+      let count = 0;
+      list.forEach(m => { if (m.status === 'batida') { m.status = 'arquivada'; count++; } });
+      _saveMetas(list);
+      return { ok: true, msg: `${count} meta(s) batida(s) arquivada(s), Chefe.`, data: { count } };
+    }
+    const meta = _findMeta(params.name, params.escopo_nome);
+    if (!meta) return { ok: false, msg: 'Chefe, qual meta?' };
+    const idx = list.findIndex(m => m.id === meta.id);
+    const novoStatus = /arquiv|encerr|finaliz/.test(raw) ? 'arquivada' : 'pausada';
+    list[idx].status = novoStatus;
+    list[idx].updated_at = new Date().toISOString();
+    _saveMetas(list);
+    return { ok: true, msg: `Meta "${list[idx].nome}" → status "${novoStatus}".`, data: list[idx] };
+  }
+
+  function projectMeta(params, entities) {
+    const list = readJSON(modeKey('fly_metas_v1'), []);
+    const meta = _findMeta(params.name, params.escopo_nome) || list.find(m => m.status === 'ativa');
+    if (!meta || !meta.alvo) return { ok: false, msg: 'Chefe, sem meta ativa pra projetar.' };
+    const inicio = new Date(meta.data_inicio || Date.now());
+    const fim    = new Date(meta.data_fim    || Date.now());
+    const hoje   = new Date();
+    const totalDias    = Math.max(1, Math.round((fim - inicio) / (1000*60*60*24)));
+    const diasPassados = Math.max(1, Math.round((hoje - inicio) / (1000*60*60*24)));
+    const diasRestantes = Math.max(0, Math.round((fim - hoje) / (1000*60*60*24)));
+    const realizado = meta.realizado || 0;
+    const runRate = realizado / diasPassados; // por dia
+    const projetado = realizado + (runRate * diasRestantes);
+    const pctAtual = Math.round((realizado / meta.alvo) * 100);
+    const pctProjetado = Math.round((projetado / meta.alvo) * 100);
+    const fmt = (v) => meta.unidade === 'BRL' ? `R$ ${Math.round(v).toLocaleString('pt-BR')}` : Math.round(v);
+
+    let recomendacao = '';
+    if (pctProjetado >= 110) recomendacao = ` Vai bater com folga — considere AUMENTAR a meta em ${Math.round(pctProjetado - 100)}%.`;
+    else if (pctProjetado >= 100) recomendacao = ` No ritmo certo pra bater no prazo. 🎯`;
+    else if (pctProjetado >= 80) recomendacao = ` Quase lá. Acelera um pouco que bate.`;
+    else if (pctProjetado >= 50) recomendacao = ` Em risco. Faltam ${diasRestantes}d e o ritmo atual leva só a ${pctProjetado}%.`;
+    else recomendacao = ` ALERTA: ritmo muito baixo. Considere REDUZIR a meta ou plano de recuperação urgente.`;
+
+    return {
+      ok: true,
+      msg: `Chefe, "${meta.nome}": ${fmt(realizado)} de ${fmt(meta.alvo)} (${pctAtual}%). Run rate: ${fmt(runRate)}/dia. Projeção em ${diasRestantes}d: ${fmt(projetado)} (${pctProjetado}%).${recomendacao}`,
+      data: { meta, runRate, projetado, pctAtual, pctProjetado, diasRestantes },
+    };
+  }
+
+  function queryMetaProgress(params, entities) {
+    const list = readJSON(modeKey('fly_metas_v1'), []).filter(m => m.status === 'ativa');
+    if (!list.length) return { ok: true, msg: 'Chefe, sem metas ativas no momento.' };
+    const meta = params.name || params.escopo_nome ? _findMeta(params.name, params.escopo_nome) : null;
+    if (meta) {
+      const pct = meta.alvo ? Math.round((meta.realizado || 0) / meta.alvo * 100) : 0;
+      const falta = Math.max(0, meta.alvo - (meta.realizado || 0));
+      const fmt = meta.unidade === 'BRL' ? `R$ ${falta.toLocaleString('pt-BR')}` : falta;
+      return { ok: true, msg: `Chefe, "${meta.nome}": ${pct}% atingido. Falta ${fmt} pra bater.`, data: meta };
+    }
+    const linhas = list.slice(0, 5).map(m => {
+      const pct = m.alvo ? Math.round((m.realizado || 0) / m.alvo * 100) : 0;
+      return `${m.nome}: ${pct}%`;
+    }).join(' · ');
+    return { ok: true, msg: `Chefe, ${list.length} meta(s) ativa(s) — ${linhas}`, data: { metas: list } };
+  }
+
+  /* ---------------------------------------------------------------
      STEP SYSTEM
   --------------------------------------------------------------- */
   const _stepListeners = [];
@@ -1081,6 +1384,29 @@
     } else if (action === 'create_james_log') {
       // Log é criado ao final da operação completa — skip aqui
       result = { ok: true, msg: 'Log registrado.' };
+
+    /* ── Connection Registry queries ── */
+    } else if (action === '__query_panel_outgoing') {
+      result = describeOutgoing(params.panel || extractPanelName(entities.raw));
+    } else if (action === '__query_panel_incoming') {
+      result = describeIncoming(params.panel || extractPanelName(entities.raw));
+    } else if (action === '__query_panel_connections') {
+      result = describeConnections(params.panel || extractPanelName(entities.raw));
+    } else if (action === '__query_panel_suggestions') {
+      result = describeSuggestions(params.panel || extractPanelName(entities.raw));
+
+    /* ── Metas (alterar, ajustar, pausar, projetar) ── */
+    } else if (action === '__update_meta') {
+      result = updateMeta(params, entities);
+    } else if (action === '__adjust_meta') {
+      result = adjustMeta(params, entities);
+    } else if (action === '__pause_meta') {
+      result = pauseMeta(params, entities);
+    } else if (action === '__project_meta') {
+      result = projectMeta(params, entities);
+    } else if (action === '__query_meta_progress') {
+      result = queryMetaProgress(params, entities);
+
     } else if (window.__jamesActions?.execute) {
       // Delega para o catálogo de ações existente
       result = window.__jamesActions.execute(action, params);

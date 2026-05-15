@@ -144,6 +144,64 @@
       confidence: 0.95, requiresConfirmation: false,
     },
 
+    /* === CONNECTION REGISTRY · "o que X afeta?", "quem alimenta X?" === */
+    {
+      // "o que [painel] afeta", "o que [painel] atualiza", "o que sai de [painel]"
+      re: /\b(?:o\s+que|quais)\s+(?:o\s+|a\s+)?(?:painel\s+)?(\w+)\s+(?:afeta|atualiza|alimenta|impacta|conect[a-z]+|sai)/i,
+      type: 'connection', subtype: 'query_panel_outgoing', category: 'meta',
+      confidence: 0.93, requiresConfirmation: false,
+    },
+    {
+      // "quem alimenta [painel]", "quem afeta [painel]", "de onde vem [painel]"
+      re: /\b(?:quem|o\s+que|de\s+onde)\s+(?:alimenta|afeta|chega|entra|vem)\s+(?:em\s+|no\s+|na\s+|pra\s+|para\s+)?(?:o\s+|a\s+)?(?:painel\s+)?(\w+)/i,
+      type: 'connection', subtype: 'query_panel_incoming', category: 'meta',
+      confidence: 0.93, requiresConfirmation: false,
+    },
+    {
+      // "como [painel] está conectado", "conexões de [painel]"
+      re: /\b(?:como\s+(?:o\s+|a\s+)?(?:painel\s+)?(\w+)\s+(?:est[áa]|tá|fica)?\s*conect|conex[ãa]o.{0,20}(\w+)|painel\s+(\w+)\s+conex)/i,
+      type: 'connection', subtype: 'query_panel_connections', category: 'meta',
+      confidence: 0.92, requiresConfirmation: false,
+    },
+    {
+      // "o que combina com [painel]", "que painel combina com X"
+      re: /\b(?:o\s+que|que\s+pain[éie]l|quais\s+pain[éie]is)\s+(?:combina|funciona\s+bem)\s+com\s+(\w+)/i,
+      type: 'connection', subtype: 'query_panel_suggestions', category: 'meta',
+      confidence: 0.9, requiresConfirmation: false,
+    },
+
+    /* === ALTERAÇÃO DE METAS · ajusta, aumenta, diminui, pausa, arquiva === */
+    {
+      // "ajusta a meta de [X] pra [Y]"
+      re: /\b(?:ajusta|altera|muda|atualiza|seta|define)\s+(?:a\s+)?meta\b/i,
+      type: 'metas', subtype: 'update_meta', category: 'metas',
+      confidence: 0.93, requiresConfirmation: true,
+    },
+    {
+      // "aumenta a meta em X%" ou "diminui meta em Y"
+      re: /\b(?:aumenta|sobe|cresce|incrementa|diminui|reduz|baixa|corta)\s+(?:a\s+)?meta\b/i,
+      type: 'metas', subtype: 'adjust_meta', category: 'metas',
+      confidence: 0.92, requiresConfirmation: true,
+    },
+    {
+      // "pausa a meta", "arquiva metas batidas"
+      re: /\b(?:pausa|pausar|para|arquiv[ae]|encerra|finaliza)\s+(?:a\s+|as\s+)?meta/i,
+      type: 'metas', subtype: 'pause_meta', category: 'metas',
+      confidence: 0.91, requiresConfirmation: true,
+    },
+    {
+      // "recalcula meta", "ajusta meta automaticamente", "projeta meta"
+      re: /\b(?:recalcula|projeta|simul[ae]|run\s*rate)\s+(?:a\s+|as\s+)?meta/i,
+      type: 'metas', subtype: 'project_meta', category: 'metas',
+      confidence: 0.93, requiresConfirmation: false,
+    },
+    {
+      // "quanto falta pra bater a meta de [X]" / "como tá a meta"
+      re: /\b(?:quanto\s+falta\s+(?:pra\s+|para\s+)?bater|como\s+(?:t[áa]|est[áa])\s+(?:a\s+)?meta|progresso\s+da\s+meta)/i,
+      type: 'metas', subtype: 'query_meta_progress', category: 'metas',
+      confidence: 0.94, requiresConfirmation: false,
+    },
+
     /* === HIERARQUIA (RH) === */
     {
       // "contrata Pedro como vendedor", "admite Maria"

@@ -214,7 +214,53 @@
     }];
   }
 
-  // 7. Tarefas atrasadas
+  // 7. Run rate de metas (projeção)
+  function analyzeRunRate() {
+    const metas = readJSON(modeKey('fly_metas_v1'), []).filter(m => m.status === 'ativa' && m.alvo > 0);
+    const out = [];
+    metas.forEach(m => {
+      if (!m.data_inicio || !m.data_fim) return;
+      const inicio = new Date(m.data_inicio), fim = new Date(m.data_fim), hoje = new Date();
+      const diasPassados = Math.max(1, Math.round((hoje - inicio) / (1000 * 60 * 60 * 24)));
+      const diasRestantes = Math.max(0, Math.round((fim - hoje) / (1000 * 60 * 60 * 24)));
+      if (diasRestantes === 0 || diasPassados < 2) return; // skip se acabou ou começou agora
+      const realizado = m.realizado || 0;
+      const runRate = realizado / diasPassados;
+      const projetado = realizado + runRate * diasRestantes;
+      const pctProj = Math.round(projetado / m.alvo * 100);
+      // Só sugere se a projeção tá BEM acima ou BEM abaixo
+      if (pctProj >= 120) {
+        out.push({
+          id: 'runrate_high_' + m.id,
+          priority: 50,
+          icon: '📈',
+          color: '#6dffb0',
+          title: `"${m.nome}" projetada pra ${pctProj}%`,
+          message: `No ritmo atual, vai fechar com folga em ${diasRestantes}d. Considere AUMENTAR a meta.`,
+          actions: [
+            { label: 'Aumentar meta em 20%', cmd: `aumenta a meta de ${m.escopo_nome || 'empresa'} em 20%` },
+            { label: 'Ver Metas', cmd: 'abre metas' },
+          ],
+        });
+      } else if (pctProj < 60 && diasRestantes <= 15) {
+        out.push({
+          id: 'runrate_low_' + m.id,
+          priority: 88,
+          icon: '📉',
+          color: '#ff6464',
+          title: `"${m.nome}" projetada pra apenas ${pctProj}%`,
+          message: `Ritmo atual leva a ${pctProj}% em ${diasRestantes}d. Considere REDUZIR a meta ou plano de ação.`,
+          actions: [
+            { label: 'Reduzir meta em 20%', cmd: `diminui a meta de ${m.escopo_nome || 'empresa'} em 20%` },
+            { label: 'Projetar agora', cmd: `projeta meta ${m.escopo_nome || ''}` },
+          ],
+        });
+      }
+    });
+    return out;
+  }
+
+  // 8. Tarefas atrasadas
   function analyzeOverdueTasks() {
     const tasks = readJSON(modeKey('fly_tasks_v1'), []);
     const today = new Date().toISOString().slice(0, 10);
@@ -236,6 +282,7 @@
   --------------------------------------------------------------- */
   const ANALYZERS = [
     analyzeMetas,
+    analyzeRunRate,
     analyzeReconcile,
     analyzeCommissions,
     analyzeInactiveSellers,

@@ -15065,20 +15065,12 @@
         return `<span style="font-size:14px; color:rgba(255,255,255,0.55); font-weight:700;">${rank}º</span>`;
       }
 
-      function refresh() {
-        const list = (window.__jamesPanels?.sellers?.list?.()?.data) || [];
-        const kpis = window.__jamesPanels?.sellers?.kpis?.()?.data || {};
-        document.getElementById('sel-kpis').innerHTML = `
-          <div class="hier-hero-kpi"><div class="lbl">Total</div><div class="val">${list.length}</div></div>
-          <div class="hier-hero-kpi"><div class="lbl">Ativos</div><div class="val">${kpis.ativos || 0}</div></div>
-          <div class="hier-hero-kpi"><div class="lbl">Vendido no Mês</div><div class="val">R$ ${(kpis.vendido || 0).toLocaleString('pt-BR')}</div></div>
-          <div class="hier-hero-kpi"><div class="lbl">Comissão Acumulada</div><div class="val">R$ ${(kpis.comissao || 0).toLocaleString('pt-BR')}</div></div>
-        `;
-        document.getElementById('sel-list').innerHTML = list.length ? list.map((s, i) => {
+      function buildList(list) {
+        return list.length ? list.map((s, i) => {
           const meta = s.meta_mes ? Math.min(100, Math.round((s.vendido_mes || 0) / s.meta_mes * 100)) : null;
           const corMeta = meta === null ? '#aaaaaa' : (meta >= 100 ? '#6dffb0' : (meta >= 70 ? '#ffd070' : (meta >= 30 ? '#ff9b3a' : '#ff6464')));
           return `
-            <div class="sel-row" data-rank="${i + 1}" style="padding:14px; border:1px solid rgba(245,184,66,0.18); border-radius:8px; background: rgba(0,0,0,0.25); display:grid; grid-template-columns: 44px 1fr auto; gap:14px; align-items:center; transition: transform 0.3s ease;">
+            <div class="sel-row" data-id="${escapeHtml(s.id)}" data-rank="${i + 1}" style="padding:14px; border:1px solid rgba(245,184,66,0.18); border-radius:8px; background: rgba(0,0,0,0.25); display:grid; grid-template-columns: 44px 1fr auto; gap:14px; align-items:center;">
               <div style="text-align:center;">${medalFor(i + 1)}</div>
               <div>
                 <div style="font-weight:600; color:#fff; font-size:14px;">${escapeHtml(s.nome)}</div>
@@ -15098,6 +15090,26 @@
             </div>
           `;
         }).join('') : '<div style="padding:24px; text-align:center; color:rgba(255,255,255,0.4);">Nenhum vendedor cadastrado ainda.</div>';
+      }
+
+      function refresh() {
+        const list = (window.__jamesPanels?.sellers?.list?.()?.data) || [];
+        const kpis = window.__jamesPanels?.sellers?.kpis?.()?.data || {};
+        document.getElementById('sel-kpis').innerHTML = `
+          <div class="hier-hero-kpi"><div class="lbl">Total</div><div class="val">${list.length}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Ativos</div><div class="val">${kpis.ativos || 0}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Vendido no Mês</div><div class="val">R$ ${(kpis.vendido || 0).toLocaleString('pt-BR')}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Comissão Acumulada</div><div class="val">R$ ${(kpis.comissao || 0).toLocaleString('pt-BR')}</div></div>
+        `;
+        const container = document.getElementById('sel-list');
+        if (window.__flyFlip && container) {
+          // Snapshot ANTES do refresh
+          const snap = window.__flyFlip.snapshot(container, '.sel-row');
+          container.innerHTML = buildList(list);
+          window.__flyFlip.animate(snap, container, '.sel-row', { highlight: true });
+        } else {
+          container.innerHTML = buildList(list);
+        }
       }
 
       // Botão reconciliar
@@ -15189,18 +15201,9 @@
         return `<span style="display:inline-block; padding:1px 8px; border-radius:10px; background:${c}22; color:${c}; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">${tier || 'tier?'}</span>`;
       }
 
-      function refresh() {
-        const list = (window.__jamesPanels?.influencers?.list?.()?.data) || [];
-        const kpis = window.__jamesPanels?.influencers?.kpis?.()?.data || {};
-        const devido = (kpis.devido || 0);
-        document.getElementById('inf-kpis').innerHTML = `
-          <div class="hier-hero-kpi"><div class="lbl">Total</div><div class="val">${list.length}</div></div>
-          <div class="hier-hero-kpi"><div class="lbl">Ativos</div><div class="val">${kpis.ativos || 0}</div></div>
-          <div class="hier-hero-kpi"><div class="lbl">Vendas Geradas</div><div class="val">${kpis.vendas || 0}</div></div>
-          <div class="hier-hero-kpi"><div class="lbl">Comissão Devida</div><div class="val" style="color:${devido > 0 ? '#ff9b3a' : '#fff'};">R$ ${devido.toLocaleString('pt-BR')}</div></div>
-        `;
-        document.getElementById('inf-list').innerHTML = list.length ? list.map((i, idx) => `
-          <div class="inf-row" data-rank="${idx + 1}" style="padding:14px; border:1px solid rgba(245,184,66,0.18); border-radius:8px; background: rgba(0,0,0,0.25); display:grid; grid-template-columns: 44px 1fr auto; gap:14px; align-items:center; transition: transform 0.3s ease;">
+      function buildInfList(list) {
+        return list.length ? list.map((i, idx) => `
+          <div class="inf-row" data-id="${escapeHtml(i.id)}" data-rank="${idx + 1}" style="padding:14px; border:1px solid rgba(245,184,66,0.18); border-radius:8px; background: rgba(0,0,0,0.25); display:grid; grid-template-columns: 44px 1fr auto; gap:14px; align-items:center;">
             <div style="text-align:center;">${infMedal(idx + 1)}</div>
             <div>
               <div style="font-weight:600; color:#fff; font-size:14px;">${escapeHtml(i.handle)} ${tierBadge(i.tier)} <span style="color:rgba(255,255,255,0.4); font-size:11px; font-weight:400;">${escapeHtml(i.nome !== i.handle ? '· ' + i.nome : '')}</span></div>
@@ -15213,6 +15216,26 @@
             </div>
           </div>
         `).join('') : '<div style="padding:24px; text-align:center; color:rgba(255,255,255,0.4);">Nenhum influencer cadastrado ainda.</div>';
+      }
+
+      function refresh() {
+        const list = (window.__jamesPanels?.influencers?.list?.()?.data) || [];
+        const kpis = window.__jamesPanels?.influencers?.kpis?.()?.data || {};
+        const devido = (kpis.devido || 0);
+        document.getElementById('inf-kpis').innerHTML = `
+          <div class="hier-hero-kpi"><div class="lbl">Total</div><div class="val">${list.length}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Ativos</div><div class="val">${kpis.ativos || 0}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Vendas Geradas</div><div class="val">${kpis.vendas || 0}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Comissão Devida</div><div class="val" style="color:${devido > 0 ? '#ff9b3a' : '#fff'};">R$ ${devido.toLocaleString('pt-BR')}</div></div>
+        `;
+        const container = document.getElementById('inf-list');
+        if (window.__flyFlip && container) {
+          const snap = window.__flyFlip.snapshot(container, '.inf-row');
+          container.innerHTML = buildInfList(list);
+          window.__flyFlip.animate(snap, container, '.inf-row', { highlight: true });
+        } else {
+          container.innerHTML = buildInfList(list);
+        }
       }
 
       // Botão reconciliar
@@ -24060,6 +24083,7 @@
 
   <script type="module" src="assets/fly-supabase-sync.js"></script>
   <script src="assets/fly-expansoes.js"></script>
+  <script src="assets/fly-flip-animate.js"></script>
   <script src="assets/james-cascade.js"></script>
   <script src="assets/james-cascade-watcher.js"></script>
   <script src="assets/james-connections.js"></script>
