@@ -9900,8 +9900,19 @@
     // - No load inicial, puxamos do Supabase e sobrescrevemos cache local
     // - Se offline ou erro, app continua funcionando 100% via localStorage
 
-    const FLY_SUPA_URL = 'https://ezfmvblirhmootdvqmsr.supabase.co';
-    const FLY_SUPA_KEY = 'sb_publishable_5vVImnH7PBHM0E5jDP1bAA_CiHZz6jt';
+    // Lê config do localStorage (setada pelo painel do James) — fallback pros hardcoded antigos
+    const _SUPA_OVERRIDE = (() => {
+      try {
+        const raw = localStorage.getItem('fly_supabase_config');
+        if (!raw) return null;
+        const cfg = JSON.parse(raw);
+        if (cfg && cfg.url && cfg.anonKey) return cfg;
+      } catch (e) {}
+      return null;
+    })();
+    const FLY_SUPA_URL = _SUPA_OVERRIDE?.url    || 'https://ezfmvblirhmootdvqmsr.supabase.co';
+    const FLY_SUPA_KEY = _SUPA_OVERRIDE?.anonKey || 'sb_publishable_5vVImnH7PBHM0E5jDP1bAA_CiHZz6jt';
+    if (_SUPA_OVERRIDE) console.log('[FLY] Usando Supabase config do localStorage:', _SUPA_OVERRIDE.url);
     const _BASE_SYNCED_KEYS = [
       'fly_7anos_data_v1',
       'fly_basesfly_pins_v2',
