@@ -1140,8 +1140,8 @@ body.admin-mode .war-map-toolbar small {
    ============================================================ */
 .dash-trigger {
   position: fixed;
-  right: 22px;
-  bottom: 22px; /* canto inferior direito, alinhado com James */
+  left: 380px;     /* canto inferior esquerdo, à direita da memória */
+  bottom: 18px;
   z-index: 1014;
   display: flex;
   align-items: center;

@@ -22,8 +22,8 @@
    ============================================================ */
 #jms-orb {
   position: fixed;
-  right: 170px;    /* à esquerda do COCKPIT, alinhado horizontalmente */
-  bottom: 8px;
+  right: 24px;     /* sozinho no canto inferior direito */
+  bottom: 18px;
   width: 78px;
   height: 78px;
   border-radius: 50%;
@@ -725,8 +725,13 @@
   #jms-orb {
     width: 64px;
     height: 64px;
-    right: 130px;
-    bottom: 6px;
+    right: 16px;
+    bottom: 16px;
+  }
+  /* No mobile, COCKPIT empilha acima dos indicadores no canto esquerdo */
+  .dash-trigger {
+    left: 12px !important;
+    bottom: 70px !important;
   }
   #jms-panel {
     right: 12px;
