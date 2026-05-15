@@ -372,11 +372,41 @@
 }
 .jms-panel__reply.empty { color: rgba(255, 255, 255, 0.3); font-style: italic; }
 
+/* Input de texto rápido */
+.jms-panel__input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px 20px 4px;
+}
+.jms-panel__input-row input {
+  flex: 1;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(245, 182, 66, 0.22);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+  transition: border-color 0.2s ease;
+}
+.jms-panel__input-row input:focus {
+  outline: none;
+  border-color: var(--jms-gold);
+  box-shadow: 0 0 8px rgba(245, 182, 66, 0.18);
+}
+.jms-panel__input-row input::placeholder { color: rgba(255, 255, 255, 0.35); }
+
+.jms-send-btn {
+  padding: 0 16px !important;
+  min-width: 44px;
+  font-size: 18px !important;
+  letter-spacing: 0 !important;
+}
+
 .jms-panel__actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  padding: 14px 20px 14px;
+  padding: 10px 20px 14px;
 }
 
 .jms-btn {

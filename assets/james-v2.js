@@ -813,11 +813,17 @@
         <div class="jms-panel__reply empty" id="jms-reply">Aguardando comando.</div>
       </section>
 
+      <!-- Input de texto pra digitar comando -->
+      <div class="jms-panel__input-row">
+        <input type="text" id="jms-text-input" placeholder="Digite uma pergunta pro James..." autocomplete="off" />
+        <button class="jms-btn jms-btn--primary jms-send-btn" id="jms-text-send" type="button" aria-label="Enviar">↑</button>
+      </div>
+
       <div class="jms-panel__actions">
-        <button class="jms-btn jms-btn--primary" id="jms-activate" type="button">Ativar James</button>
+        <button class="jms-btn jms-btn--primary" id="jms-activate" type="button">🎤 Ativar Voz</button>
         <button class="jms-btn jms-btn--danger" id="jms-stop" type="button">Encerrar</button>
         <button class="jms-btn jms-btn--ghost" id="jms-fs-open" type="button">Tela Cheia</button>
-        <button class="jms-btn jms-btn--ghost" id="jms-config-ai" type="button">Configurar IA</button>
+        <button class="jms-btn jms-btn--ghost" id="jms-config-ai" type="button">⚙ Config</button>
       </div>
 
       <!-- Mini-form de configuração de IA (escondido por padrão) -->
@@ -836,13 +842,18 @@
 
         <h4>☁️ Conectar Supabase</h4>
         <small>Sincronizar dados entre dispositivos (opcional):</small>
+        <div class="jms-sb-diag" id="jms-sb-diag"></div>
         <input type="url" id="jms-sb-url" placeholder="https://xxxxx.supabase.co" autocomplete="off" />
-        <input type="password" id="jms-sb-key" placeholder="anon key (eyJhbGc...)" autocomplete="off" />
+        <input type="password" id="jms-sb-key" placeholder="anon key (eyJhbGc...) — NÃO a chave do dashboard" autocomplete="off" />
         <div class="jms-config__actions">
-          <button class="jms-btn jms-btn--primary" id="jms-save-sb" type="button">Conectar Supabase</button>
-          <button class="jms-btn jms-btn--danger" id="jms-disconnect-sb" type="button">Desconectar</button>
+          <button class="jms-btn jms-btn--primary" id="jms-save-sb" type="button">Conectar</button>
+          <button class="jms-btn jms-btn--ghost" id="jms-test-sb" type="button">Testar</button>
+          <button class="jms-btn jms-btn--danger" id="jms-disconnect-sb" type="button">Reset</button>
         </div>
         <div class="jms-config__status" id="jms-sb-status"></div>
+        <small style="margin-top:8px; color:rgba(255,255,255,0.4);">
+          💡 Achar a anon key: Supabase Dashboard → Settings → API → Project API keys → <strong>anon public</strong> (a chave começa com <code>eyJhbGc...</code>)
+        </small>
       </div>
     `;
     container.appendChild(panel);
@@ -1136,6 +1147,25 @@
     });
     ui.fsClose.addEventListener('click', () => setFullscreen(false));
 
+    // Input de TEXTO — enviar pergunta por digitação
+    const textInput = $('jms-text-input');
+    const textSendBtn = $('jms-text-send');
+    function sendTextFromInput() {
+      const txt = textInput.value.trim();
+      if (!txt) return;
+      textInput.value = '';
+      // Garante painel aberto
+      setPanelOpen(true);
+      voice.sendTextCommand(txt);
+    }
+    textInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendTextFromInput();
+      }
+    });
+    textSendBtn?.addEventListener('click', sendTextFromInput);
+
     // ESC fecha fullscreen
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
@@ -1224,17 +1254,53 @@
     const sbUrlInput = $('jms-sb-url');
     const sbKeyInput = $('jms-sb-key');
     const sbSaveBtn = $('jms-save-sb');
+    const sbTestBtn = $('jms-test-sb');
     const sbDisconnectBtn = $('jms-disconnect-sb');
     const sbStatus = $('jms-sb-status');
+    const sbDiag = $('jms-sb-diag');
 
-    // Carrega config existente
-    try {
-      const sbCfg = JSON.parse(localStorage.getItem('fly_supabase_config') || 'null');
-      if (sbCfg) {
-        sbUrlInput.value = sbCfg.url || '';
-        sbKeyInput.value = sbCfg.anonKey || '';
+    // Carrega config existente + roda diagnóstico
+    function loadSupabaseConfig() {
+      try {
+        const sbCfg = JSON.parse(localStorage.getItem('fly_supabase_config') || 'null');
+        if (sbCfg) {
+          sbUrlInput.value = sbCfg.url || '';
+          sbKeyInput.value = sbCfg.anonKey || '';
+        }
+      } catch (e) {}
+    }
+    loadSupabaseConfig();
+
+    function diagnoseSupabase() {
+      if (!sbDiag) return;
+      const cfg = (() => {
+        try { return JSON.parse(localStorage.getItem('fly_supabase_config') || 'null'); }
+        catch (e) { return null; }
+      })();
+      const flySyncStatus = window.__flySync?.status?.();
+      const syncStatusEl = document.getElementById('syncStatus');
+      const oldSysStatus = syncStatusEl?.dataset?.status || 'desconhecido';
+
+      let html = '<div style="font-size:10px; line-height:1.6; padding:8px 10px; background:rgba(0,0,0,0.3); border-radius:6px; margin-bottom:8px;">';
+      html += '<strong style="color:#ffd770">Diagnóstico:</strong><br>';
+
+      if (cfg) {
+        html += `📁 Config local: <span style="color:#6dffb0">✓</span> (${cfg.url ? cfg.url.replace('https://','').slice(0,30) : '?'})<br>`;
+        const keyType = (cfg.anonKey || '').startsWith('eyJ') ? '✓ formato JWT correto' : (cfg.anonKey || '').startsWith('sb_publishable') ? '⚠ formato publishable (antigo)' : '✗ formato desconhecido';
+        const keyColor = keyType.startsWith('✓') ? '#6dffb0' : '#ff8a8a';
+        html += `🔑 Chave: <span style="color:${keyColor}">${keyType}</span><br>`;
+      } else {
+        html += '📁 Config local: <span style="color:#ff8a8a">✗ sem config</span><br>';
       }
-    } catch (e) {}
+
+      html += `🔌 Sistema novo (sync.js): <span style="color:${flySyncStatus?.online ? '#6dffb0' : '#ff8a8a'}">${flySyncStatus?.online ? '✓ online' : '✗ offline'}</span><br>`;
+      html += `🔌 Sistema antigo (index.html): <span style="color:${oldSysStatus === 'online' ? '#6dffb0' : '#ff8a8a'}">${oldSysStatus}</span><br>`;
+
+      html += '</div>';
+      sbDiag.innerHTML = html;
+    }
+    diagnoseSupabase();
+    setInterval(diagnoseSupabase, 3000);
 
     sbSaveBtn?.addEventListener('click', async () => {
       const url = sbUrlInput.value.trim();
@@ -1244,21 +1310,27 @@
         return;
       }
       if (!/\.supabase\.co/i.test(url)) {
-        sbStatus.innerHTML = '<span style="color:#ff8a8a">URL deve terminar em .supabase.co (não .supabase.com/dashboard/...)</span>';
+        sbStatus.innerHTML = '<span style="color:#ff8a8a">URL deve terminar em .supabase.co</span>';
         return;
       }
+      if (!k.startsWith('eyJ')) {
+        sbStatus.innerHTML = '<span style="color:#ffd770">⚠ A chave deve começar com "eyJ" (JWT). Você colou a chave certa? (NÃO use sb_publishable_)</span>';
+        return;
+      }
+      // Salva config (afeta os 2 sistemas)
+      localStorage.setItem('fly_supabase_config', JSON.stringify({ url, anonKey: k }));
       sbStatus.innerHTML = '<span style="color:#ffd770">Conectando…</span>';
+
       try {
         if (window.__flySync && typeof window.__flySync.init === 'function') {
           const ok = await window.__flySync.init({ url, anonKey: k });
           if (ok) {
-            sbStatus.innerHTML = '<span style="color:#6dffb0">✓ Supabase conectado!</span>';
+            sbStatus.innerHTML = '<span style="color:#6dffb0">✓ Conectado! Recarregando pra aplicar no sistema todo…</span>';
+            setTimeout(() => location.reload(), 1500);
           } else {
             sbStatus.innerHTML = '<span style="color:#ff8a8a">Falha. Verifique URL e Key.</span>';
           }
         } else {
-          // Fallback: salva config e recarrega
-          localStorage.setItem('fly_supabase_config', JSON.stringify({ url, anonKey: k }));
           sbStatus.innerHTML = '<span style="color:#ffd770">Config salva. Recarregando…</span>';
           setTimeout(() => location.reload(), 1200);
         }
@@ -1267,12 +1339,36 @@
       }
     });
 
+    sbTestBtn?.addEventListener('click', async () => {
+      const url = sbUrlInput.value.trim() || (window.__flySync?.status?.()?.url);
+      const k = sbKeyInput.value.trim();
+      if (!url || !k) {
+        sbStatus.innerHTML = '<span style="color:#ff8a8a">Preencha URL e Key pra testar</span>';
+        return;
+      }
+      sbStatus.innerHTML = '<span style="color:#ffd770">Testando conexão direta…</span>';
+      try {
+        // Faz um fetch direto pra REST API do Supabase
+        const r = await fetch(url.replace(/\/$/, '') + '/rest/v1/', {
+          headers: { 'apikey': k, 'Authorization': 'Bearer ' + k },
+        });
+        if (r.ok) {
+          sbStatus.innerHTML = '<span style="color:#6dffb0">✓ Conexão OK (status ' + r.status + ')</span>';
+        } else {
+          const txt = await r.text().catch(() => '');
+          sbStatus.innerHTML = `<span style="color:#ff8a8a">✗ Status ${r.status}: ${txt.slice(0,100)}</span>`;
+        }
+      } catch (e) {
+        sbStatus.innerHTML = '<span style="color:#ff8a8a">Erro de rede: ' + (e.message || e) + '</span>';
+      }
+    });
+
     sbDisconnectBtn?.addEventListener('click', () => {
-      if (confirm('Desconectar Supabase? Dados continuam salvos localmente.')) {
+      if (confirm('RESET Supabase? Vai limpar configuração atual e recarregar. Dados continuam salvos localmente.')) {
         localStorage.removeItem('fly_supabase_config');
         sbUrlInput.value = '';
         sbKeyInput.value = '';
-        sbStatus.innerHTML = '<span style="color:#ffd770">Desconectado. Recarregando…</span>';
+        sbStatus.innerHTML = '<span style="color:#ffd770">Resetado. Recarregando…</span>';
         setTimeout(() => location.reload(), 800);
       }
     });
