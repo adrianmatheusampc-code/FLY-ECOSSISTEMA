@@ -852,6 +852,15 @@
         </div>
       </div>
 
+      <!-- 💡 Sugestões inteligentes do James (gerenciado por james-suggestions.js) -->
+      <div class="jms-suggestions-section" id="jms-suggestions-section">
+        <div class="jms-suggestions-header">
+          <span class="jms-suggestions-title">💡 SUGESTÕES PRO CHEFE</span>
+          <button class="jms-suggestions-refresh" id="jms-suggestions-refresh" type="button" title="Atualizar">⟳</button>
+        </div>
+        <div class="jms-suggestions-host" id="jms-suggestions-host"></div>
+      </div>
+
       <div class="jms-panel__actions">
         <button class="jms-btn jms-btn--primary" id="jms-activate" type="button">🎤 Ativar Voz</button>
         <button class="jms-btn jms-btn--danger" id="jms-stop" type="button">Encerrar</button>
@@ -1703,6 +1712,18 @@
 
     // Renderiza o histórico no boot para mostrar logs anteriores
     renderOpsHistory();
+
+    // 💡 Sugestões inteligentes — refresh quando painel abre + botão manual
+    function refreshSuggestions() {
+      const host = document.getElementById('jms-suggestions-host');
+      if (!host || !window.__flySuggestions) return;
+      window.__flySuggestions.render(host);
+    }
+    document.getElementById('jms-suggestions-refresh')?.addEventListener('click', refreshSuggestions);
+    // Render inicial após pequeno delay (pra dar tempo dos modules carregarem)
+    setTimeout(refreshSuggestions, 500);
+    // Refresh quando painel é aberto
+    orbEl.addEventListener('click', () => setTimeout(refreshSuggestions, 200));
   }
 
   // ----------------- Boot quando DOM pronto -----------------

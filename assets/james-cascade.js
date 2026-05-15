@@ -673,22 +673,28 @@
   }
 
   /* =====================================================================
-     ANIMAÇÃO VISUAL · pulse-gold
-     Aplica classe .fly-cascade-pulse no card do painel afetado
+     ANIMAÇÃO VISUAL · pulse-gold em SEQUÊNCIA (efeito onda)
   ===================================================================== */
-  function pulsePanel(panelId, scope) {
-    const targets = [];
-    // Tenta achar o card no DOM por ID conhecido
-    const map = {
-      cockpit: ['#dashboardSupremoTrigger', '.cockpit-card', '[data-section="cockpit"]'],
-      cofre:   ['#cofreTriggerBtn', '.cofre-trigger', '[data-section="cofre"]'],
-      hierarchy: ['.hier-module', '.hier-hero', '[data-section="hierarquia"]'],
-      bases:   ['.bases-module', '.bases-hero', '[data-section="bases"]'],
-      war:     ['.timeline-planet', '[data-id="fly"]'],
-    };
-    const selectors = map[panelId] || [`[data-panel="${panelId}"]`];
+  const PANEL_SELECTORS = {
+    cockpit:     ['#dashboardSupremoTrigger', '.cockpit-card', '[data-section="cockpit"]'],
+    cofre:       ['#cofreTriggerBtn', '.cofre-trigger', '[data-section="cofre"]'],
+    hierarchy:   ['.hier-module', '.hier-hero', '[data-section="hierarquia"]'],
+    bases:       ['.bases-module', '.bases-hero', '[data-section="bases"]'],
+    sellers:     ['#sel-list', '#sel-kpis'],
+    influencers: ['#inf-list', '#inf-kpis'],
+    metas:       ['#met-list', '#met-kpis'],
+    war:         ['.timeline-planet', '[data-id="fly"]'],
+    tasks:       ['[data-section="tasks"]'],
+  };
+
+  function pulsePanel(panelId, opts = {}) {
+    if (!panelId) return;
+    // suporta "product:Billionaire" → tenta matchar
+    const key = String(panelId).split(':')[0];
+    const selectors = PANEL_SELECTORS[key] || [`[data-panel="${panelId}"]`];
+    const targets = new Set();
     for (const sel of selectors) {
-      document.querySelectorAll(sel).forEach(el => targets.push(el));
+      document.querySelectorAll(sel).forEach(el => targets.add(el));
     }
     targets.forEach(el => {
       el.classList.add('fly-cascade-pulse');
@@ -696,9 +702,17 @@
     });
   }
 
-  // Listener global pra animar tudo que receber pulse
+  // Listener global — pulse imediato (uso solto)
   window.addEventListener('fly:panel-pulse', (e) => {
     pulsePanel(e?.detail?.panel);
+  });
+
+  // Listener pra cascata completa — pulsa painéis EM SEQUÊNCIA (onda visual)
+  window.addEventListener('fly:cascade-completed', (e) => {
+    const panels = e?.detail?.panels_updated || [];
+    panels.forEach((p, i) => {
+      setTimeout(() => pulsePanel(p), i * 180);
+    });
   });
 
   /* =====================================================================

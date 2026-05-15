@@ -983,3 +983,52 @@
   padding: 12px 0;
   margin: 0;
 }
+
+/* ==================================================================
+   💡 SUGESTÕES INTELIGENTES (painel no James)
+   ================================================================== */
+.jms-suggestions-section {
+  padding: 0 16px 12px;
+  margin-top: 6px;
+}
+.jms-suggestions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(245, 182, 66, 0.12);
+}
+.jms-suggestions-title {
+  font-size: 9.5px;
+  letter-spacing: 1.4px;
+  font-weight: 700;
+  color: rgba(245, 182, 66, 0.7);
+  text-transform: uppercase;
+}
+.jms-suggestions-refresh {
+  background: transparent;
+  border: 1px solid rgba(245, 182, 66, 0.25);
+  color: rgba(245, 182, 66, 0.7);
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.jms-suggestions-refresh:hover {
+  background: rgba(245, 182, 66, 0.12);
+  color: var(--jms-gold);
+  transform: rotate(180deg);
+}
+.jms-suggestions-host {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.jms-suggestions-host::-webkit-scrollbar { width: 4px; }
+.jms-suggestions-host::-webkit-scrollbar-thumb { background: rgba(245,182,66,0.2); border-radius: 2px; }
