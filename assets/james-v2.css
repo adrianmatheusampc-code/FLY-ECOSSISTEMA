@@ -223,6 +223,78 @@
   50%      { opacity: 0.3; }
 }
 
+/* AI Badge */
+.jms-panel__ai-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 7px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 999px;
+  background: rgba(255, 138, 138, 0.15);
+  color: #ff8a8a;
+  border: 1px solid rgba(255, 138, 138, 0.4);
+}
+.jms-panel__ai-badge.is-real {
+  background: rgba(109, 255, 176, 0.15);
+  color: #6dffb0;
+  border-color: rgba(109, 255, 176, 0.5);
+  animation: jmsLedBlink 2s ease infinite;
+}
+
+/* Configuração IA inline */
+.jms-config {
+  padding: 14px 20px;
+  border-top: 1px solid rgba(245, 182, 66, 0.12);
+  background: rgba(245, 182, 66, 0.04);
+}
+.jms-config h4 {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(245, 182, 66, 0.85);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.jms-config small {
+  display: block;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.jms-config input {
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(245, 182, 66, 0.25);
+  border-radius: 6px;
+  color: #fff;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 11px;
+  transition: border-color 0.2s ease;
+}
+.jms-config input:focus {
+  outline: none;
+  border-color: var(--jms-gold);
+  box-shadow: 0 0 8px rgba(245, 182, 66, 0.2);
+}
+.jms-config__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.jms-config__actions .jms-btn { flex: 1; }
+.jms-config__status {
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  min-height: 16px;
+}
+
 .jms-panel__close {
   background: rgba(255, 255, 255, 0.06);
   border: none;
@@ -304,7 +376,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  padding: 14px 20px 18px;
+  padding: 14px 20px 14px;
 }
 
 .jms-btn {

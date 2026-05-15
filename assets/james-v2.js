@@ -353,22 +353,36 @@
       // Verifica encerramento ANTES de chamar IA
       if (jamesMockBrain.isStopCommand(userText)) {
         const reply = jamesMockBrain.generateJamesResponse(userText);
-        return { reply, isStop: true };
+        return { reply, isStop: true, source: 'stop' };
       }
 
+      const hasBrain = !!window.__jamesBrain;
+      const hasKeys  = hasBrain && window.__jamesBrain.isAvailable();
+      console.log('[JAMES] processCommand:', { userText, hasBrain, hasKeys });
+
       // Tenta IA real primeiro (Fase 2)
-      if (window.__jamesBrain && window.__jamesBrain.isAvailable()) {
+      if (hasKeys) {
         try {
+          handlers.onSourceChange?.('thinking-real');
           const result = await window.__jamesBrain.generateRealResponse(userText);
-          if (result && result.text) return { reply: result.text, isStop: false };
+          if (result && result.text) {
+            console.log('[JAMES] ✓ Resposta IA REAL:', result.text, 'Ações:', result.actions);
+            handlers.onSourceChange?.('real');
+            return { reply: result.text, isStop: false, source: 'real', actions: result.actions };
+          }
+          console.warn('[JAMES] IA retornou vazio, usando mock');
         } catch (e) {
-          console.warn('[JAMES] IA real falhou, usando mock:', e?.message || e);
+          console.error('[JAMES] ERRO IA real:', e?.message || e);
+          handlers.onIAError?.(e?.message || String(e));
         }
+      } else {
+        console.log('[JAMES] Sem chaves de IA — usando MOCK');
       }
 
       // Fallback: mock brain
       const reply = jamesMockBrain.generateJamesResponse(userText);
-      return { reply, isStop: false };
+      handlers.onSourceChange?.('mock');
+      return { reply, isStop: false, source: 'mock' };
     }
 
     /* ----------------- Capture loop (escuta um comando) ----------------- */
@@ -777,6 +791,7 @@
           <div class="jms-panel__status">
             <span class="jms-panel__status-led" id="jms-led"></span>
             <span id="jms-status-text">Aguardando</span>
+            <span class="jms-panel__ai-badge" id="jms-ai-badge">MOCK</span>
           </div>
         </div>
         <button class="jms-panel__close" id="jms-close" type="button" aria-label="Fechar">×</button>
@@ -801,7 +816,21 @@
       <div class="jms-panel__actions">
         <button class="jms-btn jms-btn--primary" id="jms-activate" type="button">Ativar James</button>
         <button class="jms-btn jms-btn--danger" id="jms-stop" type="button">Encerrar</button>
-        <button class="jms-btn jms-btn--ghost jms-btn--block" id="jms-fs-open" type="button">Tela Cheia</button>
+        <button class="jms-btn jms-btn--ghost" id="jms-fs-open" type="button">Tela Cheia</button>
+        <button class="jms-btn jms-btn--ghost" id="jms-config-ai" type="button">Configurar IA</button>
+      </div>
+
+      <!-- Mini-form de configuração de IA (escondido por padrão) -->
+      <div class="jms-config" id="jms-config-form" style="display:none;">
+        <h4>Conectar IA Real</h4>
+        <small>Cole sua chave do Anthropic (Claude) — preferencial — ou OpenAI:</small>
+        <input type="password" id="jms-key-anthropic" placeholder="sk-ant-..." autocomplete="off" />
+        <input type="password" id="jms-key-openai" placeholder="sk-... (opcional)" autocomplete="off" />
+        <div class="jms-config__actions">
+          <button class="jms-btn jms-btn--primary" id="jms-save-keys" type="button">Salvar e Testar</button>
+          <button class="jms-btn jms-btn--ghost" id="jms-cancel-keys" type="button">Cancelar</button>
+        </div>
+        <div class="jms-config__status" id="jms-config-status"></div>
       </div>
     `;
     container.appendChild(panel);
@@ -1010,6 +1039,18 @@
       orbEl.classList.toggle('is-on', on);
     }
 
+    // Atualiza badge IA conforme disponibilidade de chaves
+    function updateAIBadge() {
+      const badge = $('jms-ai-badge');
+      if (!badge) return;
+      const has = !!(window.__jamesBrain && window.__jamesBrain.isAvailable());
+      badge.textContent = has ? 'IA REAL' : 'MOCK';
+      badge.classList.toggle('is-real', has);
+      badge.classList.toggle('is-mock', !has);
+    }
+    updateAIBadge();
+    setInterval(updateAIBadge, 2000);
+
     // Cria o voice hook com handlers
     const voice = createJamesVoice({
       onStatusChange: updateStatusUI,
@@ -1022,6 +1063,14 @@
       onSpeakStart:   () => {},
       onSpeakEnd:     () => {},
       onError:        setError,
+      onIAError:      (msg) => { setError('IA real falhou: ' + msg + ' (usando modo simulado)'); },
+      onSourceChange: (src) => {
+        const badge = $('jms-ai-badge');
+        if (!badge) return;
+        if (src === 'thinking-real') { badge.textContent = 'PENSANDO…'; badge.classList.add('is-real'); }
+        else if (src === 'real') { badge.textContent = 'IA REAL ✓'; badge.classList.add('is-real'); }
+        else if (src === 'mock') { badge.textContent = 'MOCK'; badge.classList.remove('is-real'); badge.classList.add('is-mock'); }
+      },
       onWakeWord:     () => { setPanelOpen(true); },
       onStart:        () => {
         setError(null);
@@ -1085,6 +1134,60 @@
         voice.toggleJames();
       }
     }, true);
+
+    /* ----- Configuração de IA dentro do painel ----- */
+    const configBtn   = $('jms-config-ai');
+    const configForm  = $('jms-config-form');
+    const keyAnth     = $('jms-key-anthropic');
+    const keyOA       = $('jms-key-openai');
+    const saveKeysBtn = $('jms-save-keys');
+    const cancelKeysBtn = $('jms-cancel-keys');
+    const configStatus = $('jms-config-status');
+
+    configBtn?.addEventListener('click', () => {
+      configForm.style.display = configForm.style.display === 'none' ? 'block' : 'none';
+      // Pré-popula com chaves atuais (mascaradas)
+      if (window.__jamesBrain) {
+        const k = window.__jamesBrain.getKeys();
+        keyAnth.value = k.anthropic || '';
+        keyOA.value = k.openai || '';
+      }
+    });
+
+    cancelKeysBtn?.addEventListener('click', () => {
+      configForm.style.display = 'none';
+      configStatus.textContent = '';
+    });
+
+    saveKeysBtn?.addEventListener('click', async () => {
+      const ka = keyAnth.value.trim();
+      const ko = keyOA.value.trim();
+      if (!ka && !ko) {
+        configStatus.innerHTML = '<span style="color:#ff8a8a">Cole pelo menos 1 chave (Anthropic ou OpenAI)</span>';
+        return;
+      }
+      if (window.__jamesBrain) {
+        window.__jamesBrain.setKey('anthropic', ka);
+        window.__jamesBrain.setKey('openai', ko);
+      } else {
+        if (ka) localStorage.setItem('fly_james_anthropic_key', ka);
+        if (ko) localStorage.setItem('fly_james_openai_key', ko);
+      }
+      configStatus.innerHTML = '<span style="color:#ffd770">Testando chave...</span>';
+      // Faz um teste rápido com pergunta simples
+      try {
+        const result = await window.__jamesBrain.generateRealResponse('responda apenas "ok" se você está online');
+        if (result && result.text) {
+          configStatus.innerHTML = '<span style="color:#6dffb0">✓ IA conectada! Resposta: "' + result.text.slice(0, 60) + '"</span>';
+          updateAIBadge();
+          setTimeout(() => { configForm.style.display = 'none'; configStatus.textContent = ''; }, 2500);
+        } else {
+          configStatus.innerHTML = '<span style="color:#ff8a8a">Resposta vazia. Verifique a chave.</span>';
+        }
+      } catch (e) {
+        configStatus.innerHTML = '<span style="color:#ff8a8a">Erro: ' + (e.message || e) + '</span>';
+      }
+    });
 
     // Erro: se SR não disponível
     if (!voice.hasSR) {
