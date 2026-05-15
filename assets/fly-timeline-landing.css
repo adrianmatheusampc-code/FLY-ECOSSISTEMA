@@ -1140,8 +1140,8 @@ body.admin-mode .war-map-toolbar small {
    ============================================================ */
 .dash-trigger {
   position: fixed;
-  left: 380px;     /* canto inferior esquerdo, à direita da memória */
-  bottom: 18px;
+  right: 24px;
+  bottom: 110px;   /* acima do James (que ocupa o canto) */
   z-index: 1014;
   display: flex;
   align-items: center;
@@ -5793,15 +5793,15 @@ body.admin-mode .war-map-toolbar small {
    ============================================================ */
 .fly-sync-indicator {
   position: fixed;
-  bottom: 18px;
-  left: 24px;
-  z-index: 95;
+  top: 22px;
+  left: 140px;       /* depois do cofre (24-70) e expansões (80-126) */
+  z-index: 100;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background: rgba(0,0,0,0.55);
-  border: 1px solid rgba(245,184,66,0.35);
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(245,184,66,0.45);
   border-radius: 30px;
   color: rgba(245,184,66,0.78);
   font-family: inherit;
@@ -5913,12 +5913,13 @@ body.admin-mode .war-map-toolbar small {
    ============================================================ */
 .fly-exp-trigger {
   position: fixed;
-  bottom: 18px;
-  right: 24px;
-  z-index: 95;
+  top: 18px;
+  left: 78px;
+  /* será reposicionado dinamicamente pelo JS abaixo, mas mantém fallback */
+  z-index: 100;
   width: 46px; height: 46px;
   padding: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0,0,0,0.5);
   border: 1px solid rgba(245,184,66,0.45);
   border-radius: 30px;
   color: var(--gold);
@@ -6299,7 +6300,7 @@ body.fly-exp-open .fly-exp-trigger { opacity: 0; pointer-events: none; }
 .fly-mem-bar {
   position: fixed;
   bottom: 18px;
-  left: 200px;   /* à direita do sync indicator */
+  left: 24px;
   z-index: 95;
   display: flex;
   align-items: center;

@@ -1,81 +1,49 @@
-/* =====================================================================
-   FLY DOCK — agrupa controles flutuantes do canto inferior esquerdo
-   numa caixa unificada premium (estilo command bar)
-   ===================================================================== */
-(function flyDockBoot() {
-  'use strict';
+/* fly-dock.js — Posiciona Expansões trigger ao lado do Cofre */
+(function () {
+  // Remove dock antigo se existir
+  const oldDock = document.getElementById('fly-bottom-dock-left');
+  if (oldDock) oldDock.remove();
 
-  function buildDock() {
-    if (document.getElementById('fly-bottom-dock-left')) return;
-    const dock = document.createElement('div');
-    dock.id = 'fly-bottom-dock-left';
-    dock.className = 'fly-dock';
-    dock.innerHTML = `
-      <div class="fly-dock__slot" data-slot="zoom"></div>
-      <div class="fly-dock__divider"></div>
-      <div class="fly-dock__slot" data-slot="cockpit"></div>
-      <div class="fly-dock__divider"></div>
-      <div class="fly-dock__slot" data-slot="memory"></div>
-      <div class="fly-dock__divider"></div>
-      <div class="fly-dock__slot" data-slot="sync"></div>
-    `;
-    document.body.appendChild(dock);
-    return dock;
-  }
-
-  function moveInto(dock, selector, slotName) {
-    const slot = dock.querySelector(`[data-slot="${slotName}"]`);
-    if (!slot) return false;
-    const el = typeof selector === 'string' ? document.querySelector(selector) : selector;
-    if (!el) return false;
-    if (el.dataset.flyDocked === '1') return true; // já docked
-    el.dataset.flyDocked = '1';
-    el.classList.add('fly-docked');
-    slot.appendChild(el);
-    return true;
-  }
-
-  function hideEmptyDividers(dock) {
-    // Se um slot está vazio, esconde o divider adjacente
-    const slots = dock.querySelectorAll('.fly-dock__slot');
-    slots.forEach(s => {
-      const empty = !s.querySelector(':scope > *');
-      s.classList.toggle('is-empty', empty);
+  // Restaura elementos que estavam docked (caso tenham sido movidos antes)
+  function restoreDocked() {
+    document.querySelectorAll('.fly-docked').forEach(el => {
+      el.classList.remove('fly-docked');
+      delete el.dataset.flyDocked;
+      // Move pra direto no body se ainda estiver dentro do dock
+      if (el.parentElement && el.parentElement.classList.contains('fly-dock__slot')) {
+        document.body.appendChild(el);
+      }
     });
   }
 
-  function organize() {
-    const dock = buildDock();
-
-    // Tenta mover cada elemento conhecido pro seu slot
-    moveInto(dock, '#flySyncIndicator', 'sync');
-    moveInto(dock, '#flyMemBar', 'memory');
-    moveInto(dock, '#dashboardSupremoTrigger', 'cockpit');
-
-    // Zoom controls (existe em 2 lugares possíveis)
-    const zoomEl = document.querySelector('.fly-timeline-zoom-controls');
-    if (zoomEl) moveInto(dock, zoomEl, 'zoom');
-
-    hideEmptyDividers(dock);
+  function positionExpTrigger() {
+    const exp = document.getElementById('flyExpTrigger');
+    if (!exp) return;
+    // Posiciona ao lado do botão do cofre (que está em top:18, left:24, 46x46)
+    exp.style.position = 'fixed';
+    exp.style.top = '18px';
+    exp.style.left = '80px';
+    exp.style.right = 'auto';
+    exp.style.bottom = 'auto';
+    exp.style.zIndex = '100';
   }
 
-  // Roda múltiplas vezes pra pegar elementos que ainda não foram criados
-  function startOrganizer() {
-    organize();
-    // Re-tenta nos próximos frames porque alguns elementos são criados dinamicamente
-    setTimeout(organize, 100);
-    setTimeout(organize, 500);
-    setTimeout(organize, 1500);
-    setTimeout(organize, 3000);
-
-    // Observa mudanças no body pra capturar novos elementos
-    const obs = new MutationObserver(() => organize());
-    obs.observe(document.body, { childList: true, subtree: false });
+  function run() {
+    restoreDocked();
+    positionExpTrigger();
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startOrganizer);
+    document.addEventListener('DOMContentLoaded', run);
   } else {
-    startOrganizer();
+    run();
   }
+
+  // Re-tenta caso elementos sejam criados depois
+  setTimeout(run, 100);
+  setTimeout(run, 500);
+  setTimeout(run, 1500);
+
+  const obs = new MutationObserver(() => positionExpTrigger());
+  obs.observe(document.body, { childList: true, subtree: false });
 })();
