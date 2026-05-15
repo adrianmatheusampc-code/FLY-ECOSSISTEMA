@@ -331,23 +331,130 @@
   }
 
   /* =====================================================================
-     LISTENERS · VENDAS → 18 efeitos (Fase B — stub funcional)
-     Quando Vendedores/Influencers/Metas existirem, completar.
+     LISTENERS · SELLERS / INFLUENCERS / METAS
   ===================================================================== */
+  function onSellerCreated(seller) {
+    if (!seller) return;
+    const c = loadCockpit();
+    c.sellers_count = (c.sellers_count || 0) + 1;
+    saveCockpit(c);
+    logCascadeStep({
+      event: 'fly:seller-created', panel: 'cockpit', action: 'increment',
+      detail: `sellers +1 (${seller.nome})`,
+    });
+  }
+
+  function onSellerDeleted(seller) {
+    if (!seller) return;
+    const c = loadCockpit();
+    c.sellers_count = Math.max(0, (c.sellers_count || 0) - 1);
+    saveCockpit(c);
+    logCascadeStep({
+      event: 'fly:seller-deleted', panel: 'cockpit', action: 'decrement',
+      detail: `sellers -1 (${seller.nome})`,
+    });
+  }
+
+  function onInfluencerCreated(inf) {
+    if (!inf) return;
+    const c = loadCockpit();
+    c.influencers_count = (c.influencers_count || 0) + 1;
+    saveCockpit(c);
+    logCascadeStep({
+      event: 'fly:influencer-created', panel: 'cockpit', action: 'increment',
+      detail: `influencers +1 (${inf.handle || inf.nome})`,
+    });
+  }
+
+  function onInfluencerDeleted(inf) {
+    if (!inf) return;
+    const c = loadCockpit();
+    c.influencers_count = Math.max(0, (c.influencers_count || 0) - 1);
+    saveCockpit(c);
+    logCascadeStep({
+      event: 'fly:influencer-deleted', panel: 'cockpit', action: 'decrement',
+      detail: `influencers -1 (${inf.handle || inf.nome})`,
+    });
+  }
+
+  function onMetaCreated(meta) {
+    if (!meta) return;
+    const c = loadCockpit();
+    c.metas_count = (c.metas_count || 0) + 1;
+    saveCockpit(c);
+    logCascadeStep({
+      event: 'fly:meta-created', panel: 'cockpit', action: 'increment',
+      detail: `metas +1 (${meta.nome})`,
+    });
+  }
+
+  function onMetaReached(meta) {
+    if (!meta) return;
+    emitDom('fly:cascade-suggestion', {
+      source: 'meta-reached',
+      panel: 'metas',
+      message: `🎯 Meta "${meta.nome}" BATIDA! Realizado R$ ${(meta.realizado || 0).toLocaleString('pt-BR')}.`,
+      payload: { meta_id: meta.id, nome: meta.nome },
+    });
+    logCascadeStep({
+      event: 'fly:meta-reached', panel: 'metas', action: 'celebrate',
+      detail: `Meta ${meta.nome} BATIDA`,
+    });
+  }
+
+  /* =====================================================================
+     LISTENERS · VENDA → CASCATA COMPLETA (18 efeitos)
+     Quando uma venda é registrada, propaga para TODOS os painéis
+     correlacionados (cockpit, produto, cofre, vendedor, influencer,
+     metas globais/produto/vendedor, cliente, CRM, tasks).
+  ===================================================================== */
+  function _findSellerByName(name) {
+    if (!name) return null;
+    const sellers = readJSON(modeKey('fly_sellers_v1'), []);
+    const n = String(name).toLowerCase();
+    return sellers.find(s => (s.nome || '').toLowerCase().includes(n));
+  }
+
+  function _findInfluencerByHandle(handle) {
+    if (!handle) return null;
+    const list = readJSON(modeKey('fly_influencers_v1'), []);
+    const h = String(handle).toLowerCase().replace('@', '');
+    return list.find(i =>
+      (i.handle || '').toLowerCase().replace('@','') === h ||
+      (i.nome   || '').toLowerCase().includes(h)
+    );
+  }
+
+  function _parseInfluencerFromSale(sale) {
+    if (!sale.influencer) {
+      // Detecta padrão "Influencer:@handle" ou "@handle" no origin
+      const m = String(sale.origin || '').match(/(?:influencer:)?@?([\w._-]+)/i);
+      if (m && /influencer/i.test(sale.origin || '')) return m[1];
+    }
+    return sale.influencer || null;
+  }
+
+  function _calcInfluencerCommission(inf, value) {
+    if (!inf) return 0;
+    if (inf.comissao_modelo === 'fixo') return Number(inf.comissao_fixa) || 0;
+    if (inf.comissao_modelo === 'hibrido') {
+      return (Number(inf.comissao_fixa) || 0) + (value * (Number(inf.comissao_percent) || 0) / 100);
+    }
+    return value * (Number(inf.comissao_percent) || 0) / 100;
+  }
+
   function onSaleRecorded(sale) {
     if (!sale) return;
-    const value = Number(sale.amount) || 0;
+    const value  = Number(sale.amount) || 0;
     const profit = Number(sale.profit) || (value * 0.4);
 
     // 1) COCKPIT
     const c = loadCockpit();
     c.total_revenue += value;
-    c.sales_count += 1;
+    c.sales_count   += 1;
     saveCockpit(c);
     logCascadeStep({
-      event: 'fly:sale-recorded',
-      panel: 'cockpit',
-      action: 'increment',
+      event: 'fly:sale-recorded', panel: 'cockpit', action: 'increment',
       detail: `receita +R$ ${value.toLocaleString('pt-BR')}; vendas +1`,
     });
 
@@ -356,60 +463,174 @@
       const pmKey = modeKey('fly_product_metrics_v1');
       const pm = readJSON(pmKey, {});
       if (!pm[sale.product]) pm[sale.product] = { sales: 0, revenue: 0 };
-      pm[sale.product].sales += 1;
+      pm[sale.product].sales   += 1;
       pm[sale.product].revenue += value;
       pm[sale.product].updated_at = new Date().toISOString();
       writeJSON(pmKey, pm);
       emitDom('fly:panel-pulse', { panel: 'product:' + sale.product });
       logCascadeStep({
-        event: 'fly:sale-recorded',
-        panel: 'product',
-        action: 'increment',
+        event: 'fly:sale-recorded', panel: 'product', action: 'increment',
         detail: `${sale.product}: +1 venda, +R$ ${value.toLocaleString('pt-BR')}`,
       });
     }
 
-    // 3) COFRE: receita
+    // 3) COFRE — receita
     addCofreMovement({
-      type: 'income',
-      amount: value,
+      type: 'income', amount: value,
       description: `Venda — ${sale.product || 'Pacote'} para ${sale.name || 'cliente'}`,
       category: 'venda',
       source_event: 'fly:sale-recorded',
       source_entity_id: sale.id,
     });
     logCascadeStep({
-      event: 'fly:sale-recorded',
-      panel: 'cofre',
-      action: 'add_movement',
+      event: 'fly:sale-recorded', panel: 'cofre', action: 'add_income',
       detail: `receita R$ ${value.toLocaleString('pt-BR')}`,
     });
 
-    // 4) VENDEDOR (stub — quando módulo existir)
-    if (sale.seller) {
+    // 4) VENDEDOR — encontra, atualiza vendido + comissão
+    const seller = _findSellerByName(sale.seller || sale.seller_name);
+    if (seller) {
+      const sellers = readJSON(modeKey('fly_sellers_v1'), []);
+      const idx = sellers.findIndex(s => s.id === seller.id);
+      if (idx >= 0) {
+        const commission = value * (Number(sellers[idx].comissao_percent) || 0) / 100;
+        sellers[idx].vendido_mes        = (sellers[idx].vendido_mes        || 0) + value;
+        sellers[idx].vendido_total      = (sellers[idx].vendido_total      || 0) + value;
+        sellers[idx].vendas_count       = (sellers[idx].vendas_count       || 0) + 1;
+        sellers[idx].comissao_acumulada = (sellers[idx].comissao_acumulada || 0) + commission;
+        sellers[idx].updated_at = new Date().toISOString();
+        writeJSON(modeKey('fly_sellers_v1'), sellers);
+        emitDom('fly:panel-pulse', { panel: 'sellers' });
+        logCascadeStep({
+          event: 'fly:sale-recorded', panel: 'sellers', action: 'attribute',
+          detail: `${sellers[idx].nome}: +R$ ${value.toLocaleString('pt-BR')}, comissão +R$ ${commission.toLocaleString('pt-BR')}`,
+        });
+        // 5) COFRE — comissão devida ao vendedor
+        addCofreMovement({
+          type: 'expense', amount: commission,
+          description: `Comissão (vendedor) — ${sellers[idx].nome} · venda ${sale.product || ''}`.trim(),
+          category: 'comissao_vendedor',
+          source_event: 'fly:sale-recorded',
+          source_entity_id: sale.id,
+        });
+      }
+    } else if (sale.seller) {
       emitDom('fly:cascade-suggestion', {
-        source: 'sale-recorded',
-        panel: 'sellers',
-        message: `Vendedor ${sale.seller} ainda não tem cadastro. Quer criar?`,
+        source: 'sale-recorded', panel: 'sellers',
+        message: `Vendedor "${sale.seller}" não cadastrado. Quer criar?`,
         payload: { name: sale.seller },
       });
     }
 
-    // 5) INFLUENCER (stub — quando módulo existir)
-    if (/^influencer:/i.test(sale.origin || '')) {
-      const handle = sale.origin.replace(/^influencer:/i, '').trim();
+    // 6) INFLUENCER — encontra, atualiza vendas + comissão
+    const infHandle = _parseInfluencerFromSale(sale);
+    const inf = _findInfluencerByHandle(infHandle);
+    if (inf) {
+      const list = readJSON(modeKey('fly_influencers_v1'), []);
+      const idx = list.findIndex(i => i.id === inf.id);
+      if (idx >= 0) {
+        const commission = _calcInfluencerCommission(list[idx], value);
+        list[idx].vendas_count       = (list[idx].vendas_count       || 0) + 1;
+        list[idx].vendido_total      = (list[idx].vendido_total      || 0) + value;
+        list[idx].comissao_acumulada = (list[idx].comissao_acumulada || 0) + commission;
+        list[idx].updated_at = new Date().toISOString();
+        writeJSON(modeKey('fly_influencers_v1'), list);
+        emitDom('fly:panel-pulse', { panel: 'influencers' });
+        logCascadeStep({
+          event: 'fly:sale-recorded', panel: 'influencers', action: 'attribute',
+          detail: `${list[idx].handle}: +1 venda, comissão +R$ ${commission.toLocaleString('pt-BR')}`,
+        });
+        // 7) COFRE — comissão devida ao influencer
+        addCofreMovement({
+          type: 'expense', amount: commission,
+          description: `Comissão (influencer) — ${list[idx].handle} · venda ${sale.product || ''}`.trim(),
+          category: 'comissao_influencer',
+          source_event: 'fly:sale-recorded',
+          source_entity_id: sale.id,
+        });
+      }
+    } else if (infHandle) {
       emitDom('fly:cascade-suggestion', {
-        source: 'sale-recorded',
-        panel: 'influencers',
-        message: `Influencer ${handle} gerou venda. Cadastrar para gerar comissão?`,
-        payload: { handle, sale_id: sale.id, value },
+        source: 'sale-recorded', panel: 'influencers',
+        message: `Influencer @${infHandle} não cadastrado. Quer criar pra gerar comissão?`,
+        payload: { handle: infHandle, sale_id: sale.id, value },
       });
     }
+
+    // 8) METAS — atualiza progresso de todas as metas que matcham essa venda
+    const metas = readJSON(modeKey('fly_metas_v1'), []);
+    let metasAlteradas = 0;
+    let metasBatidas = [];
+    metas.forEach(m => {
+      if (m.status !== 'ativa') return;
+      // Filtra por escopo
+      let matches = false;
+      if (m.escopo === 'empresa') matches = true;
+      else if (m.escopo === 'produto'   && m.escopo_id === sale.product)        matches = true;
+      else if (m.escopo === 'produto'   && m.escopo_nome === sale.product)      matches = true;
+      else if (m.escopo === 'vendedor'  && seller && (m.escopo_id === seller.id || m.escopo_nome === seller.nome)) matches = true;
+      else if (m.escopo === 'influencer' && inf && (m.escopo_id === inf.id || m.escopo_nome === inf.handle))     matches = true;
+      if (!matches) return;
+      // Filtra por período
+      if (m.data_inicio && new Date(sale.created_at || Date.now()) < new Date(m.data_inicio)) return;
+      if (m.data_fim    && new Date(sale.created_at || Date.now()) > new Date(m.data_fim))    return;
+      // Soma realizado conforme tipo
+      if (m.tipo === 'receita' || m.tipo === 'lucro') {
+        m.realizado = (m.realizado || 0) + (m.tipo === 'lucro' ? profit : value);
+      } else if (m.tipo === 'vendas') {
+        m.realizado = (m.realizado || 0) + 1;
+      }
+      m.updated_at = new Date().toISOString();
+      metasAlteradas++;
+      // Detecta batida
+      if (m.alvo > 0 && m.realizado >= m.alvo) {
+        m.status = 'batida';
+        metasBatidas.push(m);
+      }
+    });
+    if (metasAlteradas > 0) {
+      writeJSON(modeKey('fly_metas_v1'), metas);
+      emitDom('fly:panel-pulse', { panel: 'metas' });
+      logCascadeStep({
+        event: 'fly:sale-recorded', panel: 'metas', action: 'progress',
+        detail: `${metasAlteradas} meta(s) atualizadas${metasBatidas.length ? `; ${metasBatidas.length} BATIDA(s)` : ''}`,
+      });
+      metasBatidas.forEach(m => onMetaReached(m));
+    }
+
+    // 9) TAREFAS de pós-venda
+    const taskKey = modeKey('fly_tasks_v1');
+    const tasks = readJSON(taskKey, []);
+    const baseTasks = [
+      { titulo: `Enviar contrato — ${sale.name || 'cliente'}`,    tipo: 'contrato',  prazo_dias: 1 },
+      { titulo: `Solicitar documentos — ${sale.name || 'cliente'}`, tipo: 'documentos', prazo_dias: 3 },
+      { titulo: `Onboarding — ${sale.name || 'cliente'}`,          tipo: 'onboarding', prazo_dias: 7 },
+    ];
+    baseTasks.forEach(bt => {
+      const due = new Date(); due.setDate(due.getDate() + bt.prazo_dias);
+      tasks.unshift({
+        id: uuid('task_'),
+        titulo: bt.titulo,
+        tipo:   bt.tipo,
+        cliente_nome: sale.name || null,
+        produto: sale.product || null,
+        sale_id: sale.id,
+        prazo: due.toISOString().slice(0, 10),
+        status: 'pendente',
+        created_at: new Date().toISOString(),
+        created_by: 'cascade',
+      });
+    });
+    writeJSON(taskKey, tasks);
+    logCascadeStep({
+      event: 'fly:sale-recorded', panel: 'tasks', action: 'add',
+      detail: `${baseTasks.length} tarefas de pós-venda criadas`,
+    });
 
     emitDom('fly:cascade-completed', {
       event: 'fly:sale-recorded',
       entity: sale,
-      panels_updated: ['cockpit', 'product_metrics', 'cofre'],
+      panels_updated: ['cockpit', 'product_metrics', 'cofre', 'sellers', 'influencers', 'metas', 'tasks'],
     });
   }
 
@@ -424,6 +645,12 @@
     'fly:base-status-active':  [onBaseStatusActive],
     'fly:base-deleted':        [onBaseDeleted],
     'fly:sale-recorded':       [onSaleRecorded],
+    'fly:seller-created':      [onSellerCreated],
+    'fly:seller-deleted':      [onSellerDeleted],
+    'fly:influencer-created':  [onInfluencerCreated],
+    'fly:influencer-deleted':  [onInfluencerDeleted],
+    'fly:meta-created':        [onMetaCreated],
+    'fly:meta-reached':        [onMetaReached],
   };
 
   function emit(eventName, payload) {
@@ -513,6 +740,9 @@
       onEmployeeCreated, onEmployeeUpdated, onEmployeeDeleted,
       onBaseCreated, onBaseStatusActive, onBaseDeleted,
       onSaleRecorded,
+      onSellerCreated, onSellerDeleted,
+      onInfluencerCreated, onInfluencerDeleted,
+      onMetaCreated, onMetaReached,
     },
   };
 

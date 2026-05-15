@@ -49,6 +49,7 @@
     }));
   }
   function getMode() { return localStorage.getItem('fly_data_mode') || 'demo'; }
+  function modeKey(base) { return `${base}_${getMode()}`; }
 
   /* =====================================================================
      PANEL TYPE 1 · HIERARCHY
@@ -224,11 +225,254 @@
   };
 
   /* =====================================================================
+     PANEL TYPE 3 · SELLERS (Vendedores / Rede Comercial)
+  ===================================================================== */
+  const SELLERS_TYPE = {
+    id: 'sellers',
+    name: 'Vendedores',
+    icon: '🏆',
+    description: 'Rede comercial: vendedores com comissão %, meta, ranking, total vendido.',
+
+    tabs: [
+      { id: 'lista',     label: 'Vendedores' },
+      { id: 'ranking',   label: 'Ranking' },
+      { id: 'comissoes', label: 'Comissões' },
+      { id: 'metas',     label: 'Metas Individuais' },
+    ],
+
+    kpis: [
+      { id: 'total',          label: 'Vendedores',      compute: (data) => data.length },
+      { id: 'ativos',         label: 'Ativos',          compute: (data) => data.filter(s => s.status === 'ativo').length },
+      { id: 'vendido_mes',    label: 'Vendido no Mês',  compute: (data) => data.reduce((s, x) => s + (x.vendido_mes || 0), 0), format: 'money' },
+      { id: 'comissao_total', label: 'Comissão Total',  compute: (data) => data.reduce((s, x) => s + (x.comissao_acumulada || 0), 0), format: 'money' },
+    ],
+
+    entity_schema: {
+      id:                  { type: 'string', required: true, primaryKey: true },
+      nome:                { type: 'string', required: true },
+      email:               { type: 'string' },
+      telefone:            { type: 'string' },
+      cidade:              { type: 'string' },
+      cargo:               { type: 'string', default: 'Vendedor' },
+      nivel:               { type: 'enum', options: ['junior','pleno','senior','coordenador'] },
+      status:              { type: 'enum', options: ['ativo','ferias','inativo'], default: 'ativo' },
+      comissao_percent:    { type: 'number', default: 5,  description: '% sobre venda' },
+      meta_mes:            { type: 'number', default: 0 },
+      vendido_mes:         { type: 'number', default: 0 },
+      vendido_total:       { type: 'number', default: 0 },
+      vendas_count:        { type: 'number', default: 0 },
+      comissao_acumulada:  { type: 'number', default: 0 },
+      ranking:             { type: 'number' },
+      employee_id:         { type: 'string', description: 'vínculo opcional com funcionário da Hierarquia' },
+    },
+
+    data_source: {
+      ls_key:    'fly_sellers_v1',
+      modeAware: true,
+    },
+
+    triggers: {
+      create: ['cadastra vendedor', 'novo vendedor', 'adiciona vendedor', 'cria vendedor'],
+      update: ['promove vendedor', 'atualiza vendedor', 'muda comissao', 'altera meta'],
+      query:  ['ranking de vendedores', 'top vendedor', 'quanto vendeu', 'comissao do'],
+    },
+
+    correlations: {
+      on_create: [
+        { panel: 'cockpit',   field: 'sellers_count',      op: 'increment', amount: 1 },
+      ],
+      on_sale_received: [
+        { panel: 'self',      field: 'vendido_mes',        op: 'add',       amount: 'sale.amount' },
+        { panel: 'self',      field: 'vendido_total',      op: 'add',       amount: 'sale.amount' },
+        { panel: 'self',      field: 'vendas_count',       op: 'increment', amount: 1 },
+        { panel: 'self',      field: 'comissao_acumulada', op: 'add',       amount: 'sale.amount * comissao_percent / 100' },
+        { panel: 'cofre',     field: 'comissoes_devidas',  op: 'add',       amount: 'comissao' },
+      ],
+    },
+
+    example_commands: [
+      'James, cadastra vendedor Lucas Borges, comissão 8%, meta mensal 100 mil',
+      'James, qual o ranking de vendedores?',
+      'James, quanto o Lucas vendeu este mês?',
+    ],
+  };
+
+  /* =====================================================================
+     PANEL TYPE 4 · INFLUENCERS (Parceiros estratégicos)
+  ===================================================================== */
+  const INFLUENCERS_TYPE = {
+    id: 'influencers',
+    name: 'Influenciadores',
+    icon: '⭐',
+    description: 'Influencers/parceiros com @, comissão %, vendas geradas, ranking.',
+
+    tabs: [
+      { id: 'lista',     label: 'Influenciadores' },
+      { id: 'ranking',   label: 'Ranking' },
+      { id: 'comissoes', label: 'Comissões a Pagar' },
+      { id: 'campanhas', label: 'Campanhas Ativas' },
+    ],
+
+    kpis: [
+      { id: 'total',          label: 'Influencers',     compute: (data) => data.length },
+      { id: 'ativos',         label: 'Ativos',          compute: (data) => data.filter(i => i.status === 'ativo').length },
+      { id: 'vendas_geradas', label: 'Vendas Geradas',  compute: (data) => data.reduce((s, x) => s + (x.vendas_count || 0), 0) },
+      { id: 'comissao_total', label: 'Comissão Total',  compute: (data) => data.reduce((s, x) => s + (x.comissao_acumulada || 0), 0), format: 'money' },
+    ],
+
+    entity_schema: {
+      id:                  { type: 'string', required: true, primaryKey: true },
+      nome:                { type: 'string', required: true },
+      handle:              { type: 'string', required: true, description: '@usuario' },
+      plataforma:          { type: 'enum', options: ['Instagram','TikTok','YouTube','Twitter','Facebook','Outro'], default: 'Instagram' },
+      seguidores:          { type: 'number', default: 0 },
+      tier:                { type: 'enum', options: ['nano','micro','mid','macro','mega'] },
+      categoria:           { type: 'string', description: 'Lifestyle, Travel, etc' },
+      cidade:              { type: 'string' },
+      email:               { type: 'string' },
+      telefone:            { type: 'string' },
+      status:              { type: 'enum', options: ['ativo','negociando','pausado','encerrado'], default: 'ativo' },
+      comissao_percent:    { type: 'number', default: 10, description: '% sobre vendas atribuídas' },
+      comissao_modelo:     { type: 'enum', options: ['percent','fixo','hibrido'], default: 'percent' },
+      comissao_fixa:       { type: 'number', default: 0 },
+      vendas_count:        { type: 'number', default: 0 },
+      vendido_total:       { type: 'number', default: 0 },
+      comissao_acumulada:  { type: 'number', default: 0 },
+      comissao_paga:       { type: 'number', default: 0 },
+      leads_gerados:       { type: 'number', default: 0 },
+      contrato_validade:   { type: 'date' },
+      observacoes:         { type: 'string' },
+    },
+
+    data_source: {
+      ls_key:    'fly_influencers_v1',
+      modeAware: true,
+    },
+
+    triggers: {
+      create: ['cadastra influencer', 'cadastra influenciador', 'novo influencer', 'novo parceiro'],
+      update: ['atualiza influencer', 'paga comissao', 'pausa influencer'],
+      query:  ['top influencer', 'ranking de influencers', 'quanto deve pra'],
+    },
+
+    correlations: {
+      on_create: [
+        { panel: 'cockpit',   field: 'influencers_count',  op: 'increment', amount: 1 },
+      ],
+      on_sale_attributed: [
+        { panel: 'self',      field: 'vendas_count',       op: 'increment', amount: 1 },
+        { panel: 'self',      field: 'vendido_total',      op: 'add',       amount: 'sale.amount' },
+        { panel: 'self',      field: 'comissao_acumulada', op: 'compute',   formula: 'comissao_modelo' },
+        { panel: 'cofre',     field: 'comissoes_devidas',  op: 'add',       amount: 'comissao' },
+      ],
+    },
+
+    example_commands: [
+      'James, cadastra influencer @joaodubai, Instagram, 250 mil seguidores, comissão 12%',
+      'James, qual o top influencer?',
+      'James, quanto a gente deve pro @joaodubai?',
+    ],
+  };
+
+  /* =====================================================================
+     PANEL TYPE 5 · METAS
+  ===================================================================== */
+  const METAS_TYPE = {
+    id: 'metas',
+    name: 'Metas',
+    icon: '🎯',
+    description: 'Metas globais, por produto, por vendedor, por período — com progresso automático.',
+
+    tabs: [
+      { id: 'globais',    label: 'Metas Globais' },
+      { id: 'produtos',   label: 'Por Produto' },
+      { id: 'vendedores', label: 'Por Vendedor' },
+      { id: 'historico',  label: 'Histórico' },
+    ],
+
+    kpis: [
+      { id: 'total',         label: 'Metas Ativas',    compute: (data) => data.filter(m => m.status === 'ativa').length },
+      { id: 'batidas',       label: 'Batidas',         compute: (data) => data.filter(m => (m.realizado || 0) >= (m.alvo || 0) && m.alvo > 0).length },
+      { id: 'em_risco',      label: 'Em Risco',        compute: (data) => data.filter(m => m.status === 'ativa' && progressOf(m) < 0.5 && daysLeft(m) < 15).length },
+      { id: 'progresso_med', label: 'Progresso Médio', compute: (data) => {
+        const ativas = data.filter(m => m.status === 'ativa' && m.alvo > 0);
+        if (!ativas.length) return '0%';
+        const avg = ativas.reduce((s, m) => s + Math.min(1, (m.realizado || 0) / m.alvo), 0) / ativas.length;
+        return Math.round(avg * 100) + '%';
+      }},
+    ],
+
+    entity_schema: {
+      id:           { type: 'string', required: true, primaryKey: true },
+      nome:         { type: 'string', required: true, description: 'Ex: "Meta de Receita Mensal"' },
+      escopo:       { type: 'enum', options: ['empresa','produto','vendedor','influencer','base'], required: true },
+      escopo_id:    { type: 'string', description: 'id do produto/vendedor/etc (vazio se escopo=empresa)' },
+      escopo_nome:  { type: 'string' },
+      tipo:         { type: 'enum', options: ['receita','vendas','clientes','lucro','custom'], required: true },
+      periodo:      { type: 'enum', options: ['diaria','semanal','mensal','trimestral','anual','custom'], default: 'mensal' },
+      data_inicio:  { type: 'date' },
+      data_fim:     { type: 'date' },
+      alvo:         { type: 'number', required: true, description: 'Valor a bater' },
+      realizado:    { type: 'number', default: 0 },
+      unidade:      { type: 'enum', options: ['BRL','count','percent'], default: 'BRL' },
+      status:       { type: 'enum', options: ['ativa','batida','perdida','pausada','arquivada'], default: 'ativa' },
+      responsavel:  { type: 'string' },
+      observacoes:  { type: 'string' },
+    },
+
+    data_source: {
+      ls_key:    'fly_metas_v1',
+      modeAware: true,
+    },
+
+    triggers: {
+      create: ['cria meta', 'nova meta', 'define meta', 'estabelece meta'],
+      update: ['atualiza meta', 'pausa meta', 'arquiva meta'],
+      query:  ['quanto falta pra bater', 'progresso da meta', 'metas em risco', 'minhas metas'],
+    },
+
+    correlations: {
+      on_create: [
+        { panel: 'cockpit', field: 'metas_count', op: 'increment', amount: 1 },
+      ],
+      on_sale_recorded: [
+        { panel: 'self', field: 'realizado', op: 'add', amount: 'sale.amount', filter: 'matches escopo' },
+      ],
+      on_target_reached: [
+        { panel: 'self', field: 'status', op: 'set', value: 'batida' },
+      ],
+    },
+
+    example_commands: [
+      'James, cria meta de receita mensal de 500 mil',
+      'James, define meta de Dubai Explorer pra 50 vendas',
+      'James, meta do Lucas é 100 mil este mês',
+      'James, quanto falta pra bater a meta de receita?',
+      'James, quais metas estão em risco?',
+    ],
+  };
+
+  // Helpers para computar progresso de metas
+  function progressOf(m) {
+    if (!m || !m.alvo) return 0;
+    return (m.realizado || 0) / m.alvo;
+  }
+  function daysLeft(m) {
+    if (!m?.data_fim) return 9999;
+    const fim = new Date(m.data_fim);
+    const now = new Date();
+    return Math.max(0, Math.ceil((fim - now) / (1000 * 60 * 60 * 24)));
+  }
+
+  /* =====================================================================
      REGISTRY
   ===================================================================== */
   const PANEL_TYPES = {
-    hierarchy: HIERARCHY_TYPE,
-    bases:     BASES_TYPE,
+    hierarchy:    HIERARCHY_TYPE,
+    bases:        BASES_TYPE,
+    sellers:      SELLERS_TYPE,
+    influencers:  INFLUENCERS_TYPE,
+    metas:        METAS_TYPE,
   };
 
   /* =====================================================================
@@ -457,6 +701,269 @@
     };
   }
 
+  /* -------------------- SELLERS HANDLERS -------------------- */
+  function _loadSellers() { return readJSON(modeKey('fly_sellers_v1'), []); }
+  function _saveSellers(arr) {
+    writeJSON(modeKey('fly_sellers_v1'), arr);
+    try { window.__flySync?.push?.('sellers', { id: 'sellers_singleton', data_mode: getMode(), payload: arr }); } catch (e) {}
+    dispatchUpdate({ entity: 'seller', action: 'update' });
+    dispatchPanelUpdate('sellers', 'update', null);
+  }
+
+  function createSeller(params) {
+    if (!params.nome) return { ok: false, msg: 'Nome do vendedor é obrigatório.' };
+    const list = _loadSellers();
+    const seller = {
+      id:                 params.id || uuid('sel_'),
+      nome:               params.nome,
+      email:              params.email || '',
+      telefone:           params.telefone || '',
+      cidade:             params.cidade || '',
+      cargo:              params.cargo || 'Vendedor',
+      nivel:              params.nivel || 'pleno',
+      status:             params.status || 'ativo',
+      comissao_percent:   Number(params.comissao_percent) || 5,
+      meta_mes:           Number(params.meta_mes) || 0,
+      vendido_mes:        0,
+      vendido_total:      0,
+      vendas_count:       0,
+      comissao_acumulada: 0,
+      ranking:            null,
+      employee_id:        params.employee_id || null,
+      created_at:         new Date().toISOString(),
+      created_by:         'james',
+    };
+    list.unshift(seller);
+    _saveSellers(list);
+    return { ok: true, msg: `Vendedor ${seller.nome} cadastrado (${seller.comissao_percent}% comissão${seller.meta_mes ? `, meta R$ ${seller.meta_mes.toLocaleString('pt-BR')}/mês` : ''}).`, data: seller };
+  }
+
+  function updateSeller(params) {
+    if (!params.nome && !params.id) return { ok: false, msg: 'Nome ou ID necessário.' };
+    const list = _loadSellers();
+    const matchById = params.id ? (s) => s.id === params.id : null;
+    const matchByName = (s) => (s.nome || '').toLowerCase().includes(String(params.nome || '').toLowerCase());
+    const idx = list.findIndex(matchById || matchByName);
+    if (idx < 0) return { ok: false, msg: `Vendedor "${params.nome || params.id}" não encontrado.` };
+    const updates = {};
+    ['cargo','nivel','status','comissao_percent','meta_mes','email','telefone','cidade','employee_id'].forEach(k => {
+      if (params[k] !== undefined && params[k] !== null) updates[k] = params[k];
+    });
+    Object.assign(list[idx], updates, { updated_at: new Date().toISOString() });
+    _saveSellers(list);
+    return { ok: true, msg: `${list[idx].nome} atualizado.`, data: list[idx] };
+  }
+
+  function listSellers(params) {
+    const list = _loadSellers().filter(s => {
+      if (params?.status && s.status !== params.status) return false;
+      return true;
+    }).sort((a, b) => (b.vendido_mes || 0) - (a.vendido_mes || 0));
+    return { ok: true, msg: `${list.length} vendedor(es).`, data: list };
+  }
+
+  function querySellersKpi() {
+    const list = _loadSellers();
+    const total = list.length;
+    const ativos = list.filter(s => s.status === 'ativo').length;
+    const vendido = list.reduce((s, x) => s + (x.vendido_mes || 0), 0);
+    const comissao = list.reduce((s, x) => s + (x.comissao_acumulada || 0), 0);
+    const top = [...list].sort((a, b) => (b.vendido_mes || 0) - (a.vendido_mes || 0))[0];
+    return {
+      ok: true,
+      msg: `Chefe, ${total} vendedor(es) (${ativos} ativos). Vendido no mês: R$ ${vendido.toLocaleString('pt-BR')}. Comissões acumuladas: R$ ${comissao.toLocaleString('pt-BR')}.${top ? ` Top: ${top.nome} (R$ ${(top.vendido_mes || 0).toLocaleString('pt-BR')}).` : ''}`,
+      data: { total, ativos, vendido, comissao, top },
+    };
+  }
+
+  /* -------------------- INFLUENCERS HANDLERS -------------------- */
+  function _loadInfluencers() { return readJSON(modeKey('fly_influencers_v1'), []); }
+  function _saveInfluencers(arr) {
+    writeJSON(modeKey('fly_influencers_v1'), arr);
+    try { window.__flySync?.push?.('influencers', { id: 'influencers_singleton', data_mode: getMode(), payload: arr }); } catch (e) {}
+    dispatchUpdate({ entity: 'influencer', action: 'update' });
+    dispatchPanelUpdate('influencers', 'update', null);
+  }
+
+  function createInfluencer(params) {
+    if (!params.nome && !params.handle) return { ok: false, msg: 'Nome ou @ do influencer é obrigatório.' };
+    const list = _loadInfluencers();
+    const inf = {
+      id:                 params.id || uuid('inf_'),
+      nome:               params.nome || params.handle,
+      handle:             params.handle || params.nome,
+      plataforma:         params.plataforma || 'Instagram',
+      seguidores:         Number(params.seguidores) || 0,
+      tier:               params.tier || _autoTier(Number(params.seguidores) || 0),
+      categoria:          params.categoria || '',
+      cidade:             params.cidade || '',
+      email:              params.email || '',
+      telefone:           params.telefone || '',
+      status:             params.status || 'ativo',
+      comissao_percent:   Number(params.comissao_percent) || 10,
+      comissao_modelo:    params.comissao_modelo || 'percent',
+      comissao_fixa:     Number(params.comissao_fixa) || 0,
+      vendas_count:       0,
+      vendido_total:      0,
+      comissao_acumulada: 0,
+      comissao_paga:      0,
+      leads_gerados:      Number(params.leads_gerados) || 0,
+      contrato_validade:  params.contrato_validade || null,
+      observacoes:        params.observacoes || '',
+      created_at:         new Date().toISOString(),
+      created_by:         'james',
+    };
+    list.unshift(inf);
+    _saveInfluencers(list);
+    return { ok: true, msg: `Influencer ${inf.handle} cadastrado(a) (${inf.plataforma}, ${inf.tier}, ${inf.comissao_percent}%).`, data: inf };
+  }
+
+  function _autoTier(followers) {
+    if (followers < 10000) return 'nano';
+    if (followers < 100000) return 'micro';
+    if (followers < 500000) return 'mid';
+    if (followers < 1000000) return 'macro';
+    return 'mega';
+  }
+
+  function updateInfluencer(params) {
+    if (!params.nome && !params.id && !params.handle) return { ok: false, msg: 'Nome, @ ou ID necessário.' };
+    const list = _loadInfluencers();
+    const search = params.id || params.handle || params.nome;
+    const sl = String(search).toLowerCase().replace('@','');
+    const idx = list.findIndex(i => i.id === params.id || (i.handle || '').toLowerCase().replace('@','') === sl || (i.nome || '').toLowerCase().includes(sl));
+    if (idx < 0) return { ok: false, msg: `Influencer "${search}" não encontrado.` };
+    const updates = {};
+    ['plataforma','seguidores','tier','categoria','status','comissao_percent','comissao_modelo','comissao_fixa','email','telefone','contrato_validade','observacoes'].forEach(k => {
+      if (params[k] !== undefined && params[k] !== null) updates[k] = params[k];
+    });
+    Object.assign(list[idx], updates, { updated_at: new Date().toISOString() });
+    _saveInfluencers(list);
+    return { ok: true, msg: `Influencer ${list[idx].handle} atualizado.`, data: list[idx] };
+  }
+
+  function listInfluencers(params) {
+    const list = _loadInfluencers().filter(i => {
+      if (params?.status && i.status !== params.status) return false;
+      if (params?.plataforma && i.plataforma !== params.plataforma) return false;
+      return true;
+    }).sort((a, b) => (b.vendido_total || 0) - (a.vendido_total || 0));
+    return { ok: true, msg: `${list.length} influencer(s).`, data: list };
+  }
+
+  function queryInfluencersKpi() {
+    const list = _loadInfluencers();
+    const ativos = list.filter(i => i.status === 'ativo').length;
+    const totalVendas = list.reduce((s, i) => s + (i.vendas_count || 0), 0);
+    const totalReceita = list.reduce((s, i) => s + (i.vendido_total || 0), 0);
+    const totalComissao = list.reduce((s, i) => s + (i.comissao_acumulada || 0), 0);
+    const devido = totalComissao - list.reduce((s, i) => s + (i.comissao_paga || 0), 0);
+    const top = [...list].sort((a, b) => (b.vendido_total || 0) - (a.vendido_total || 0))[0];
+    return {
+      ok: true,
+      msg: `Chefe, ${list.length} influencer(s) (${ativos} ativos). ${totalVendas} venda(s) atribuída(s), R$ ${totalReceita.toLocaleString('pt-BR')} em receita. Comissão devida: R$ ${devido.toLocaleString('pt-BR')}.${top ? ` Top: ${top.handle} (R$ ${(top.vendido_total || 0).toLocaleString('pt-BR')}).` : ''}`,
+      data: { total: list.length, ativos, vendas: totalVendas, receita: totalReceita, devido, top },
+    };
+  }
+
+  /* -------------------- METAS HANDLERS -------------------- */
+  function _loadMetas() { return readJSON(modeKey('fly_metas_v1'), []); }
+  function _saveMetas(arr) {
+    writeJSON(modeKey('fly_metas_v1'), arr);
+    try { window.__flySync?.push?.('metas', { id: 'metas_singleton', data_mode: getMode(), payload: arr }); } catch (e) {}
+    dispatchUpdate({ entity: 'meta', action: 'update' });
+    dispatchPanelUpdate('metas', 'update', null);
+  }
+
+  function createMeta(params) {
+    if (!params.alvo || Number(params.alvo) <= 0) return { ok: false, msg: 'Valor da meta (alvo) é obrigatório.' };
+    if (!params.tipo) return { ok: false, msg: 'Tipo da meta é obrigatório (receita, vendas, clientes, lucro).' };
+    const list = _loadMetas();
+    const now = new Date();
+    const meta = {
+      id:           params.id || uuid('meta_'),
+      nome:         params.nome || _defaultMetaNome(params),
+      escopo:       params.escopo || 'empresa',
+      escopo_id:    params.escopo_id || null,
+      escopo_nome:  params.escopo_nome || null,
+      tipo:         params.tipo,
+      periodo:      params.periodo || 'mensal',
+      data_inicio:  params.data_inicio || _periodStart(params.periodo || 'mensal', now),
+      data_fim:     params.data_fim   || _periodEnd(params.periodo || 'mensal', now),
+      alvo:         Number(params.alvo),
+      realizado:    Number(params.realizado) || 0,
+      unidade:      params.unidade || (params.tipo === 'receita' || params.tipo === 'lucro' ? 'BRL' : 'count'),
+      status:       'ativa',
+      responsavel:  params.responsavel || '',
+      observacoes:  params.observacoes || '',
+      created_at:   new Date().toISOString(),
+      created_by:   'james',
+    };
+    list.unshift(meta);
+    _saveMetas(list);
+    const fmt = meta.unidade === 'BRL' ? `R$ ${meta.alvo.toLocaleString('pt-BR')}` : `${meta.alvo}`;
+    return { ok: true, msg: `Meta "${meta.nome}" criada: ${fmt} ${meta.periodo}${meta.escopo_nome ? ' para ' + meta.escopo_nome : ''}.`, data: meta };
+  }
+
+  function _defaultMetaNome(p) {
+    const escopo = p.escopo_nome || (p.escopo === 'empresa' ? 'Empresa' : (p.escopo || ''));
+    const tipoMap = { receita: 'Receita', vendas: 'Vendas', clientes: 'Clientes', lucro: 'Lucro' };
+    return `${tipoMap[p.tipo] || p.tipo} ${p.periodo || 'mensal'} — ${escopo}`;
+  }
+
+  function _periodStart(periodo, ref) {
+    const d = new Date(ref);
+    if (periodo === 'diaria')   { d.setHours(0,0,0,0); }
+    if (periodo === 'semanal')  { const day = d.getDay(); d.setDate(d.getDate() - day); d.setHours(0,0,0,0); }
+    if (periodo === 'mensal')   { d.setDate(1); d.setHours(0,0,0,0); }
+    if (periodo === 'trimestral'){ const q = Math.floor(d.getMonth()/3)*3; d.setMonth(q,1); d.setHours(0,0,0,0); }
+    if (periodo === 'anual')    { d.setMonth(0,1); d.setHours(0,0,0,0); }
+    return d.toISOString().slice(0,10);
+  }
+  function _periodEnd(periodo, ref) {
+    const d = new Date(ref);
+    if (periodo === 'diaria')   { d.setHours(23,59,59,0); }
+    if (periodo === 'semanal')  { const day = d.getDay(); d.setDate(d.getDate() + (6-day)); d.setHours(23,59,59,0); }
+    if (periodo === 'mensal')   { d.setMonth(d.getMonth()+1, 0); d.setHours(23,59,59,0); }
+    if (periodo === 'trimestral'){ const q = Math.floor(d.getMonth()/3)*3 + 3; d.setMonth(q, 0); d.setHours(23,59,59,0); }
+    if (periodo === 'anual')    { d.setMonth(11,31); d.setHours(23,59,59,0); }
+    return d.toISOString().slice(0,10);
+  }
+
+  function updateMeta(params) {
+    if (!params.nome && !params.id) return { ok: false, msg: 'Nome ou ID da meta necessário.' };
+    const list = _loadMetas();
+    const idx = list.findIndex(m => m.id === params.id || (m.nome || '').toLowerCase().includes(String(params.nome || '').toLowerCase()));
+    if (idx < 0) return { ok: false, msg: `Meta "${params.nome || params.id}" não encontrada.` };
+    const updates = {};
+    ['nome','alvo','realizado','periodo','data_inicio','data_fim','status','responsavel','observacoes'].forEach(k => {
+      if (params[k] !== undefined && params[k] !== null) updates[k] = params[k];
+    });
+    Object.assign(list[idx], updates, { updated_at: new Date().toISOString() });
+    _saveMetas(list);
+    return { ok: true, msg: `Meta "${list[idx].nome}" atualizada.`, data: list[idx] };
+  }
+
+  function listMetas(params) {
+    const list = _loadMetas().filter(m => {
+      if (params?.escopo && m.escopo !== params.escopo) return false;
+      if (params?.status && m.status !== params.status) return false;
+      return true;
+    });
+    return { ok: true, msg: `${list.length} meta(s).`, data: list };
+  }
+
+  function queryMetasKpi() {
+    const list = _loadMetas();
+    const ativas = list.filter(m => m.status === 'ativa');
+    if (!ativas.length) return { ok: true, msg: 'Chefe, sem metas ativas no momento.', data: { total: 0 } };
+    const principais = ativas.slice(0, 3).map(m => {
+      const pct = m.alvo > 0 ? Math.round(((m.realizado || 0) / m.alvo) * 100) : 0;
+      return `${m.nome}: ${pct}%`;
+    });
+    return { ok: true, msg: `Chefe, ${ativas.length} meta(s) ativa(s). ${principais.join('; ')}.`, data: { ativas } };
+  }
+
   /* =====================================================================
      ACTION RUNNER · ponto único de execução por tipo+ação
   ===================================================================== */
@@ -472,6 +979,24 @@
       update_base:       updateBase,
       list_bases:        listBases,
       query_kpi:         queryBasesKpi,
+    },
+    sellers: {
+      create_seller:     createSeller,
+      update_seller:     updateSeller,
+      list_sellers:      listSellers,
+      query_kpi:         querySellersKpi,
+    },
+    influencers: {
+      create_influencer: createInfluencer,
+      update_influencer: updateInfluencer,
+      list_influencers:  listInfluencers,
+      query_kpi:         queryInfluencersKpi,
+    },
+    metas: {
+      create_meta:       createMeta,
+      update_meta:       updateMeta,
+      list_metas:        listMetas,
+      query_kpi:         queryMetasKpi,
     },
   };
 
@@ -527,6 +1052,24 @@
       create: (p) => createBase(p),
       update: (p) => updateBase(p),
       kpis:   () => queryBasesKpi(),
+    },
+    sellers: {
+      list:   (p) => listSellers(p),
+      create: (p) => createSeller(p),
+      update: (p) => updateSeller(p),
+      kpis:   () => querySellersKpi(),
+    },
+    influencers: {
+      list:   (p) => listInfluencers(p),
+      create: (p) => createInfluencer(p),
+      update: (p) => updateInfluencer(p),
+      kpis:   () => queryInfluencersKpi(),
+    },
+    metas: {
+      list:   (p) => listMetas(p),
+      create: (p) => createMeta(p),
+      update: (p) => updateMeta(p),
+      kpis:   () => queryMetasKpi(),
     },
   };
 

@@ -160,6 +160,36 @@
       const diff = diffArrayById(oldVal, newVal);
       diff.added.forEach(s => emitCascade('fly:sale-recorded', s));
     },
+
+    // Vendedores (mode-aware)
+    'fly_sellers_v1': (oldVal, newVal) => {
+      const diff = diffArrayById(oldVal, newVal);
+      diff.added.forEach(s => emitCascade('fly:seller-created', s));
+      diff.updated.forEach(d => emitCascade('fly:seller-updated', d));
+      diff.removed.forEach(s => emitCascade('fly:seller-deleted', s));
+    },
+
+    // Influencers (mode-aware)
+    'fly_influencers_v1': (oldVal, newVal) => {
+      const diff = diffArrayById(oldVal, newVal);
+      diff.added.forEach(i => emitCascade('fly:influencer-created', i));
+      diff.updated.forEach(d => emitCascade('fly:influencer-updated', d));
+      diff.removed.forEach(i => emitCascade('fly:influencer-deleted', i));
+    },
+
+    // Metas (mode-aware)
+    'fly_metas_v1': (oldVal, newVal) => {
+      const diff = diffArrayById(oldVal, newVal);
+      diff.added.forEach(m => emitCascade('fly:meta-created', m));
+      diff.updated.forEach(d => {
+        // Detecta meta batida (status passou pra "batida")
+        if (d.before.status !== 'batida' && d.after.status === 'batida') {
+          emitCascade('fly:meta-reached', d.after);
+        }
+        emitCascade('fly:meta-updated', d);
+      });
+      diff.removed.forEach(m => emitCascade('fly:meta-deleted', m));
+    },
   };
 
   /* ---------------------------------------------------------------

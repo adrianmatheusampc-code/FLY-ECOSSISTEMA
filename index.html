@@ -8819,6 +8819,39 @@
     background: linear-gradient(135deg, rgba(64,180,255,.18), rgba(245,184,66,.06));
     box-shadow: 0 6px 22px -8px rgba(64,180,255,.45);
   }
+  .format-card.sellers {
+    background: linear-gradient(135deg, rgba(255,200,80,.08), rgba(245,184,66,.04));
+    border-color: rgba(255,200,80,.28);
+  }
+  .format-opt.active .format-card.sellers,
+  .format-opt input:checked ~ .format-card.sellers,
+  .format-opt:has(input:checked) .format-card.sellers {
+    border-color: rgba(255,200,80,.78);
+    background: linear-gradient(135deg, rgba(255,200,80,.20), rgba(245,184,66,.06));
+    box-shadow: 0 6px 22px -8px rgba(255,200,80,.50);
+  }
+  .format-card.influencers {
+    background: linear-gradient(135deg, rgba(255,80,180,.08), rgba(245,184,66,.04));
+    border-color: rgba(255,80,180,.26);
+  }
+  .format-opt.active .format-card.influencers,
+  .format-opt input:checked ~ .format-card.influencers,
+  .format-opt:has(input:checked) .format-card.influencers {
+    border-color: rgba(255,80,180,.7);
+    background: linear-gradient(135deg, rgba(255,80,180,.18), rgba(245,184,66,.06));
+    box-shadow: 0 6px 22px -8px rgba(255,80,180,.45);
+  }
+  .format-card.metas {
+    background: linear-gradient(135deg, rgba(109,255,176,.08), rgba(245,184,66,.04));
+    border-color: rgba(109,255,176,.26);
+  }
+  .format-opt.active .format-card.metas,
+  .format-opt input:checked ~ .format-card.metas,
+  .format-opt:has(input:checked) .format-card.metas {
+    border-color: rgba(109,255,176,.7);
+    background: linear-gradient(135deg, rgba(109,255,176,.18), rgba(245,184,66,.06));
+    box-shadow: 0 6px 22px -8px rgba(109,255,176,.45);
+  }
   @container fly-vp (max-width: 640px) {
     .format-picker { grid-template-columns: 1fr; gap: 8px; }
     .format-card { padding: 12px; }
@@ -14995,6 +15028,302 @@
 
     }
 
+    /* ============================================================
+       SELLERS · Vendedores (template reutilizável)
+       ============================================================ */
+    function renderSellersItemView(item, topicData, idx) {
+      itemView.innerHTML = '';
+      const topicName = (currentTopic && currentTopic.name) || 'tópico';
+      const back = document.createElement('div');
+      back.className = 'hier-back-bar';
+      back.innerHTML = `<button class="apple-btn" id="sel-back"><span class="apple-icon">←</span><span>Voltar para ${escapeHtml(topicName)}</span></button>`;
+      itemView.appendChild(back);
+      back.querySelector('#sel-back').addEventListener('click', () => { switchTo('topic'); showTopic(currentTopic); });
+
+      const wrap = document.createElement('div');
+      wrap.className = 'hier-module';
+      wrap.innerHTML = `
+        <div class="hier-hero">
+          <h1>VENDEDORES</h1>
+          <div class="hier-sub">Rede Comercial · Comissões · Ranking · Metas</div>
+          <div class="hier-hero-kpis" id="sel-kpis"></div>
+        </div>
+        <div style="margin: 16px 0; display: flex; gap: 10px; align-items: center;">
+          <button class="apple-btn" id="sel-add-btn">＋ Adicionar Vendedor</button>
+          <span style="color: rgba(255,255,255,0.4); font-size: 11px;">ou peça ao James: "James, cadastra vendedor X com comissão Y%"</span>
+        </div>
+        <div id="sel-form" style="display:none; padding:16px; border:1px solid rgba(245,184,66,0.25); border-radius:10px; margin-bottom:16px; background: rgba(245,184,66,0.04);"></div>
+        <div id="sel-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+      `;
+      itemView.appendChild(wrap);
+
+      function refresh() {
+        const list = (window.__jamesPanels?.sellers?.list?.()?.data) || [];
+        const kpis = window.__jamesPanels?.sellers?.kpis?.()?.data || {};
+        document.getElementById('sel-kpis').innerHTML = `
+          <div class="hier-hero-kpi"><div class="lbl">Total</div><div class="val">${list.length}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Ativos</div><div class="val">${kpis.ativos || 0}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Vendido no Mês</div><div class="val">R$ ${(kpis.vendido || 0).toLocaleString('pt-BR')}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Comissão Acumulada</div><div class="val">R$ ${(kpis.comissao || 0).toLocaleString('pt-BR')}</div></div>
+        `;
+        document.getElementById('sel-list').innerHTML = list.length ? list.map((s, i) => `
+          <div style="padding:14px; border:1px solid rgba(245,184,66,0.18); border-radius:8px; background: rgba(0,0,0,0.25); display:grid; grid-template-columns: 32px 1fr auto; gap:14px; align-items:center;">
+            <div style="font-size:18px; color:#ffd070; font-weight:700;">${i + 1}º</div>
+            <div>
+              <div style="font-weight:600; color:#fff; font-size:14px;">${escapeHtml(s.nome)}</div>
+              <div style="font-size:11px; color:rgba(255,255,255,0.55); margin-top:2px;">${escapeHtml(s.cargo || 'Vendedor')} · ${escapeHtml(s.cidade || '')} · ${s.comissao_percent}% comissão · status: <span style="color:${s.status === 'ativo' ? '#6dffb0' : 'rgba(255,255,255,0.5)'}">${s.status}</span></div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px; color:#ffd070;">R$ ${(s.vendido_mes || 0).toLocaleString('pt-BR')}</div>
+              <div style="font-size:10px; color:rgba(255,255,255,0.4);">vendido no mês · ${s.vendas_count || 0} vendas</div>
+              <div style="font-size:10px; color:#6dffb0; margin-top:2px;">+ R$ ${(s.comissao_acumulada || 0).toLocaleString('pt-BR')} comissão</div>
+            </div>
+          </div>
+        `).join('') : '<div style="padding:24px; text-align:center; color:rgba(255,255,255,0.4);">Nenhum vendedor cadastrado ainda.</div>';
+      }
+
+      document.getElementById('sel-add-btn').addEventListener('click', () => {
+        const formEl = document.getElementById('sel-form');
+        formEl.style.display = formEl.style.display === 'none' ? 'block' : 'none';
+        formEl.innerHTML = `
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <input id="sn_nome"     placeholder="Nome do vendedor" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+            <input id="sn_cidade"   placeholder="Cidade" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+            <input id="sn_cargo"    placeholder="Cargo (Vendedor)" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+            <input id="sn_email"    placeholder="Email" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+            <input id="sn_comissao" type="number" placeholder="% Comissão (5)" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+            <input id="sn_meta"     type="number" placeholder="Meta mensal R$" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+          </div>
+          <button class="apple-btn" id="sn_save" style="margin-top:10px;">Salvar Vendedor</button>
+        `;
+        document.getElementById('sn_save').addEventListener('click', () => {
+          const r = window.__jamesPanels.sellers.create({
+            nome: document.getElementById('sn_nome').value.trim(),
+            cidade: document.getElementById('sn_cidade').value.trim(),
+            cargo: document.getElementById('sn_cargo').value.trim() || 'Vendedor',
+            email: document.getElementById('sn_email').value.trim(),
+            comissao_percent: Number(document.getElementById('sn_comissao').value) || 5,
+            meta_mes: Number(document.getElementById('sn_meta').value) || 0,
+          });
+          if (!r.ok) { alert(r.msg); return; }
+          formEl.style.display = 'none';
+          refresh();
+        });
+      });
+
+      window.addEventListener('fly:panel-update', (e) => { if (e?.detail?.panel === 'sellers') refresh(); });
+      refresh();
+    }
+
+    /* ============================================================
+       INFLUENCERS · Influenciadores (template reutilizável)
+       ============================================================ */
+    function renderInfluencersItemView(item, topicData, idx) {
+      itemView.innerHTML = '';
+      const topicName = (currentTopic && currentTopic.name) || 'tópico';
+      const back = document.createElement('div');
+      back.className = 'hier-back-bar';
+      back.innerHTML = `<button class="apple-btn" id="inf-back"><span class="apple-icon">←</span><span>Voltar para ${escapeHtml(topicName)}</span></button>`;
+      itemView.appendChild(back);
+      back.querySelector('#inf-back').addEventListener('click', () => { switchTo('topic'); showTopic(currentTopic); });
+
+      const wrap = document.createElement('div');
+      wrap.className = 'hier-module';
+      wrap.innerHTML = `
+        <div class="hier-hero">
+          <h1>INFLUENCIADORES</h1>
+          <div class="hier-sub">Parceiros Estratégicos · Comissões · Atribuição de Vendas</div>
+          <div class="hier-hero-kpis" id="inf-kpis"></div>
+        </div>
+        <div style="margin: 16px 0; display: flex; gap: 10px;">
+          <button class="apple-btn" id="inf-add-btn">＋ Adicionar Influencer</button>
+          <span style="color: rgba(255,255,255,0.4); font-size: 11px; align-self:center;">ou: "James, cadastra influencer @handle, 100k seguidores, 12%"</span>
+        </div>
+        <div id="inf-form" style="display:none; padding:16px; border:1px solid rgba(245,184,66,0.25); border-radius:10px; margin-bottom:16px; background: rgba(245,184,66,0.04);"></div>
+        <div id="inf-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+      `;
+      itemView.appendChild(wrap);
+
+      function refresh() {
+        const list = (window.__jamesPanels?.influencers?.list?.()?.data) || [];
+        const kpis = window.__jamesPanels?.influencers?.kpis?.()?.data || {};
+        const devido = (kpis.devido || 0);
+        document.getElementById('inf-kpis').innerHTML = `
+          <div class="hier-hero-kpi"><div class="lbl">Total</div><div class="val">${list.length}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Ativos</div><div class="val">${kpis.ativos || 0}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Vendas Geradas</div><div class="val">${kpis.vendas || 0}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Comissão Devida</div><div class="val">R$ ${devido.toLocaleString('pt-BR')}</div></div>
+        `;
+        document.getElementById('inf-list').innerHTML = list.length ? list.map((i, idx) => `
+          <div style="padding:14px; border:1px solid rgba(245,184,66,0.18); border-radius:8px; background: rgba(0,0,0,0.25); display:grid; grid-template-columns: 32px 1fr auto; gap:14px; align-items:center;">
+            <div style="font-size:18px; color:#ffd070; font-weight:700;">${idx + 1}º</div>
+            <div>
+              <div style="font-weight:600; color:#fff; font-size:14px;">${escapeHtml(i.handle)} <span style="color:rgba(255,255,255,0.4); font-size:11px; font-weight:400;">${escapeHtml(i.nome !== i.handle ? '· ' + i.nome : '')}</span></div>
+              <div style="font-size:11px; color:rgba(255,255,255,0.55); margin-top:2px;">${escapeHtml(i.plataforma)} · ${(i.seguidores || 0).toLocaleString('pt-BR')} seguidores · ${escapeHtml(i.tier || '')} · ${i.comissao_percent}% comissão</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px; color:#ffd070;">${i.vendas_count || 0} vendas</div>
+              <div style="font-size:10px; color:rgba(255,255,255,0.4);">R$ ${(i.vendido_total || 0).toLocaleString('pt-BR')} gerado</div>
+              <div style="font-size:10px; color:#6dffb0; margin-top:2px;">R$ ${((i.comissao_acumulada || 0) - (i.comissao_paga || 0)).toLocaleString('pt-BR')} a pagar</div>
+            </div>
+          </div>
+        `).join('') : '<div style="padding:24px; text-align:center; color:rgba(255,255,255,0.4);">Nenhum influencer cadastrado ainda.</div>';
+      }
+
+      document.getElementById('inf-add-btn').addEventListener('click', () => {
+        const formEl = document.getElementById('inf-form');
+        formEl.style.display = formEl.style.display === 'none' ? 'block' : 'none';
+        formEl.innerHTML = `
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <input id="if_handle"    placeholder="@handle" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+            <input id="if_nome"      placeholder="Nome (opcional)" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+            <select id="if_plat"     style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+              <option value="Instagram">Instagram</option>
+              <option value="TikTok">TikTok</option>
+              <option value="YouTube">YouTube</option>
+              <option value="Twitter">Twitter</option>
+              <option value="Facebook">Facebook</option>
+              <option value="Outro">Outro</option>
+            </select>
+            <input id="if_followers" type="number" placeholder="Seguidores" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+            <input id="if_categoria" placeholder="Categoria (Travel, Lifestyle...)" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+            <input id="if_comissao"  type="number" placeholder="% Comissão (10)" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+          </div>
+          <button class="apple-btn" id="if_save" style="margin-top:10px;">Salvar Influencer</button>
+        `;
+        document.getElementById('if_save').addEventListener('click', () => {
+          const r = window.__jamesPanels.influencers.create({
+            handle: document.getElementById('if_handle').value.trim(),
+            nome: document.getElementById('if_nome').value.trim(),
+            plataforma: document.getElementById('if_plat').value,
+            seguidores: Number(document.getElementById('if_followers').value) || 0,
+            categoria: document.getElementById('if_categoria').value.trim(),
+            comissao_percent: Number(document.getElementById('if_comissao').value) || 10,
+          });
+          if (!r.ok) { alert(r.msg); return; }
+          formEl.style.display = 'none';
+          refresh();
+        });
+      });
+
+      window.addEventListener('fly:panel-update', (e) => { if (e?.detail?.panel === 'influencers') refresh(); });
+      refresh();
+    }
+
+    /* ============================================================
+       METAS · Metas (template reutilizável)
+       ============================================================ */
+    function renderMetasItemView(item, topicData, idx) {
+      itemView.innerHTML = '';
+      const topicName = (currentTopic && currentTopic.name) || 'tópico';
+      const back = document.createElement('div');
+      back.className = 'hier-back-bar';
+      back.innerHTML = `<button class="apple-btn" id="met-back"><span class="apple-icon">←</span><span>Voltar para ${escapeHtml(topicName)}</span></button>`;
+      itemView.appendChild(back);
+      back.querySelector('#met-back').addEventListener('click', () => { switchTo('topic'); showTopic(currentTopic); });
+
+      const wrap = document.createElement('div');
+      wrap.className = 'hier-module';
+      wrap.innerHTML = `
+        <div class="hier-hero">
+          <h1>METAS</h1>
+          <div class="hier-sub">Globais · Por Produto · Por Vendedor · Progresso Automático</div>
+          <div class="hier-hero-kpis" id="met-kpis"></div>
+        </div>
+        <div style="margin: 16px 0; display: flex; gap: 10px;">
+          <button class="apple-btn" id="met-add-btn">＋ Criar Meta</button>
+          <span style="color: rgba(255,255,255,0.4); font-size: 11px; align-self:center;">ou: "James, cria meta de receita mensal de 500 mil"</span>
+        </div>
+        <div id="met-form" style="display:none; padding:16px; border:1px solid rgba(245,184,66,0.25); border-radius:10px; margin-bottom:16px; background: rgba(245,184,66,0.04);"></div>
+        <div id="met-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+      `;
+      itemView.appendChild(wrap);
+
+      function refresh() {
+        const list = (window.__jamesPanels?.metas?.list?.()?.data) || [];
+        const ativas = list.filter(m => m.status === 'ativa');
+        const batidas = list.filter(m => m.status === 'batida').length;
+        document.getElementById('met-kpis').innerHTML = `
+          <div class="hier-hero-kpi"><div class="lbl">Total</div><div class="val">${list.length}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Ativas</div><div class="val">${ativas.length}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Batidas</div><div class="val">${batidas}</div></div>
+          <div class="hier-hero-kpi"><div class="lbl">Em Risco</div><div class="val">${ativas.filter(m => m.alvo > 0 && (m.realizado || 0) / m.alvo < 0.5).length}</div></div>
+        `;
+        document.getElementById('met-list').innerHTML = list.length ? list.map(m => {
+          const pct = m.alvo > 0 ? Math.min(100, Math.round(((m.realizado || 0) / m.alvo) * 100)) : 0;
+          const fmtAlvo = m.unidade === 'BRL' ? `R$ ${(m.alvo || 0).toLocaleString('pt-BR')}` : (m.alvo || 0);
+          const fmtReal = m.unidade === 'BRL' ? `R$ ${(m.realizado || 0).toLocaleString('pt-BR')}` : (m.realizado || 0);
+          const corBar = m.status === 'batida' ? '#6dffb0' : (pct >= 70 ? '#ffd070' : (pct >= 30 ? '#ff9b3a' : '#ff6464'));
+          return `
+            <div style="padding:14px; border:1px solid rgba(245,184,66,0.18); border-radius:8px; background: rgba(0,0,0,0.25);">
+              <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <div>
+                  <div style="font-weight:600; color:#fff;">${escapeHtml(m.nome)}</div>
+                  <div style="font-size:10px; color:rgba(255,255,255,0.55); margin-top:2px;">${escapeHtml(m.escopo)} · ${escapeHtml(m.tipo)} · ${escapeHtml(m.periodo)} · ${m.data_inicio || ''} → ${m.data_fim || ''}</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="color:${corBar}; font-weight:700;">${pct}%</div>
+                  <div style="font-size:10px; color:rgba(255,255,255,0.5);">${fmtReal} / ${fmtAlvo}</div>
+                </div>
+              </div>
+              <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;">
+                <div style="height:100%; width:${pct}%; background:${corBar}; transition:width 0.4s;"></div>
+              </div>
+              <div style="font-size:10px; color:rgba(255,255,255,0.4); margin-top:6px;">Status: <span style="color:${m.status === 'batida' ? '#6dffb0' : '#ffd070'}">${m.status}</span></div>
+            </div>
+          `;
+        }).join('') : '<div style="padding:24px; text-align:center; color:rgba(255,255,255,0.4);">Nenhuma meta criada ainda.</div>';
+      }
+
+      document.getElementById('met-add-btn').addEventListener('click', () => {
+        const formEl = document.getElementById('met-form');
+        formEl.style.display = formEl.style.display === 'none' ? 'block' : 'none';
+        formEl.innerHTML = `
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <input id="mt_nome" placeholder="Nome da meta (opcional)" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+            <select id="mt_escopo" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+              <option value="empresa">Escopo: Empresa</option>
+              <option value="produto">Por Produto</option>
+              <option value="vendedor">Por Vendedor</option>
+              <option value="influencer">Por Influencer</option>
+            </select>
+            <input id="mt_escopo_nome" placeholder="Nome do produto/vendedor (se aplicável)" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+            <select id="mt_tipo" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+              <option value="receita">Tipo: Receita</option>
+              <option value="vendas">Vendas (count)</option>
+              <option value="clientes">Clientes (count)</option>
+              <option value="lucro">Lucro</option>
+            </select>
+            <select id="mt_periodo" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+              <option value="mensal">Mensal</option>
+              <option value="trimestral">Trimestral</option>
+              <option value="anual">Anual</option>
+              <option value="semanal">Semanal</option>
+            </select>
+            <input id="mt_alvo" type="number" placeholder="Alvo (R$ ou contagem)" style="padding:8px; background:#000; border:1px solid rgba(245,184,66,0.3); color:#fff; border-radius:6px;">
+          </div>
+          <button class="apple-btn" id="mt_save" style="margin-top:10px;">Criar Meta</button>
+        `;
+        document.getElementById('mt_save').addEventListener('click', () => {
+          const escopo = document.getElementById('mt_escopo').value;
+          const r = window.__jamesPanels.metas.create({
+            nome: document.getElementById('mt_nome').value.trim() || undefined,
+            escopo,
+            escopo_nome: document.getElementById('mt_escopo_nome').value.trim() || (escopo === 'empresa' ? 'Empresa' : ''),
+            tipo: document.getElementById('mt_tipo').value,
+            periodo: document.getElementById('mt_periodo').value,
+            alvo: Number(document.getElementById('mt_alvo').value) || 0,
+          });
+          if (!r.ok) { alert(r.msg); return; }
+          formEl.style.display = 'none';
+          refresh();
+        });
+      });
+
+      window.addEventListener('fly:panel-update', (e) => { if (e?.detail?.panel === 'metas') refresh(); });
+      refresh();
+    }
+
 
     function renderHierPanel(t) {
       const panel = document.getElementById('hier-panel');
@@ -16208,7 +16537,7 @@
       it.id = it.id || base.id;
       it.categoria = it.categoria || '';
       it.folder = it.folder || '';
-      it.format = ['pacotes', 'presskit', 'hierarchy', 'bases', 'default'].includes(it.format) ? it.format : 'default';
+      it.format = ['pacotes', 'presskit', 'hierarchy', 'bases', 'sellers', 'influencers', 'metas', 'default'].includes(it.format) ? it.format : 'default';
       it.descricao = it.descricao || '';
       it.inclui = Array.isArray(it.inclui) ? it.inclui : [];
       it.publico = it.publico || '';
@@ -20522,6 +20851,21 @@
           switchTo('item');
           return;
         }
+        if (it.format === 'sellers') {
+          renderSellersItemView(it, topicData, idx);
+          switchTo('item');
+          return;
+        }
+        if (it.format === 'influencers') {
+          renderInfluencersItemView(it, topicData, idx);
+          switchTo('item');
+          return;
+        }
+        if (it.format === 'metas') {
+          renderMetasItemView(it, topicData, idx);
+          switchTo('item');
+          return;
+        }
         if (it.format === 'presskit' || isPressKitProduct) {
           renderPressKitItemView(it, topicData, idx);
           switchTo('item');
@@ -21317,6 +21661,30 @@
                 <div class="format-desc">Mapa interativo · países · cidades · equipe · custo de implantação · operacional mensal · experiência visual</div>
               </div>
             </label>
+            <label class="format-opt ${it.format === 'sellers' ? 'active' : ''}">
+              <input type="radio" name="m_format" value="sellers" ${it.format === 'sellers' ? 'checked' : ''}>
+              <div class="format-card sellers">
+                <div class="format-ico">🏆</div>
+                <div class="format-name">Vendedores <span class="format-badge">COMERCIAL</span></div>
+                <div class="format-desc">Rede comercial · comissão % · meta mensal · vendido · ranking · comissão acumulada · 4 abas</div>
+              </div>
+            </label>
+            <label class="format-opt ${it.format === 'influencers' ? 'active' : ''}">
+              <input type="radio" name="m_format" value="influencers" ${it.format === 'influencers' ? 'checked' : ''}>
+              <div class="format-card influencers">
+                <div class="format-ico">⭐</div>
+                <div class="format-name">Influencers <span class="format-badge">PARCERIA</span></div>
+                <div class="format-desc">Parceiros · @ · plataforma · seguidores · tier · comissão % · vendas atribuídas · comissão a pagar</div>
+              </div>
+            </label>
+            <label class="format-opt ${it.format === 'metas' ? 'active' : ''}">
+              <input type="radio" name="m_format" value="metas" ${it.format === 'metas' ? 'checked' : ''}>
+              <div class="format-card metas">
+                <div class="format-ico">🎯</div>
+                <div class="format-name">Metas <span class="format-badge">PROGRESSO</span></div>
+                <div class="format-desc">Globais · por produto · por vendedor · por período · progresso automático via cascata</div>
+              </div>
+            </label>
           </div>
           <label>CATEGORIA</label>
           <input type="text" id="m_cat" value="${escapeHtml(it.categoria || '')}" />
@@ -21642,7 +22010,7 @@
         }
 
         const formatRadio = modal.querySelector('input[name="m_format"]:checked');
-        const chosenFormat = ['default', 'pacotes', 'presskit', 'hierarchy', 'bases'].includes(formatRadio?.value) ? formatRadio.value : 'default';
+        const chosenFormat = ['default', 'pacotes', 'presskit', 'hierarchy', 'bases', 'sellers', 'influencers', 'metas'].includes(formatRadio?.value) ? formatRadio.value : 'default';
         const updated = {
           id: it.id,
           name: modal.querySelector('#m_name').value.trim(),
