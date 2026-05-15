@@ -1,0 +1,150 @@
+/* =====================================================================
+   MOBILE / IPAD FIX — corrige layout de botões e elementos flutuantes
+   pra rodar bonito igual desktop
+   ===================================================================== */
+
+/* Botão VOLTAR sempre visível, z-index máximo */
+.back-btn {
+  z-index: 200 !important;
+}
+
+/* ============================================================
+   TABLET (≤ 1024px) — ajustes intermediários
+   ============================================================ */
+@media (max-width: 1024px) {
+  /* Memória sai do topo direito (perto do admin) e vai pro topo só dela */
+  .fly-mem-bar {
+    top: 70px !important;
+    right: 20px !important;
+  }
+}
+
+/* ============================================================
+   MOBILE (≤ 720px) — reorganização completa
+   ============================================================ */
+@media (max-width: 720px) {
+  /* TOPO ESQUERDO: cofre + expansões grudados, sync some pra evitar conflito */
+  .cofre-trigger {
+    top: max(10px, env(safe-area-inset-top)) !important;
+    left: 10px !important;
+    width: 40px !important;
+    height: 40px !important;
+  }
+  .fly-exp-trigger {
+    top: max(10px, env(safe-area-inset-top)) !important;
+    left: 58px !important;
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  /* SYNC + MEM ficam empilhados pequenos no topo, depois de cofre/exp */
+  .fly-sync-indicator {
+    top: max(10px, env(safe-area-inset-top)) !important;
+    left: 106px !important;
+    padding: 6px 10px !important;
+    font-size: 8px !important;
+    letter-spacing: 0.8px !important;
+    border-radius: 999px;
+  }
+  .fly-mem-bar {
+    top: 58px !important;
+    left: 10px !important;
+    right: auto !important;
+    padding: 5px 9px !important;
+    font-size: 8px !important;
+  }
+
+  /* ADMIN topo direito menor */
+  .admin-toggle {
+    top: max(10px, env(safe-area-inset-top)) !important;
+    right: 12px !important;
+    padding: 8px 14px !important;
+    font-size: 10px !important;
+    letter-spacing: 2px !important;
+  }
+
+  /* Botão VOLTAR — quando em detail-mode, ocupa topo central */
+  body.detail-mode .back-btn,
+  body.topic-mode .back-btn,
+  body.item-mode .back-btn {
+    position: fixed !important;
+    top: max(10px, env(safe-area-inset-top)) !important;
+    left: 10px !important;
+    z-index: 250 !important;
+    padding: 8px 14px !important;
+    font-size: 10px !important;
+    letter-spacing: 1.5px !important;
+  }
+
+  /* DETAIL MODE no mobile esconde tudo do topo pra dar espaço pro VOLTAR */
+  body.detail-mode .cofre-trigger,
+  body.detail-mode .fly-exp-trigger,
+  body.detail-mode .fly-sync-indicator,
+  body.detail-mode .fly-mem-bar,
+  body.topic-mode .cofre-trigger,
+  body.topic-mode .fly-exp-trigger,
+  body.topic-mode .fly-sync-indicator,
+  body.topic-mode .fly-mem-bar {
+    display: none !important;
+  }
+
+  /* JAMES orbe menor e bem no canto */
+  #jms-orb {
+    width: 60px !important;
+    height: 60px !important;
+    right: 12px !important;
+    bottom: max(70px, env(safe-area-inset-bottom)) !important;
+  }
+  .jms-orb__label {
+    bottom: -14px !important;
+    font-size: 7px !important;
+    letter-spacing: 1.6px !important;
+  }
+
+  /* Painel do James: full-width quase, alto */
+  #jms-panel {
+    right: 8px !important;
+    left: 8px !important;
+    bottom: max(140px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: calc(100dvh - 200px) !important;
+  }
+
+  /* COCKPIT dentro do utility dock no mobile fica compacto */
+  .dash-trigger.in-utility-dock {
+    padding: 6px 10px !important;
+    font-size: 9px !important;
+    letter-spacing: 1.4px !important;
+    gap: 4px !important;
+  }
+  .dash-trigger.in-utility-dock .dash-trigger__dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  /* Zoom controls ficam invisíveis em mobile (não precisa) */
+  .fly-timeline-zoom-controls {
+    display: none !important;
+  }
+}
+
+/* ============================================================
+   PORTRAIT EXTREMO (telefone vertical estreito)
+   ============================================================ */
+@media (max-width: 480px) and (orientation: portrait) {
+  /* Mais compacto ainda no celular vertical */
+  .fly-sync-indicator {
+    display: none !important; /* economiza espaço, status já tá no JAMES */
+  }
+  .fly-mem-bar {
+    font-size: 7px !important;
+    padding: 4px 8px !important;
+  }
+
+  /* COCKPIT no utility-dock: ainda mais compacto */
+  .dash-trigger.in-utility-dock {
+    padding: 5px 8px !important;
+    font-size: 8px !important;
+  }
+}

@@ -778,7 +778,17 @@ export class FlyWarSpaceTimeline {
 
     if (this.camera) {
       this.camera.aspect = this.width / this.height;
-      this.camera.fov = this.width < 720 ? 52 : 43;
+      // FOV adaptativo: portrait mobile precisa de mais ângulo pra Terra não ficar comprida
+      const isPortrait = this.height > this.width;
+      if (isPortrait && this.width < 720) {
+        this.camera.fov = 78; // portrait mobile: FOV bem aberto
+      } else if (this.width < 720) {
+        this.camera.fov = 56; // landscape mobile
+      } else if (this.width < 1024) {
+        this.camera.fov = 48; // tablet
+      } else {
+        this.camera.fov = 43; // desktop
+      }
       this.camera.updateProjectionMatrix();
     }
 
