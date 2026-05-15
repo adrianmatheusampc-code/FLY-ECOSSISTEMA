@@ -291,9 +291,7 @@
 
     data[year].unshift(employee);
     _saveHierarchy(data);
-
-    // ── CASCATA: dispara cockpit + cofre + log ──
-    try { window.__flyCascade?.emit?.('fly:employee-created', employee); } catch (e) {}
+    // Cascata é disparada pelo cascade-watcher (intercepta o setItem)
 
     return {
       ok: true,
@@ -318,12 +316,9 @@
       if (params[k] !== undefined && params[k] !== null) updates[k] = params[k];
     });
 
-    const before = JSON.parse(JSON.stringify(list[idx]));
     Object.assign(list[idx], updates, { updated_at: new Date().toISOString() });
     _saveHierarchy(data);
-
-    // ── CASCATA: recalcula folha se salário/comissão/benefícios mudaram ──
-    try { window.__flyCascade?.emit?.('fly:employee-updated', { before, after: list[idx] }); } catch (e) {}
+    // Cascata é disparada pelo cascade-watcher (compara antes/depois)
 
     return {
       ok: true,
@@ -402,13 +397,7 @@
 
     list.unshift(base);
     _saveBases(list);
-
-    // ── CASCATA: dispara cockpit + cofre + sugestão WAR ──
-    try { window.__flyCascade?.emit?.('fly:base-created', base); } catch (e) {}
-    // Se a base já nasce ativa, dispara também o evento de ativação
-    if (base.status === 'ativa') {
-      try { window.__flyCascade?.emit?.('fly:base-status-active', base); } catch (e) {}
-    }
+    // Cascata é disparada pelo cascade-watcher
 
     return {
       ok: true,
@@ -431,14 +420,9 @@
       if (params[k] !== undefined && params[k] !== null) updates[k] = params[k];
     });
 
-    const beforeBase = JSON.parse(JSON.stringify(list[idx]));
     Object.assign(list[idx], updates, { updated_at: new Date().toISOString() });
     _saveBases(list);
-
-    // ── CASCATA: se mudou pra ativa, dispara cofre opex recorrente ──
-    if (beforeBase.status !== 'ativa' && list[idx].status === 'ativa') {
-      try { window.__flyCascade?.emit?.('fly:base-status-active', list[idx]); } catch (e) {}
-    }
+    // Cascata é disparada pelo cascade-watcher (detecta mudança de status, etc)
 
     return { ok: true, msg: `Base ${list[idx].nome} atualizada (${Object.keys(updates).join(', ')}).`, data: list[idx] };
   }
