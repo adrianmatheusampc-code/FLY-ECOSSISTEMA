@@ -963,6 +963,13 @@
           <button class="jms-btn jms-btn--primary" id="jms-test-voice" type="button">🔊 Testar Voz (TTS)</button>
           <button class="jms-btn jms-btn--ghost" id="jms-test-stt" type="button">🎤 Testar Microfone (STT)</button>
         </div>
+        <div style="margin-top:10px; font-size:11px;">
+          <label style="display:flex; align-items:center; gap:8px;">
+            <span style="white-space:nowrap;">⚡ Velocidade da voz:</span>
+            <input type="range" id="jms-voice-speed" min="0.7" max="1.2" step="0.02" value="1.12" style="flex:1; accent-color:#f5b842;" />
+            <span id="jms-voice-speed-val" style="min-width:34px; color:#ffd770; font-weight:700;">1.12x</span>
+          </label>
+        </div>
         <div style="margin-top:8px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-size:11px;">
           <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
             <input type="checkbox" id="jms-stt-eleven-toggle" /> Usar ElevenLabs Scribe pra ouvir (melhor qualidade)
@@ -1632,11 +1639,28 @@
     const sttToggle    = $('jms-stt-eleven-toggle');
     const ttsToggleBr  = $('jms-tts-browser-toggle');
     const voiceStatus  = $('jms-voice-status');
+    const speedSlider  = $('jms-voice-speed');
+    const speedVal     = $('jms-voice-speed-val');
 
     function setVoiceStatus(html, color) {
       if (!voiceStatus) return;
       voiceStatus.innerHTML = `<span style="color:${color || '#ffd770'}">${html}</span>`;
     }
+
+    // ----- Slider de velocidade da voz -----
+    if (speedSlider && window.__jamesVoiceEleven?.getSpeed) {
+      const cur = window.__jamesVoiceEleven.getSpeed();
+      speedSlider.value = cur;
+      if (speedVal) speedVal.textContent = cur.toFixed(2) + 'x';
+    }
+    speedSlider?.addEventListener('input', () => {
+      if (speedVal) speedVal.textContent = parseFloat(speedSlider.value).toFixed(2) + 'x';
+    });
+    speedSlider?.addEventListener('change', () => {
+      const v = parseFloat(speedSlider.value);
+      window.__jamesVoiceEleven?.setSpeed?.(v);
+      setVoiceStatus(`✓ Velocidade ajustada para ${v.toFixed(2)}x. Próximas falas usam essa velocidade.`, '#6dffb0');
+    });
 
     testVoiceBtn?.addEventListener('click', async () => {
       if (!window.__jamesVoiceEleven) {

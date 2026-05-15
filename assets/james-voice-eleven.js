@@ -61,12 +61,27 @@
   const DEFAULT_MODEL_STT = 'scribe_v1';
   const DEFAULT_LANGUAGE  = 'por'; // ISO 639-3 = pt-BR
 
+  // similarity_boost alto = mais fiel à gravação original (IVC)
+  // speed: 0.7 (lento) … 1.0 (normal) … 1.2 (rápido) — configurável
   const DEFAULT_VOICE_SETTINGS = {
-    stability:        0.45,
-    similarity_boost: 0.85,
-    style:            0.35,
+    stability:        0.40,
+    similarity_boost: 0.92,
+    style:            0.30,
     use_speaker_boost: true,
+    speed:            1.12,
   };
+
+  function getSpeed() {
+    const s = parseFloat(localStorage.getItem('fly_eleven_speed'));
+    if (!isNaN(s) && s >= 0.7 && s <= 1.2) return s;
+    return DEFAULT_VOICE_SETTINGS.speed;
+  }
+  function setSpeed(v) {
+    const s = Math.max(0.7, Math.min(1.2, parseFloat(v) || 1.0));
+    localStorage.setItem('fly_eleven_speed', String(s));
+    clearCache(); // áudios antigos têm a velocidade antiga
+    return s;
+  }
 
   /* ---------------------------------------------------------------
      CACHE de blobs (texto → URL) — economiza chamadas em frases comuns
@@ -142,7 +157,11 @@
           body: JSON.stringify({
             text: String(text),
             model_id: opts.model_id || DEFAULT_MODEL_TTS,
-            voice_settings: { ...DEFAULT_VOICE_SETTINGS, ...(opts.voice_settings || {}) },
+            voice_settings: {
+              ...DEFAULT_VOICE_SETTINGS,
+              speed: getSpeed(),
+              ...(opts.voice_settings || {}),
+            },
           }),
         });
         if (!r.ok) {
@@ -364,7 +383,9 @@
     isRecording,
     clearCache,
     setKey,
+    setSpeed,
+    getSpeed,
   };
 
-  console.log('[JamesVoice ElevenLabs] Online (modo client-only). TTS + STT prontos.');
+  console.log('[JamesVoice ElevenLabs] Online (modo client-only). TTS + STT prontos. Speed:', getSpeed());
 })();
