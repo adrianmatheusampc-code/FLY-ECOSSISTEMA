@@ -1137,6 +1137,17 @@
         </div>
 
         <div class="jms-card" style="grid-column: 1 / -1;">
+          <h3>Escrever pro James</h3>
+          <div class="jms-panel__input-row" style="padding:0;">
+            <button class="jms-attach-btn" id="jms-fs-attach-pdf" type="button" aria-label="Anexar PDF" title="Anexar PDF pro James ler">📎</button>
+            <input type="text" id="jms-fs-text-input" placeholder="Digite uma pergunta ou comando pro James..." autocomplete="off" />
+            <button class="jms-btn jms-btn--primary jms-send-btn" id="jms-fs-text-send" type="button" aria-label="Enviar">↑</button>
+            <input type="file" id="jms-fs-attach-pdf-input" accept="application/pdf,.pdf" style="display:none;" />
+          </div>
+          <div class="jms-attached-docs" id="jms-fs-attached-docs" style="display:none; padding:6px 0 0;"></div>
+        </div>
+
+        <div class="jms-card" style="grid-column: 1 / -1;">
           <h3>Comandos rápidos</h3>
           <div class="jms-quick">
             <button class="jms-quick__btn" data-cmd="Abrir Plano WAR">▸ Plano WAR</button>
@@ -1207,6 +1218,11 @@
       fsAutoLoop:   $('jms-fs-auto-loop'),
       fsStop:       $('jms-fs-stop'),
       fsClose:      $('jms-fs-close'),
+      fsTextInput:  $('jms-fs-text-input'),
+      fsTextSend:   $('jms-fs-text-send'),
+      fsAttachBtn:  $('jms-fs-attach-pdf'),
+      fsAttachInput:$('jms-fs-attach-pdf-input'),
+      fsAttachList: $('jms-fs-attached-docs'),
     };
 
     // Visualizers
@@ -1672,17 +1688,17 @@
     bindAutoLoop(ui.fsAutoLoop);
 
     /* ----- Upload de PDF (anexa pro James ler) ----- */
-    function renderAttachedDocs() {
-      if (!ui.attachList) return;
+    function renderAttachedDocsInto(container) {
+      if (!container) return;
       const reader = window.__jamesPdfReader;
       const list = reader?.getAttachedDocs?.() || [];
       if (!list.length) {
-        ui.attachList.style.display = 'none';
-        ui.attachList.innerHTML = '';
+        container.style.display = 'none';
+        container.innerHTML = '';
         return;
       }
-      ui.attachList.style.display = 'block';
-      ui.attachList.innerHTML = list.map(d => `
+      container.style.display = 'block';
+      container.innerHTML = list.map(d => `
         <div class="jms-doc-chip" data-doc-id="${d.id}">
           <span class="jms-doc-chip__icon">📄</span>
           <span class="jms-doc-chip__name" title="${d.name}">${d.name}</span>
@@ -1690,12 +1706,33 @@
           <button class="jms-doc-chip__rm" data-rm="${d.id}" type="button" aria-label="Remover" title="Remover">×</button>
         </div>
       `).join('');
-      ui.attachList.querySelectorAll('[data-rm]').forEach(btn => {
+      container.querySelectorAll('[data-rm]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           reader?.removeDoc?.(btn.dataset.rm);
         });
       });
+    }
+    function renderAttachedDocs() {
+      renderAttachedDocsInto(ui.attachList);
+      renderAttachedDocsInto(ui.fsAttachList);
+    }
+
+    function showLoadingChip(filename) {
+      const html = `
+        <div class="jms-doc-chip is-loading">
+          <span class="jms-doc-chip__icon">⏳</span>
+          <span class="jms-doc-chip__name">Lendo "${filename}"…</span>
+          <span class="jms-doc-chip__meta jms-doc-prog">carregando biblioteca</span>
+        </div>`;
+      [ui.attachList, ui.fsAttachList].forEach(c => {
+        if (!c) return;
+        c.style.display = 'block';
+        c.innerHTML = html;
+      });
+    }
+    function updateLoadingChipProgress(text) {
+      document.querySelectorAll('.jms-doc-prog').forEach(el => { el.textContent = text; });
     }
 
     async function handlePdfUpload(file) {
@@ -1704,23 +1741,16 @@
         updateReply('Leitor de PDF não disponível.');
         return;
       }
-      setPanelOpen(true);
-      // Feedback visual: chip placeholder enquanto processa
-      ui.attachList.style.display = 'block';
-      ui.attachList.innerHTML = `
-        <div class="jms-doc-chip is-loading">
-          <span class="jms-doc-chip__icon">⏳</span>
-          <span class="jms-doc-chip__name">Lendo "${file.name}"…</span>
-          <span class="jms-doc-chip__meta" id="jms-doc-prog">carregando biblioteca</span>
-        </div>
-      `;
+      // Mantém o lado que já está aberto; se nenhum, abre o painel mini
+      const fsOpen = fsEl.classList.contains('open');
+      if (!fsOpen) setPanelOpen(true);
+
+      showLoadingChip(file.name);
       try {
         const doc = await reader.extractPdf(file, (p) => {
-          const el = document.getElementById('jms-doc-prog');
-          if (!el) return;
-          if (p.phase === 'loading_lib') el.textContent = 'carregando pdf.js…';
-          else if (p.phase === 'reading') el.textContent = 'lendo arquivo…';
-          else if (p.phase === 'extracting') el.textContent = `página ${p.page}/${p.total}…`;
+          if (p.phase === 'loading_lib') updateLoadingChipProgress('carregando pdf.js…');
+          else if (p.phase === 'reading') updateLoadingChipProgress('lendo arquivo…');
+          else if (p.phase === 'extracting') updateLoadingChipProgress(`página ${p.page}/${p.total}…`);
         });
         reader.attachDoc(doc);
         renderAttachedDocs();
@@ -1728,7 +1758,6 @@
 
         // Auto-reação: dispara prompt no brain pra resumir + sugerir ação
         const intro = reader.buildAttachIntroPrompt(doc);
-        // Usa sendTextCommand (passa pelo engine + brain real se disponível)
         setTimeout(() => voice.sendTextCommand(intro), 200);
       } catch (e) {
         console.error('[James] Erro lendo PDF:', e);
@@ -1737,39 +1766,45 @@
       }
     }
 
-    ui.attachBtn?.addEventListener('click', () => {
-      ui.attachInput?.click();
-    });
-    ui.attachInput?.addEventListener('change', async (e) => {
+    ui.attachBtn?.addEventListener('click', () => ui.attachInput?.click());
+    ui.fsAttachBtn?.addEventListener('click', () => ui.fsAttachInput?.click());
+
+    async function onAttachInputChange(e) {
       const file = e.target.files?.[0];
       if (!file) return;
-      e.target.value = ''; // permite reanexar mesmo PDF
+      e.target.value = ''; // permite reanexar o mesmo PDF
       await handlePdfUpload(file);
-    });
+    }
+    ui.attachInput?.addEventListener('change', onAttachInputChange);
+    ui.fsAttachInput?.addEventListener('change', onAttachInputChange);
 
-    // Drag-and-drop no painel
-    const panelDropZone = panelEl;
-    let dragCounter = 0;
-    panelDropZone.addEventListener('dragenter', (e) => {
-      if (!e.dataTransfer?.types?.includes('Files')) return;
-      e.preventDefault();
-      dragCounter++;
-      panelDropZone.classList.add('is-drop-target');
-    });
-    panelDropZone.addEventListener('dragleave', () => {
-      dragCounter--;
-      if (dragCounter <= 0) { dragCounter = 0; panelDropZone.classList.remove('is-drop-target'); }
-    });
-    panelDropZone.addEventListener('dragover', (e) => {
-      if (e.dataTransfer?.types?.includes('Files')) e.preventDefault();
-    });
-    panelDropZone.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      dragCounter = 0;
-      panelDropZone.classList.remove('is-drop-target');
-      const file = e.dataTransfer?.files?.[0];
-      if (file && /\.pdf$/i.test(file.name)) await handlePdfUpload(file);
-    });
+    // Drag-and-drop pro painel e pro fullscreen
+    function bindDropZone(zone) {
+      if (!zone) return;
+      let counter = 0;
+      zone.addEventListener('dragenter', (e) => {
+        if (!e.dataTransfer?.types?.includes('Files')) return;
+        e.preventDefault();
+        counter++;
+        zone.classList.add('is-drop-target');
+      });
+      zone.addEventListener('dragleave', () => {
+        counter--;
+        if (counter <= 0) { counter = 0; zone.classList.remove('is-drop-target'); }
+      });
+      zone.addEventListener('dragover', (e) => {
+        if (e.dataTransfer?.types?.includes('Files')) e.preventDefault();
+      });
+      zone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        counter = 0;
+        zone.classList.remove('is-drop-target');
+        const file = e.dataTransfer?.files?.[0];
+        if (file && /\.pdf$/i.test(file.name)) await handlePdfUpload(file);
+      });
+    }
+    bindDropZone(panelEl);
+    bindDropZone(fsEl);
 
     // Atualiza lista quando docs mudam (attach/remove/clear)
     window.addEventListener('fly:james-doc-attached', renderAttachedDocs);
@@ -1782,24 +1817,26 @@
     });
     ui.fsClose.addEventListener('click', () => setFullscreen(false));
 
-    // Input de TEXTO — enviar pergunta por digitação
-    const textInput = $('jms-text-input');
-    const textSendBtn = $('jms-text-send');
-    function sendTextFromInput() {
-      const txt = textInput.value.trim();
-      if (!txt) return;
-      textInput.value = '';
-      // Garante painel aberto
-      setPanelOpen(true);
-      voice.sendTextCommand(txt);
+    // Input de TEXTO — enviar pergunta por digitação (painel + fullscreen)
+    function bindTextInput(inputEl, sendBtn, ensureOpen) {
+      if (!inputEl) return;
+      const send = () => {
+        const txt = inputEl.value.trim();
+        if (!txt) return;
+        inputEl.value = '';
+        ensureOpen?.();
+        voice.sendTextCommand(txt);
+      };
+      inputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          send();
+        }
+      });
+      sendBtn?.addEventListener('click', send);
     }
-    textInput?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendTextFromInput();
-      }
-    });
-    textSendBtn?.addEventListener('click', sendTextFromInput);
+    bindTextInput($('jms-text-input'),    $('jms-text-send'),    () => setPanelOpen(true));
+    bindTextInput(ui.fsTextInput,         ui.fsTextSend,         () => setFullscreen(true));
 
     // ESC fecha fullscreen
     document.addEventListener('keydown', (e) => {
