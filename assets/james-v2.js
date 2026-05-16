@@ -176,8 +176,25 @@
       messages: [],
       isListening: false,
       isConversationActive: false,
+      // autoLoop=true → após resposta, James recaptura sozinho (conversa contínua).
+      // autoLoop=false → uma frase por vez (precisa do botão de mic pra falar de novo).
+      // pendingSingle → flag temporária: a próxima resposta encerra a conversa.
+      autoLoop: localStorage.getItem('fly_james_auto_loop') !== '0',
+      pendingSingle: false,
       error: null,
     };
+
+    // Helper: decide se o James deve continuar escutando depois de uma resposta.
+    function _shouldKeepListening() {
+      if (state.pendingSingle) { state.pendingSingle = false; return false; }
+      return state.isConversationActive && state.autoLoop;
+    }
+    function _endConversation() {
+      state.isConversationActive = false;
+      stopAllRecog();
+      setStatus(STATUS.IDLE);
+      handlers.onStop?.();
+    }
 
     // Voz masculina cacheada
     let _maleVoice = null;
@@ -440,8 +457,10 @@
       handlers.onListenEnd?.();
       const userText = (rawText || '').trim();
       if (!userText) {
-        if (state.isConversationActive) {
+        if (_shouldKeepListening()) {
           setTimeout(() => { if (state.isConversationActive) captureOnce(); }, 800);
+        } else if (state.isConversationActive) {
+          _endConversation();
         } else {
           setStatus(STATUS.IDLE);
         }
@@ -465,8 +484,10 @@
         return;
       }
       speak(reply, () => {
-        if (state.isConversationActive) {
+        if (_shouldKeepListening()) {
           setTimeout(() => { if (state.isConversationActive) captureOnce(); }, 250);
+        } else if (state.isConversationActive) {
+          _endConversation();
         } else {
           setStatus(STATUS.IDLE);
         }
@@ -600,13 +621,47 @@
       handlers.onJamesMessage?.(reply);
 
       speak(reply, () => {
-        if (state.isConversationActive) {
+        if (_shouldKeepListening()) {
           setTimeout(() => { if (state.isConversationActive) captureOnce(); }, 250);
+        } else if (state.isConversationActive) {
+          _endConversation();
         } else {
           setStatus(STATUS.IDLE);
         }
       });
     }
+
+    /* ----------------- Push-to-talk (botão de mic estilo Claude) -----------------
+       Escuta uma frase única — independente do toggle "Auto". Funciona mesmo
+       com conversation inativa: ativa, captura, processa, encerra. */
+    async function captureOnceMicButton() {
+      if (state.isListening) {
+        // Já gravando — segundo clique encerra a gravação (silenceMs já cuida disso,
+        // mas pra UX igual o Claude, paramos o recognizer)
+        stopAllRecog();
+        return;
+      }
+      const ok = await ensureMicPermission();
+      if (!ok) return;
+      state.pendingSingle = true;
+      state.error = null;
+      errorCount = 0;
+      if (!state.isConversationActive) {
+        state.isConversationActive = true;
+        wakeEnabled = true;
+        handlers.onStart?.();
+      }
+      captureOnce();
+    }
+
+    function setAutoLoop(value) {
+      const next = !!value;
+      state.autoLoop = next;
+      try { localStorage.setItem('fly_james_auto_loop', next ? '1' : '0'); } catch (e) {}
+      handlers.onAutoLoopChange?.(next);
+    }
+
+    function getAutoLoop() { return !!state.autoLoop; }
 
     function getState() { return { ...state }; }
     function getMessages() { return state.messages.slice(); }
@@ -621,6 +676,7 @@
       getState, getMessages, STATUS,
       // actions
       startJames, stopJames, toggleJames,
+      captureOnceMicButton, setAutoLoop, getAutoLoop,
       sendTextCommand, speak,
       enableWakeWord, disableWakeWord,
       clearMessages,
@@ -949,11 +1005,16 @@
       </div>
 
       <div class="jms-panel__actions">
-        <button class="jms-btn jms-btn--primary" id="jms-activate" type="button">🎤 Ativar Voz</button>
+        <button class="jms-btn jms-btn--primary" id="jms-mic-once" type="button" title="Falar uma vez (push-to-talk)">🎙️ Falar</button>
+        <button class="jms-btn jms-btn--ghost" id="jms-activate" type="button" title="Modo contínuo: James escuta até você encerrar">🎤 Ativar Voz</button>
         <button class="jms-btn jms-btn--danger" id="jms-stop" type="button">Encerrar</button>
         <button class="jms-btn jms-btn--ghost" id="jms-fs-open" type="button">Tela Cheia</button>
         <button class="jms-btn jms-btn--ghost" id="jms-config-ai" type="button">⚙ Config</button>
       </div>
+      <label class="jms-mode-row" title="Quando ligado, James continua escutando depois de cada resposta. Desligado, fala uma frase de cada vez (use o botão 🎙️).">
+        <input type="checkbox" id="jms-auto-loop" />
+        <span class="jms-mode-row__txt">🔁 Conversa automática <small style="opacity:0.6;">(James escuta de novo após cada resposta)</small></span>
+      </label>
 
       <!-- Mini-form de configuração de IA (escondido por padrão) -->
       <div class="jms-config" id="jms-config-form" style="display:none;">
@@ -1086,9 +1147,14 @@
       </div>
 
       <footer class="jms-fs__footer">
-        <button class="jms-btn jms-btn--primary" id="jms-fs-activate">Ativar James</button>
+        <button class="jms-btn jms-btn--primary" id="jms-fs-mic-once" title="Falar uma vez (push-to-talk)">🎙️ Falar uma vez</button>
+        <button class="jms-btn jms-btn--ghost" id="jms-fs-activate" title="Modo contínuo">🎤 Ativar conversa contínua</button>
         <button class="jms-btn jms-btn--danger" id="jms-fs-stop">Encerrar Conversa</button>
-        <button class="jms-btn jms-btn--ghost" id="jms-fs-close">Voltar ao painel</button>
+        <label class="jms-mode-row" style="margin-left:8px;">
+          <input type="checkbox" id="jms-fs-auto-loop" />
+          <span class="jms-mode-row__txt">🔁 Auto</span>
+        </label>
+        <button class="jms-btn jms-btn--ghost" id="jms-fs-close" style="margin-left:auto;">Voltar ao painel</button>
       </footer>
     `;
     container.appendChild(fs);
@@ -1117,6 +1183,8 @@
       reply:      $('jms-reply'),
       error:      $('jms-error'),
       activate:   $('jms-activate'),
+      micOnce:    $('jms-mic-once'),
+      autoLoop:   $('jms-auto-loop'),
       stop:       $('jms-stop'),
       fsOpen:     $('jms-fs-open'),
       close:      $('jms-close'),
@@ -1127,6 +1195,8 @@
       fsReply:      $('jms-fs-reply'),
       fsHistory:    $('jms-fs-history'),
       fsActivate:   $('jms-fs-activate'),
+      fsMicOnce:    $('jms-fs-mic-once'),
+      fsAutoLoop:   $('jms-fs-auto-loop'),
       fsStop:       $('jms-fs-stop'),
       fsClose:      $('jms-fs-close'),
     };
@@ -1173,6 +1243,11 @@
       else if (status === STATUS.THINKING) ui.led.classList.add('is-thinking');
       else if (status === STATUS.SPEAKING) ui.led.classList.add('is-speaking');
       else if (status === STATUS.ERROR) ui.led.classList.add('is-error');
+
+      // Pulso vermelho no botão de mic enquanto está gravando
+      const isRec = status === STATUS.LISTENING;
+      ui.micOnce?.classList.toggle('is-recording', isRec);
+      ui.fsMicOnce?.classList.toggle('is-recording', isRec);
 
       // Visualizer behavior por status
       if (status === STATUS.LISTENING) vizPanel.reset();
@@ -1559,6 +1634,34 @@
 
     ui.stop.addEventListener('click', () => voice.stopJames());
     ui.fsStop.addEventListener('click', () => voice.stopJames());
+
+    /* ----- Push-to-talk (botão de mic estilo Claude) ----- */
+    function bindMicOnce(btn) {
+      if (!btn) return;
+      btn.addEventListener('click', async () => {
+        setPanelOpen(true);
+        await voice.captureOnceMicButton();
+      });
+    }
+    bindMicOnce(ui.micOnce);
+    bindMicOnce(ui.fsMicOnce);
+
+    /* ----- Toggle "Conversa automática" (auto loop) ----- */
+    function syncAutoLoopUI(val) {
+      if (ui.autoLoop)   ui.autoLoop.checked   = !!val;
+      if (ui.fsAutoLoop) ui.fsAutoLoop.checked = !!val;
+    }
+    syncAutoLoopUI(voice.getAutoLoop());
+
+    function bindAutoLoop(input) {
+      if (!input) return;
+      input.addEventListener('change', () => {
+        voice.setAutoLoop(input.checked);
+        syncAutoLoopUI(input.checked);
+      });
+    }
+    bindAutoLoop(ui.autoLoop);
+    bindAutoLoop(ui.fsAutoLoop);
 
     ui.fsOpen.addEventListener('click', () => {
       setFullscreen(true);

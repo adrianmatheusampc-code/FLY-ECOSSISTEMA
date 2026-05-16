@@ -712,10 +712,67 @@
   max-width: 1100px;
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
   position: relative;
   z-index: 2;
+}
+
+/* ============================================================
+   MODE ROW — Toggle "Conversa automática"
+   ============================================================ */
+.jms-mode-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  margin: 0 20px 14px;
+  background: rgba(245, 182, 66, 0.04);
+  border: 1px solid rgba(245, 182, 66, 0.18);
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.jms-mode-row:hover {
+  background: rgba(245, 182, 66, 0.1);
+  border-color: rgba(245, 182, 66, 0.32);
+}
+.jms-mode-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--jms-gold, #f5b842);
+  cursor: pointer;
+}
+.jms-mode-row__txt {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--jms-gold, #f5b842);
+}
+.jms-mode-row__txt small {
+  font-weight: 500;
+  letter-spacing: 0.4px;
+  text-transform: none;
+  margin-left: 4px;
+}
+/* No fullscreen footer, fica compacto e inline com os botões */
+.jms-fs__footer .jms-mode-row {
+  margin: 0;
+  padding: 10px 14px;
+}
+/* Estado push-to-talk: botão piscando quando está gravando */
+.jms-btn.is-recording {
+  background: linear-gradient(135deg, #ff4d4d 0%, #ff7a7a 100%) !important;
+  color: #fff !important;
+  border-color: #ff4d4d !important;
+  animation: jms-rec-pulse 1.2s ease-in-out infinite;
+}
+@keyframes jms-rec-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.55); }
+  50%      { box-shadow: 0 0 0 8px rgba(255, 77, 77, 0); }
 }
 
 /* ============================================================
