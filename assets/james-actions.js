@@ -733,12 +733,12 @@
     },
 
     pacote_add_custo: {
-      desc: 'Adiciona custo (fixo ou variável) ao pacote',
+      desc: 'Adiciona CUSTO FIXO MENSAIL recorrente ao pacote (gráfica, marketing dedicado, salário rateado, base operacional). NÃO usar pra voo/hotel/passeios — esses são custos DO PACOTE (use pacote_add_custo_pacote).',
       params: {
         pacote: 'nome do pacote (opcional)',
-        nome: 'nome do custo (obrigatório, ex: Hotel, Passagem aérea)',
-        valor: 'valor R$ (obrigatório)',
-        tipo: 'fixo | variavel (default: fixo)',
+        nome: 'nome do custo fixo mensal (ex: Gráfica, Marketing dedicado, Salário Carlos)',
+        valor: 'valor R$ mensal (obrigatório)',
+        tipo: 'fixo | variavel (default: fixo) — ambos são custos mensais recorrentes',
       },
       run(p) {
         if (!p.nome) return { ok: false, msg: 'Nome do custo é obrigatório.' };
@@ -754,12 +754,12 @@
           : (D.custos.variaveis || (D.custos.variaveis = []));
         arr.push({ nome: p.nome, valor });
         api.save(item);
-        return { ok: true, msg: `Custo ${isFix ? 'fixo' : 'variável'} "${p.nome}" (R$ ${valor.toLocaleString('pt-BR')}) adicionado ao ${item.name}.` };
+        return { ok: true, msg: `Custo ${isFix ? 'fixo' : 'variável'} mensal "${p.nome}" (R$ ${valor.toLocaleString('pt-BR')}/mês) adicionado ao ${item.name}.` };
       },
     },
 
     pacote_remove_custo: {
-      desc: 'Remove custo do pacote por nome (busca em fixos e variáveis)',
+      desc: 'Remove custo fixo/variável MENSAL do pacote por nome',
       params: { pacote: 'nome do pacote (opcional)', nome: 'nome do custo (obrigatório)' },
       run(p) {
         if (!p.nome) return { ok: false, msg: 'Nome do custo é obrigatório.' };
@@ -775,7 +775,86 @@
         }
         if (!removed) return { ok: false, msg: `Custo "${p.nome}" não encontrado em ${item.name}.` };
         api.save(item);
-        return { ok: true, msg: `Custo ${tipo} "${removed.nome}" removido do ${item.name}.` };
+        return { ok: true, msg: `Custo ${tipo} mensal "${removed.nome}" removido do ${item.name}.` };
+      },
+    },
+
+    pacote_add_custo_pacote: {
+      desc: 'Adiciona CUSTO DO PACOTE (por viagem) — voo, hotel, passeios, alimentação, transfer. Esses custos SÓ existem quando alguém compra. Usar divPor>1 pra custos compartilhados pela turma (ex: transfer ÷ 6).',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        nome: 'nome do item (obrigatório, ex: Voo Emirates, Hotel Novotel, Jet Ski)',
+        valor: 'valor em R$ (obrigatório)',
+        div_por: 'divisor (1=por pessoa, >1=dividido pela turma. default: 1)',
+        moeda_original: 'opcional (ex: "150 AED")',
+      },
+      run(p) {
+        if (!p.nome) return { ok: false, msg: 'Nome do item é obrigatório.' };
+        const valor = parseValue(p.valor);
+        if (valor <= 0) return { ok: false, msg: 'Valor inválido.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.produto) D.produto = {};
+        if (!D.produto.custosPacote) D.produto.custosPacote = { turmaGrupo: 6, items: [] };
+        if (!Array.isArray(D.produto.custosPacote.items)) D.produto.custosPacote.items = [];
+        const divPor = Math.max(1, parseInt(p.div_por, 10) || 1);
+        D.produto.custosPacote.items.push({
+          nome: p.nome,
+          valor,
+          divPor,
+          moedaOriginal: p.moeda_original || '',
+        });
+        api.save(item);
+        const divLabel = divPor > 1 ? ` (÷${divPor} pessoas)` : ' (por pessoa)';
+        return { ok: true, msg: `Custo do pacote "${p.nome}" (R$ ${valor.toLocaleString('pt-BR')}${divLabel}) adicionado ao ${item.name}.` };
+      },
+    },
+
+    pacote_remove_custo_pacote: {
+      desc: 'Remove custo do pacote (por viagem) por nome',
+      params: { pacote: 'nome do pacote (opcional)', nome: 'nome do item (obrigatório)' },
+      run(p) {
+        if (!p.nome) return { ok: false, msg: 'Nome do item é obrigatório.' };
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        const arr = D.produto?.custosPacote?.items;
+        const idx = _findIndexByName(arr, 'nome', p.nome);
+        if (idx === -1) return { ok: false, msg: `"${p.nome}" não está nos custos do pacote ${item.name}.` };
+        const removed = arr.splice(idx, 1)[0];
+        api.save(item);
+        return { ok: true, msg: `Custo "${removed.nome}" removido do pacote ${item.name}.` };
+      },
+    },
+
+    pacote_set_preco: {
+      desc: 'Define preços de venda do pacote (solo, duo, grupo)',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        solo:  'preço Solo (1 pessoa) em R$',
+        duo:   'preço Duo (2 pessoas) em R$',
+        grupo: 'preço Grupo (turma cheia) em R$',
+        turma_grupo: 'tamanho da turma "Grupo" (opcional, default mantém atual)',
+      },
+      run(p) {
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        if (!D.produto) D.produto = {};
+        if (!D.produto.precos) D.produto.precos = { solo: 0, duo: 0, grupo: 0 };
+        if (!D.produto.custosPacote) D.produto.custosPacote = { turmaGrupo: 6, items: [] };
+        const changes = [];
+        if (p.solo !== undefined && p.solo !== '')  { D.produto.precos.solo  = parseValue(p.solo);  changes.push(`solo R$${D.produto.precos.solo.toLocaleString('pt-BR')}`); }
+        if (p.duo !== undefined && p.duo !== '')    { D.produto.precos.duo   = parseValue(p.duo);   changes.push(`duo R$${D.produto.precos.duo.toLocaleString('pt-BR')}`); }
+        if (p.grupo !== undefined && p.grupo !== ''){ D.produto.precos.grupo = parseValue(p.grupo); changes.push(`grupo R$${D.produto.precos.grupo.toLocaleString('pt-BR')}`); }
+        if (p.turma_grupo !== undefined && p.turma_grupo !== '') {
+          D.produto.custosPacote.turmaGrupo = Math.max(1, parseInt(p.turma_grupo, 10) || 6);
+          changes.push(`turma grupo = ${D.produto.custosPacote.turmaGrupo}`);
+        }
+        if (!changes.length) return { ok: false, msg: 'Nenhum preço informado.' };
+        api.save(item);
+        return { ok: true, msg: `Preços do ${item.name}: ${changes.join(', ')}.` };
       },
     },
 

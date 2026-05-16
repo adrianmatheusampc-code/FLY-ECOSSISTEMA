@@ -67,9 +67,23 @@
       confidence: 0.94, requiresConfirmation: false,
     },
     {
-      // "adiciona custo [fixo/variavel]"
-      re: /\b(?:adicion[ae]|cria|cadastra|inclui|lan[cç][ae])\s+(?:um\s+|uma\s+|novo\s+|nova\s+)?custo\b/i,
+      // "adiciona custo do pacote / voo / hotel / passeio / passagem"
+      // Custos DO PACOTE (por viagem) — voo, hotel, alimentação, jet ski, etc.
+      // Tem prioridade sobre o padrão genérico "adiciona custo"
+      re: /\b(?:adicion[ae]|cria|cadastra|inclui|lan[cç][ae])\s+(?:um\s+|uma\s+|novo\s+|nova\s+|o\s+|a\s+)?(?:custo\s+do\s+pacote|voo|passagem|hotel|hospedagem|jet\s*ski|deserto|safari|burj|aquaventure|museu|cruise|alimenta[cç][ãa]o|ingresso|transfer|carro\s+de\s+passeio|passeio|atra[cç][ãa]o)\b/i,
+      type: 'pacote', subtype: 'pacote_add_custo_pacote', category: 'pacotes',
+      confidence: 0.97, requiresConfirmation: false,
+    },
+    {
+      // "adiciona custo fixo / mensal / gráfica / marketing / funcionário"
+      re: /\b(?:adicion[ae]|cria|cadastra|inclui|lan[cç][ae])\s+(?:um\s+|uma\s+|novo\s+|nova\s+)?custo(?:\s+(?:fixo|vari[áa]vel|mensal|recorrente))?\b/i,
       type: 'pacote', subtype: 'pacote_add_custo', category: 'pacotes',
+      confidence: 0.94, requiresConfirmation: false,
+    },
+    {
+      // "define / atualiza preços do pacote (solo R$X, duo R$Y, grupo R$Z)"
+      re: /\b(?:define|seta|atualiza|muda|altera|coloca)\s+(?:o\s+|os\s+)?(?:pre[çc]o|valor|preco\s+de\s+venda)/i,
+      type: 'pacote', subtype: 'pacote_set_preco', category: 'pacotes',
       confidence: 0.95, requiresConfirmation: false,
     },
     {

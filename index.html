@@ -6336,6 +6336,59 @@
   .dbx-callout h4 { margin: 0 0 4px; font-size: 13px; letter-spacing: 2px; color: var(--dbx-gold-bright); text-transform: uppercase; font-weight: 700; }
   .dbx-callout p { margin: 0; color: rgba(255,255,255,.8); font-size: 13px; line-height: 1.5; }
 
+  /* CALLOUT INLINE — texto explicativo dentro de bloco */
+  .dbx-callout-inline {
+    padding: 8px 12px;
+    background: rgba(198,168,90,0.05);
+    border-left: 2px solid rgba(198,168,90,0.4);
+    border-radius: 6px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    margin: 8px 0 12px;
+  }
+  .dbx-list-head {
+    font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: rgba(255,255,255,0.4) !important;
+    padding-bottom: 6px !important; border-bottom: 1px dashed rgba(255,255,255,0.1);
+  }
+  .dbx-list-head:hover { background: transparent !important; }
+
+  /* PREÇOS DE VENDA · grid solo / duo / grupo */
+  .dbx-precos-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .dbx-preco-card {
+    padding: 18px 20px;
+    background: linear-gradient(180deg, rgba(198,168,90,0.08), rgba(198,168,90,0.02));
+    border: 1px solid rgba(198,168,90,0.3);
+    border-radius: 14px;
+    text-align: center;
+  }
+  .dbx-preco-titulo {
+    font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase;
+    color: var(--dbx-gold-bright); font-weight: 700;
+  }
+  .dbx-preco-titulo small { font-weight: 400; opacity: 0.6; }
+  .dbx-preco-valor {
+    margin: 10px 0 8px;
+    font-size: 24px; font-weight: 700; color: #fff;
+  }
+  .dbx-preco-margin { margin: 4px 0; }
+  .dbx-preco-custo {
+    font-size: 11px; color: rgba(255,255,255,0.45);
+    margin-top: 6px;
+  }
+  .dbx-margin-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  }
+  .dbx-margin-badge.good { background: rgba(111,227,168,0.15); color: #6fe3a8; }
+  .dbx-margin-badge.bad  { background: rgba(255,107,107,0.15); color: #ff8c8c; }
+  .dbx-margin-badge.neutral { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5); }
+
   /* OPERAÇÃO */
   .dbx-base-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
   .dbx-base-item {
@@ -16717,22 +16770,31 @@
           { lbl: 'Passeios + Ingressos', val: 'Todas as 6 experiências do roteiro acima' },
           { lbl: 'Refeições',          val: 'Café da manhã diário + 2 jantares VIP' },
           { lbl: 'Suporte FLY',        val: 'Líder brasileiro fixo durante toda a viagem' }
-        ]
-      },
-      custos: {
-        fixos: [
-          { nome: 'Hotel (Atlantis · 6 noites)', valor: 28000 },
-          { nome: 'Transporte base (frota Mercedes)', valor: 6500 },
-          { nome: 'Staff (líder + 2 guias)',   valor: 12000 },
-          { nome: 'Operação base (logística)', valor: 4500 }
         ],
-        variaveis: [
-          { nome: 'Passagem aérea',     valor: 4800 },
-          { nome: 'Alimentação completa', valor: 1200 },
-          { nome: 'Ingressos atrações', valor: 950 },
-          { nome: 'Comissão FLY',       valor: 600 }
-        ]
+        // ===== CUSTOS DO PACOTE (por viagem) =====
+        // SÓ existem quando um cliente compra. divPor=1 → custo por pessoa.
+        // divPor>1 → custo da turma, dividido entre N pessoas (transfer, carro, etc).
+        custosPacote: {
+          turmaGrupo: 6,  // tamanho da turma "Grupo" pra cálculo de preço
+          items: [
+            { nome: 'Passagem aérea',         valor: 4800, divPor: 1, moedaOriginal: '' },
+            { nome: 'Hospedagem (6 noites)',   valor: 28000, divPor: 2, moedaOriginal: '' }, // quarto duplo divide
+            { nome: 'Alimentação completa',    valor: 1200, divPor: 1, moedaOriginal: '' },
+            { nome: 'Ingressos atrações',      valor: 950,  divPor: 1, moedaOriginal: '' },
+            { nome: 'Transporte (Mercedes)',   valor: 6500, divPor: 6, moedaOriginal: '' }, // turma divide
+            { nome: 'Staff (líder + 2 guias)', valor: 12000,divPor: 6, moedaOriginal: '' },
+            { nome: 'Operação base',           valor: 4500, divPor: 6, moedaOriginal: '' },
+            { nome: 'Comissão FLY',            valor: 600,  divPor: 1, moedaOriginal: '' },
+          ],
+        },
+        // ===== PREÇOS DE VENDA por cenário =====
+        precos: { solo: 0, duo: 0, grupo: 0 },
       },
+      // ===== CUSTOS FIXOS MENSAIS RECORRENTES =====
+      // SÓ entram aqui custos que acontecem TODO MÊS independente de vendas:
+      // gráfica, marketing dedicado, salário de funcionários focados, base operacional.
+      // Voo/Hotel/Passeios → NÃO entram aqui (vão em produto.custosPacote).
+      custos: { fixos: [], variaveis: [] },
       operacao: {
         base: {
           hotel: 'Atlantis The Palm — Crescent Rd, Palm Jumeirah, Dubai',
@@ -16973,6 +17035,8 @@
       e.produto.banner = '';
       e.produto.experiencias = [];
       e.produto.incluso = [];
+      e.produto.custosPacote = { turmaGrupo: 6, items: [] };
+      e.produto.precos = { solo: 0, duo: 0, grupo: 0 };
       e.custos.fixos = [];
       e.custos.variaveis = [];
       e.operacao = { rotina: [], checklist: [] };
@@ -17100,6 +17164,28 @@
       const def = DUBAI_EXPLORER_DEFAULTS;
       for (const k of Object.keys(def)) {
         if (item[key][k] === undefined) item[key][k] = JSON.parse(JSON.stringify(def[k]));
+      }
+      // Garante novos sub-campos em produto (custosPacote / precos)
+      if (item[key].produto) {
+        if (!item[key].produto.custosPacote) {
+          item[key].produto.custosPacote = { turmaGrupo: 6, items: [] };
+        } else if (!Array.isArray(item[key].produto.custosPacote.items)) {
+          item[key].produto.custosPacote.items = [];
+        }
+        if (!item[key].produto.precos) {
+          item[key].produto.precos = { solo: 0, duo: 0, grupo: 0 };
+        }
+      }
+      // Migração one-shot: D.custos no modelo antigo tinha custos do pacote
+      // (Hotel/Voo/Passagem) misturados com tudo. Como o conceito mudou —
+      // D.custos agora é só FIXOS MENSAIS RECORRENTES — zera o que existia
+      // (o Chefe pediu pra refazer do zero) e marca como migrado.
+      const migKey = '__custosPacoteMigrated_v1';
+      if (!item[key][migKey] && item[key].custos) {
+        item[key].custos.fixos = [];
+        item[key].custos.variaveis = [];
+        item[key][migKey] = true;
+        try { saveData(); } catch (e) {}
       }
       return item[key];
     }
@@ -17485,16 +17571,34 @@
     }
     window.flyOpenComparador = flyOpenComparador;
 
+    // Custo por cliente do PACOTE para uma turma de tamanho `turmaSize`.
+    // Cada item tem divPor: 1 = por pessoa; >1 = custo da turma dividido.
+    // Custo por cliente = item.valor / min(turmaSize, item.divPor)
+    function dbxComputeCustoPacotePorCliente(D, turmaSize) {
+      const items = D?.produto?.custosPacote?.items || [];
+      const t = Math.max(1, Number(turmaSize) || 1);
+      return items.reduce((s, c) => {
+        const v = Number(c.valor) || 0;
+        const dp = Math.max(1, Number(c.divPor) || 1);
+        return s + (v / Math.min(t, dp));
+      }, 0);
+    }
+
     function dbxComputeFinance(D) {
       const clientesPagos = D.clientes.filter(c => c.status === 'pago').length;
       const totalClientes = clientesPagos;
       const ticket = D.vendas.ticketMedio || 0;
       const totalReceita = totalClientes * ticket;
-      const totalCustoFixo = D.custos.fixos.reduce((s,c) => s + (Number(c.valor)||0), 0);
-      const custoVarPorCliente = D.custos.variaveis.reduce((s,c) => s + (Number(c.valor)||0), 0);
-      const totalCustoVar = custoVarPorCliente * totalClientes;
+      // Custos fixos mensais (gráfica, marketing dedicado, funcionários, base op)
+      const totalCustoFixo = (D.custos.fixos || []).reduce((s,c) => s + (Number(c.valor)||0), 0);
+      const totalCustoVarMensal = (D.custos.variaveis || []).reduce((s,c) => s + (Number(c.valor)||0), 0);
+      // Custo do pacote por cliente (assume turma do tamanho atual de clientes pagos, ou turmaGrupo se >0)
+      const turmaGrupo = Number(D?.produto?.custosPacote?.turmaGrupo) || 6;
+      const turmaEfetiva = Math.max(1, totalClientes || turmaGrupo);
+      const custoPacotePorCliente = dbxComputeCustoPacotePorCliente(D, turmaEfetiva);
+      const totalCustoPacote = custoPacotePorCliente * totalClientes;
       const upsellReceita = D.upsell.extras.reduce((s,e) => s + (Number(e.receita)||0), 0);
-      const totalCusto = totalCustoFixo + totalCustoVar;
+      const totalCusto = totalCustoFixo + totalCustoVarMensal + totalCustoPacote;
       const lucro = totalReceita + upsellReceita - totalCusto;
       const margem = (totalReceita + upsellReceita) > 0 ? (lucro / (totalReceita + upsellReceita) * 100) : 0;
       // CAC: gasto em marketing / clientes adquiridos
@@ -17504,8 +17608,13 @@
       const receitaMkt = D.marketing.campanhas.reduce((s,c) => s + (Number(c.retorno)||0), 0);
       const roi = investMkt > 0 ? ((receitaMkt - investMkt) / investMkt * 100) : 0;
       return {
-        totalClientes, ticket, totalReceita, totalCustoFixo, custoVarPorCliente,
-        totalCustoVar, upsellReceita, totalCusto, lucro, margem, investMkt, cac, receitaMkt, roi
+        totalClientes, ticket, totalReceita,
+        totalCustoFixo, totalCustoVarMensal,
+        custoPacotePorCliente, totalCustoPacote, turmaEfetiva,
+        // Aliases legacy pra não quebrar quem ainda usa:
+        custoVarPorCliente: custoPacotePorCliente,
+        totalCustoVar: totalCustoPacote,
+        upsellReceita, totalCusto, lucro, margem, investMkt, cac, receitaMkt, roi
       };
     }
 
@@ -18509,6 +18618,22 @@
     function dbxRenderProduto(D) {
       const exp = D.produto.experiencias || [];
       const inc = D.produto.incluso || [];
+      const cp = D.produto.custosPacote || { items: [], turmaGrupo: 6 };
+      const cpItems = cp.items || [];
+      const turmaGrupo = Number(cp.turmaGrupo) || 6;
+      const precos = D.produto.precos || { solo: 0, duo: 0, grupo: 0 };
+      // Custo por cliente em cada cenário
+      const custoSolo  = dbxComputeCustoPacotePorCliente(D, 1);
+      const custoDuo   = dbxComputeCustoPacotePorCliente(D, 2);
+      const custoGrupo = dbxComputeCustoPacotePorCliente(D, turmaGrupo);
+      const margemPct = (preco, custo) => preco > 0 ? ((preco - custo) / preco * 100) : 0;
+      const margemBadge = (preco, custo) => {
+        if (!preco) return '<span class="dbx-margin-badge neutral">— defina o preço</span>';
+        const lucro = preco - custo;
+        const pct = margemPct(preco, custo);
+        const cls = lucro > 0 ? 'good' : 'bad';
+        return `<span class="dbx-margin-badge ${cls}">lucro ${dbxFmtMoney(lucro)} · ${pct.toFixed(1)}%</span>`;
+      };
       return `
         <div class="dbx-panel-head">
           <h2><span class="ico">📦</span>Produto · Banner + Experiências + Incluso</h2>
@@ -18574,6 +18699,80 @@
             <div class="dbx-add-row" data-add="inc">
               <span style="font-size:18px;">+</span>
               <span>Adicionar item incluído (hotel, transporte, refeições...)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== CUSTOS DO PACOTE (por viagem) ===== -->
+        <div class="dbx-block">
+          <div class="dbx-block-head">
+            <h3>💰 Custos do Pacote (por viagem)</h3>
+            <div class="dbx-block-actions">
+              <button class="dbx-mini-btn" data-edit="turma-grupo" title="Tamanho da turma 'Grupo' pra dividir custos compartilhados">👥 Turma grupo: ${turmaGrupo}</button>
+              <button class="dbx-mini-btn" data-add="custo-pacote">+ Adicionar custo</button>
+            </div>
+          </div>
+          <p class="dbx-desc dbx-callout-inline">
+            Esses são custos que <strong>só existem quando um cliente compra</strong>. Voo, hotel, passeios, alimentação.
+            Itens com <em>divisor &gt; 1</em> (ex: transfer ÷ 6) são compartilhados pela turma.
+          </p>
+          <div class="dbx-list">
+            <div class="dbx-list-row dbx-list-head">
+              <span style="flex:2;">Item</span>
+              <span style="flex:1; text-align:right;">Valor (R$)</span>
+              <span style="flex:1; text-align:center;">÷ Turma</span>
+              <span style="width:80px;"></span>
+            </div>
+            ${cpItems.map((c, i) => `
+              <div class="dbx-list-row dbx-editable" data-idx="${i}">
+                <div class="dbx-card-actions">
+                  <button class="dbx-act-btn" data-edit="custo-pacote" data-idx="${i}" title="Editar">✎</button>
+                  <button class="dbx-act-btn danger" data-del="custo-pacote" data-idx="${i}" title="Excluir">✕</button>
+                </div>
+                <span style="flex:2;">${escapeHtml(c.nome || '')}${c.moedaOriginal ? ` <small style="opacity:0.5;">(${escapeHtml(c.moedaOriginal)})</small>` : ''}</span>
+                <strong style="flex:1; text-align:right;">${dbxFmtMoney(c.valor)}</strong>
+                <span style="flex:1; text-align:center; opacity:${(c.divPor || 1) > 1 ? '1' : '0.4'};">${(c.divPor || 1) > 1 ? '÷' + c.divPor : 'por pessoa'}</span>
+                <span style="width:80px;"></span>
+              </div>
+            `).join('')}
+            <div class="dbx-add-row" data-add="custo-pacote">
+              <span style="font-size:18px;">+</span>
+              <span>Adicionar custo do pacote</span>
+            </div>
+          </div>
+          <div class="dbx-stats-grid" style="margin-top:14px;">
+            <div class="dbx-stat"><div class="lbl">Custo / cliente (Solo)</div><div class="val">${dbxFmtMoney(custoSolo)}</div></div>
+            <div class="dbx-stat"><div class="lbl">Custo / cliente (Duo)</div><div class="val">${dbxFmtMoney(custoDuo)}</div></div>
+            <div class="dbx-stat"><div class="lbl">Custo / cliente (Grupo de ${turmaGrupo})</div><div class="val">${dbxFmtMoney(custoGrupo)}</div></div>
+          </div>
+        </div>
+
+        <!-- ===== PREÇOS DE VENDA ===== -->
+        <div class="dbx-block">
+          <div class="dbx-block-head">
+            <h3>🏷 Preços de Venda</h3>
+            <div class="dbx-block-actions">
+              <button class="dbx-mini-btn" data-edit="precos">✎ Editar preços</button>
+            </div>
+          </div>
+          <div class="dbx-precos-grid">
+            <div class="dbx-preco-card">
+              <div class="dbx-preco-titulo">SOLO <small>(1 pessoa)</small></div>
+              <div class="dbx-preco-valor">${dbxFmtMoney(precos.solo)}</div>
+              <div class="dbx-preco-margin">${margemBadge(precos.solo, custoSolo)}</div>
+              <div class="dbx-preco-custo">custo: ${dbxFmtMoney(custoSolo)}</div>
+            </div>
+            <div class="dbx-preco-card">
+              <div class="dbx-preco-titulo">DUO <small>(2 pessoas)</small></div>
+              <div class="dbx-preco-valor">${dbxFmtMoney(precos.duo)}</div>
+              <div class="dbx-preco-margin">${margemBadge(precos.duo, custoDuo)}</div>
+              <div class="dbx-preco-custo">custo: ${dbxFmtMoney(custoDuo)}</div>
+            </div>
+            <div class="dbx-preco-card">
+              <div class="dbx-preco-titulo">GRUPO <small>(${turmaGrupo} pessoas)</small></div>
+              <div class="dbx-preco-valor">${dbxFmtMoney(precos.grupo)}</div>
+              <div class="dbx-preco-margin">${margemBadge(precos.grupo, custoGrupo)}</div>
+              <div class="dbx-preco-custo">custo: ${dbxFmtMoney(custoGrupo)}</div>
             </div>
           </div>
         </div>
@@ -18686,6 +18885,85 @@
           dbxRefresh(D, item);
         }
       }));
+
+      // ===== Custos do Pacote (por viagem) =====
+      if (!D.produto.custosPacote) D.produto.custosPacote = { turmaGrupo: 6, items: [] };
+      if (!Array.isArray(D.produto.custosPacote.items)) D.produto.custosPacote.items = [];
+      function openCustoPacoteModal(idx) {
+        const arr = D.produto.custosPacote.items;
+        const isEdit = idx !== undefined && idx !== null;
+        const cur = isEdit ? arr[idx] : { nome: '', valor: 0, divPor: 1, moedaOriginal: '' };
+        dbxOpenModal({
+          title: (isEdit ? 'Editar' : 'Novo') + ' custo do pacote',
+          fields: [
+            { key: 'nome',  label: 'Nome do item', type: 'text', placeholder: 'Ex: Voo Emirates, Hotel Novotel, Jet Ski' },
+            { key: 'valor', label: 'Valor em R$', type: 'number', step: '0.01', placeholder: '0,00' },
+            { key: 'divPor',label: 'Divisor (1 = por pessoa · >1 = dividido pela turma)', type: 'number', step: '1', placeholder: '1' },
+            { key: 'moedaOriginal', label: 'Moeda original (opcional)', type: 'text', placeholder: 'Ex: 150 AED' },
+          ],
+          values: cur,
+          onSave: (vals) => {
+            const item2 = {
+              nome: vals.nome || '',
+              valor: Number(vals.valor) || 0,
+              divPor: Math.max(1, parseInt(vals.divPor, 10) || 1),
+              moedaOriginal: vals.moedaOriginal || '',
+            };
+            if (isEdit) arr[idx] = item2;
+            else arr.push(item2);
+            dbxRefresh(D, item);
+          }
+        });
+      }
+      panelEl.querySelectorAll('[data-add="custo-pacote"]').forEach(b => b.addEventListener('click', () => openCustoPacoteModal()));
+      panelEl.querySelectorAll('[data-edit="custo-pacote"]').forEach(b => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openCustoPacoteModal(parseInt(b.dataset.idx, 10));
+      }));
+      panelEl.querySelectorAll('[data-del="custo-pacote"]').forEach(b => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const i = parseInt(b.dataset.idx, 10);
+        const arr = D.produto.custosPacote.items;
+        if (dbxConfirm(`Excluir custo "${arr[i].nome}"?`)) {
+          arr.splice(i, 1);
+          dbxRefresh(D, item);
+        }
+      }));
+
+      // Editar tamanho da turma "Grupo"
+      panelEl.querySelectorAll('[data-edit="turma-grupo"]').forEach(b => b.addEventListener('click', () => {
+        dbxOpenModal({
+          title: 'Tamanho da turma "Grupo"',
+          fields: [{ key: 'turmaGrupo', label: 'Pessoas na turma Grupo', type: 'number', step: '1' }],
+          values: { turmaGrupo: D.produto.custosPacote.turmaGrupo || 6 },
+          onSave: (vals) => {
+            D.produto.custosPacote.turmaGrupo = Math.max(1, parseInt(vals.turmaGrupo, 10) || 6);
+            dbxRefresh(D, item);
+          }
+        });
+      }));
+
+      // Editar preços de venda
+      if (!D.produto.precos) D.produto.precos = { solo: 0, duo: 0, grupo: 0 };
+      panelEl.querySelectorAll('[data-edit="precos"]').forEach(b => b.addEventListener('click', () => {
+        dbxOpenModal({
+          title: 'Preços de venda',
+          fields: [
+            { key: 'solo',  label: 'Solo (1 pessoa) — R$',    type: 'number', step: '0.01' },
+            { key: 'duo',   label: 'Duo (2 pessoas) — R$',    type: 'number', step: '0.01' },
+            { key: 'grupo', label: `Grupo (${D.produto.custosPacote.turmaGrupo || 6} pessoas) — R$`, type: 'number', step: '0.01' },
+          ],
+          values: D.produto.precos,
+          onSave: (vals) => {
+            D.produto.precos = {
+              solo:  Number(vals.solo)  || 0,
+              duo:   Number(vals.duo)   || 0,
+              grupo: Number(vals.grupo) || 0,
+            };
+            dbxRefresh(D, item);
+          }
+        });
+      }));
     }
 
     /* ===== PAINEL: CUSTOS ===== */
@@ -18693,30 +18971,47 @@
       const fixos = D.custos.fixos || [];
       const vars  = D.custos.variaveis || [];
       const totalFixo = fixos.reduce((s,c) => s + (Number(c.valor)||0), 0);
-      const totalVarPorCliente = vars.reduce((s,c) => s + (Number(c.valor)||0), 0);
-      const totalVarTurma = totalVarPorCliente * fin.totalClientes;
-      const breakeven = fin.ticket > 0 ? Math.ceil(totalFixo / Math.max(1, (fin.ticket - totalVarPorCliente))) : 0;
+      const totalVarMensal = vars.reduce((s,c) => s + (Number(c.valor)||0), 0);
+      const cpItems = D.produto?.custosPacote?.items || [];
+      const totalPacoteItens = cpItems.length;
+      const custoTotalMensal = totalFixo + totalVarMensal;
 
       return `
         <div class="dbx-panel-head">
-          <h2><span class="ico">💰</span>Custos · A raiz do lucro</h2>
+          <h2><span class="ico">🏢</span>Custos Fixos Mensais · Independem de vendas</h2>
+        </div>
+
+        <div class="dbx-callout" style="background:rgba(255,200,80,0.08); border:1px solid rgba(255,200,80,0.25); margin-bottom:18px;">
+          <div class="dbx-callout-icon">💡</div>
+          <div>
+            <h4>Esses custos acontecem TODO MÊS — mesmo sem vendas.</h4>
+            <p>
+              Exemplos: gráfica/material impresso, marketing dedicado ao produto, salário rateado de funcionários
+              focados no Dubai Explorer, base operacional alocada.
+              <br><strong>Não são custos de pacote.</strong> Voo, hotel e passeios vão na aba
+              <em>Produto → Custos do Pacote</em> (${totalPacoteItens} ${totalPacoteItens === 1 ? 'item cadastrado' : 'itens cadastrados'} lá).
+            </p>
+          </div>
         </div>
 
         <div class="dbx-stats-grid">
-          <div class="dbx-stat"><div class="lbl">Custo Fixo Total</div><div class="val">${dbxFmtMoney(totalFixo)}</div></div>
-          <div class="dbx-stat"><div class="lbl">Custo Variável / cliente</div><div class="val">${dbxFmtMoney(totalVarPorCliente)}</div></div>
-          <div class="dbx-stat"><div class="lbl">Variável Total (turma)</div><div class="val">${dbxFmtMoney(totalVarTurma)}</div></div>
-          <div class="dbx-stat highlight"><div class="lbl">Break-even</div><div class="val">${breakeven} clientes</div></div>
+          <div class="dbx-stat"><div class="lbl">Total fixo mensal</div><div class="val">${dbxFmtMoney(totalFixo)}</div></div>
+          <div class="dbx-stat"><div class="lbl">Total variável mensal</div><div class="val">${dbxFmtMoney(totalVarMensal)}</div></div>
+          <div class="dbx-stat highlight"><div class="lbl">Custo recorrente / mês</div><div class="val">${dbxFmtMoney(custoTotalMensal)}</div></div>
+          <div class="dbx-stat"><div class="lbl">Itens no pacote</div><div class="val">${totalPacoteItens}</div></div>
         </div>
 
         <div class="dbx-2col">
           <div class="dbx-block">
             <div class="dbx-block-head">
-              <h3>Custos Fixos · Independem da turma</h3>
+              <h3>📌 Fixos mensais</h3>
               <div class="dbx-block-actions">
                 <button class="dbx-mini-btn" data-add="custo-fixo">+ Adicionar</button>
               </div>
             </div>
+            <p class="dbx-desc dbx-callout-inline">
+              Ex: Gráfica · Marketing dedicado · Salário rateado · Base operacional · Software/SaaS
+            </p>
             <div class="dbx-list">
               ${fixos.map((c, i) => `
                 <div class="dbx-list-row dbx-editable" data-idx="${i}">
@@ -18730,18 +19025,22 @@
               `).join('')}
               <div class="dbx-add-row" data-add="custo-fixo">
                 <span style="font-size:18px;">+</span>
-                <span>Adicionar custo fixo</span>
+                <span>Adicionar custo fixo mensal</span>
               </div>
               <div class="dbx-list-total"><span>Total Fixo</span><strong>${dbxFmtMoney(totalFixo)}</strong></div>
             </div>
           </div>
           <div class="dbx-block">
             <div class="dbx-block-head">
-              <h3>Custos Variáveis · Por cliente</h3>
+              <h3>🔁 Variáveis mensais (operação)</h3>
               <div class="dbx-block-actions">
                 <button class="dbx-mini-btn" data-add="custo-var">+ Adicionar</button>
               </div>
             </div>
+            <p class="dbx-desc dbx-callout-inline">
+              Custos que variam com o nível de operação mensal — não com cliente individual.
+              Ex: campanha de tráfego do mês · viagens da equipe · materiais consumidos.
+            </p>
             <div class="dbx-list">
               ${vars.map((c, i) => `
                 <div class="dbx-list-row dbx-editable" data-idx="${i}">
@@ -18755,18 +19054,10 @@
               `).join('')}
               <div class="dbx-add-row" data-add="custo-var">
                 <span style="font-size:18px;">+</span>
-                <span>Adicionar custo variável</span>
+                <span>Adicionar custo variável mensal</span>
               </div>
-              <div class="dbx-list-total"><span>Total / cliente</span><strong>${dbxFmtMoney(totalVarPorCliente)}</strong></div>
+              <div class="dbx-list-total"><span>Total Variável Mensal</span><strong>${dbxFmtMoney(totalVarMensal)}</strong></div>
             </div>
-          </div>
-        </div>
-
-        <div class="dbx-callout">
-          <div class="dbx-callout-icon">📈</div>
-          <div>
-            <h4>E se eu vender mais 10 clientes?</h4>
-            <p>+${dbxFmtMoney(10 * (fin.ticket - totalVarPorCliente))} de lucro extra · custo fixo já pago.</p>
           </div>
         </div>
       `;
