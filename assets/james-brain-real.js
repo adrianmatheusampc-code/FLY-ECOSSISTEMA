@@ -95,6 +95,11 @@
       ? window.__jamesActions.promptSection()
       : '';
 
+    // PDFs anexados na sessão (se houver) — injetados como contexto
+    const docsPrompt = (window.__jamesPdfReader && typeof window.__jamesPdfReader.buildContextSection === 'function')
+      ? window.__jamesPdfReader.buildContextSection()
+      : '';
+
     return `Você é JAMES, assistente de IA do Ecossistema Fly (turismo de luxo focado em Dubai, com Plano WAR de expansão, Cofre AEY financeiro entre sócios, Fly Cup de eventos esportivos, Central de Vendas e CRM).
 
 PERSONALIDADE:
@@ -116,7 +121,7 @@ ${actionsPrompt}
 DADOS ATUAIS DO ECOSSISTEMA (JSON):
 ${JSON.stringify(context, null, 2)}
 
-Modo de dados: ${context.mode}`;
+Modo de dados: ${context.mode}${docsPrompt}`;
   }
 
   /* ----------------------------------------------------------
