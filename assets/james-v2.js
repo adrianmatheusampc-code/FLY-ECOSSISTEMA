@@ -244,48 +244,75 @@
       emitState();
     }
 
-    /* ----------------- TTS ----------------- */
-    /* TTS — tenta ElevenLabs (voz oficial do James) primeiro; cai pra
+    /* ----------------- TTS -----------------
+       Tenta ElevenLabs (voz oficial do James) primeiro; cai pra
        SpeechSynthesis do navegador como fallback se backend falhar.
-       Pode ser desabilitado via localStorage.fly_tts_force_browser='1' */
+       Pode ser desabilitado via localStorage.fly_tts_force_browser='1'.
+
+       Proteção contra vozes sobrepostas: cada chamada a speak() ganha um
+       seq incremental; quando uma nova fala começa, qualquer callback /
+       timer / áudio Eleven anterior é cancelado e tem isStale()=true,
+       então não dispara onSpeakEnd zombie que reabriria o ciclo. */
+    let _speakSeq = 0;
+    let _speakFallbackTimer = null;
+    let _speakUtterance = null;
+
+    function _cancelOngoingSpeech() {
+      if (_speakFallbackTimer) { clearTimeout(_speakFallbackTimer); _speakFallbackTimer = null; }
+      try { window.__jamesVoiceEleven?.stopSpeaking?.(); } catch (e) {}
+      try { window.speechSynthesis?.cancel?.(); } catch (e) {}
+      _speakUtterance = null;
+    }
+
     function speak(text, onDone) {
       if (!text) { onDone?.(); return; }
+      // Cancela qualquer fala em curso (Eleven, browser, fallback timer)
+      _cancelOngoingSpeech();
+      const mySeq = ++_speakSeq;
+      const isStale = () => mySeq !== _speakSeq;
+
       const forceBrowser = localStorage.getItem('fly_tts_force_browser') === '1';
       const useEleven = !forceBrowser && window.__jamesVoiceEleven && window.__jamesVoiceEleven.speak;
 
       if (useEleven) {
-        // Tenta ElevenLabs
         setStatus(STATUS.SPEAKING);
         handlers.onSpeakStart?.(text);
-        try { window.speechSynthesis?.cancel?.(); } catch (e) {}
-        const fallbackTimer = setTimeout(() => {
-          // Se demorar demais, libera (continua tocando em background mas reabre o ciclo)
+        _speakFallbackTimer = setTimeout(() => {
+          if (isStale()) return;
+          _speakFallbackTimer = null;
           handlers.onSpeakEnd?.(); onDone?.();
         }, Math.max(8000, text.length * 100));
+
         window.__jamesVoiceEleven.speak(text, {
           onStart: () => { /* já chamamos onSpeakStart acima */ },
-          onEnd:   () => { clearTimeout(fallbackTimer); handlers.onSpeakEnd?.(); onDone?.(); },
+          onEnd: () => {
+            if (isStale()) return;
+            if (_speakFallbackTimer) { clearTimeout(_speakFallbackTimer); _speakFallbackTimer = null; }
+            handlers.onSpeakEnd?.(); onDone?.();
+          },
         }).then((audio) => {
+          if (isStale()) return;
           if (audio === null) {
-            // ElevenLabs falhou — usa fallback navegador
-            clearTimeout(fallbackTimer);
-            console.warn('[James] ElevenLabs indisponível — caindo pro SpeechSynthesis');
-            speakBrowser(text, onDone);
+            if (_speakFallbackTimer) { clearTimeout(_speakFallbackTimer); _speakFallbackTimer = null; }
+            console.warn('[James] ElevenLabs indisponível — fallback navegador');
+            speakBrowser(text, onDone, mySeq);
           }
         }).catch((e) => {
-          clearTimeout(fallbackTimer);
+          if (isStale()) return;
+          if (_speakFallbackTimer) { clearTimeout(_speakFallbackTimer); _speakFallbackTimer = null; }
           console.warn('[James] ElevenLabs erro:', e?.message || e);
-          speakBrowser(text, onDone);
+          speakBrowser(text, onDone, mySeq);
         });
         return;
       }
 
-      // Browser-only
-      speakBrowser(text, onDone);
+      speakBrowser(text, onDone, mySeq);
     }
 
-    function speakBrowser(text, onDone) {
-      if (!hasTTS) { onDone?.(); return; }
+    function speakBrowser(text, onDone, seq) {
+      const mySeq = seq != null ? seq : ++_speakSeq;
+      const isStale = () => mySeq !== _speakSeq;
+      if (!hasTTS) { if (!isStale()) onDone?.(); return; }
       try { window.speechSynthesis.cancel(); } catch (e) {}
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'pt-BR';
@@ -296,11 +323,24 @@
       if (v) u.voice = v;
       setStatus(STATUS.SPEAKING);
       handlers.onSpeakStart?.(text);
-      u.onend = () => { handlers.onSpeakEnd?.(); onDone?.(); };
-      u.onerror = () => { handlers.onSpeakEnd?.(); onDone?.(); };
+      _speakUtterance = u;
+      const fallbackTimer = setTimeout(() => {
+        if (isStale()) return;
+        _speakFallbackTimer = null;
+        handlers.onSpeakEnd?.(); onDone?.();
+      }, Math.max(2500, text.length * 70));
+      _speakFallbackTimer = fallbackTimer;
+      u.onend = () => {
+        clearTimeout(fallbackTimer);
+        if (isStale()) return;
+        handlers.onSpeakEnd?.(); onDone?.();
+      };
+      u.onerror = () => {
+        clearTimeout(fallbackTimer);
+        if (isStale()) return;
+        handlers.onSpeakEnd?.(); onDone?.();
+      };
       window.speechSynthesis.speak(u);
-      const fallbackTimer = setTimeout(() => { handlers.onSpeakEnd?.(); onDone?.(); }, Math.max(2500, text.length * 70));
-      u.addEventListener('end', () => clearTimeout(fallbackTimer));
     }
 
     /* ----------------- Permissão de microfone ----------------- */
@@ -584,7 +624,7 @@
       const wasActive = state.isConversationActive;
       state.isConversationActive = false;
       stopAllRecog();
-      try { window.speechSynthesis.cancel(); } catch (e) {}
+      _cancelOngoingSpeech();
       if (wasActive && opts.silent !== true) {
         const farewell = 'Certo, Chefe. Vou ficar em modo de espera.';
         state.lastResponse = farewell;
