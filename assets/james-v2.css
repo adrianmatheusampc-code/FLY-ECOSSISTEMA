@@ -481,9 +481,10 @@
   50%      { background: rgba(245, 182, 66, 0.16); }
 }
 
-/* Drop-zone visual quando arrastando PDF sobre o painel */
-#jms-panel.is-drop-target::after {
-  content: "📎 Solte o PDF aqui pra anexar";
+/* Drop-zone visual quando arrastando arquivo sobre o painel */
+#jms-panel.is-drop-target::after,
+#jms-fullscreen.is-drop-target::after {
+  content: "📎 Solte aqui · PDF ou imagem";
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.85);
@@ -498,6 +499,18 @@
   letter-spacing: 1.2px;
   z-index: 9999;
   pointer-events: none;
+}
+
+/* Chip visual quando uma IMAGEM foi analisada (one-shot, sem persistir) */
+.jms-doc-chip.is-image {
+  border-color: rgba(111, 227, 168, 0.4);
+  background: rgba(111, 227, 168, 0.08);
+  animation: jms-img-fade 4s ease forwards;
+}
+.jms-doc-chip.is-image .jms-doc-chip__name { color: #6fe3a8; }
+@keyframes jms-img-fade {
+  0%, 70%  { opacity: 1; }
+  100%     { opacity: 0.25; }
 }
 
 .jms-panel__actions {

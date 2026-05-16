@@ -212,10 +212,20 @@ Modo de dados: ${context.mode}${docsPrompt}`;
      ---------------------------------------------------------- */
   let conversationHistory = []; // multi-turn
 
-  async function callAnthropic(userText, systemPrompt, key, attempt = 1) {
+  async function callAnthropic(userText, systemPrompt, key, attempt = 1, images = null) {
     // Mantém últimas 6 mensagens pra contexto
     const recent = conversationHistory.slice(-6);
-    const messages = recent.concat([{ role: 'user', content: userText }]);
+    // Se há imagens, monta content array com blocos image + text (Claude Vision)
+    let userContent;
+    if (Array.isArray(images) && images.length) {
+      userContent = images.map(img => ({
+        type: 'image',
+        source: { type: 'base64', media_type: img.mediaType || 'image/jpeg', data: img.base64 },
+      })).concat([{ type: 'text', text: userText || 'Leia essa imagem e me diga o que tem nela.' }]);
+    } else {
+      userContent = userText;
+    }
+    const messages = recent.concat([{ role: 'user', content: userContent }]);
 
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -241,7 +251,7 @@ Modo de dados: ${context.mode}${docsPrompt}`;
         const delay = attempt === 1 ? 1500 : 4000;
         console.warn(`[JAMES Brain] Anthropic ${r.status} (sobrecarregado). Tentativa ${attempt + 1}/3 em ${delay}ms...`);
         await new Promise(rs => setTimeout(rs, delay));
-        return callAnthropic(userText, systemPrompt, key, attempt + 1);
+        return callAnthropic(userText, systemPrompt, key, attempt + 1, images);
       }
 
       // Erro detalhado pro usuário
@@ -287,21 +297,22 @@ Modo de dados: ${context.mode}${docsPrompt}`;
   /* ----------------------------------------------------------
      6 · API PÚBLICA
      ---------------------------------------------------------- */
-  async function generateRealResponse(userText) {
+  async function generateRealResponse(userText, opts) {
     const keys = getKeys();
     if (!keys.anthropic && !keys.openai) {
       return null; // sem IA, usa mock
     }
+    const images = (opts && Array.isArray(opts.images)) ? opts.images : null;
     const ctx = buildFlyContext();
     const sys = buildSystemPrompt(ctx);
 
     let replyRaw;
     let lastError = null;
 
-    // Tenta Anthropic primeiro
+    // Tenta Anthropic primeiro (suporta visão se houver imagens)
     if (keys.anthropic) {
       try {
-        replyRaw = await callAnthropic(userText, sys, keys.anthropic);
+        replyRaw = await callAnthropic(userText, sys, keys.anthropic, 1, images);
       } catch (e) {
         console.warn('[JAMES Brain] Anthropic falhou:', e.message);
         lastError = e;
@@ -310,7 +321,8 @@ Modo de dados: ${context.mode}${docsPrompt}`;
     }
 
     // Fallback: OpenAI se Anthropic falhou e tem chave OA
-    if (!replyRaw && keys.openai) {
+    // (não passamos imagens pra OpenAI — fallback só pra texto)
+    if (!replyRaw && keys.openai && !images) {
       try {
         console.log('[JAMES Brain] Tentando fallback OpenAI...');
         replyRaw = await callOpenAI(userText, sys, keys.openai);

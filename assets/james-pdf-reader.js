@@ -201,10 +201,93 @@
   }
 
   /* ----------------------------------------------------------
+     IMAGENS — leitura one-shot (sem persistir)
+     PNG / JPEG / WEBP / GIF → base64 pra mandar pro Claude Vision.
+     A imagem NÃO entra em docs[] — é descartada após o brain processar.
+     ---------------------------------------------------------- */
+  const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB — limite do Anthropic
+  const MAX_IMAGE_DIMENSION = 1600;              // redimensiona se passar disso
+
+  function _mediaTypeFromFile(file) {
+    const t = file.type || '';
+    if (t === 'image/jpeg' || /\.jpe?g$/i.test(file.name)) return 'image/jpeg';
+    if (t === 'image/png'  || /\.png$/i.test(file.name))   return 'image/png';
+    if (t === 'image/webp' || /\.webp$/i.test(file.name))  return 'image/webp';
+    if (t === 'image/gif'  || /\.gif$/i.test(file.name))   return 'image/gif';
+    return t || 'image/jpeg';
+  }
+
+  function _resizeImageIfNeeded(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Falha ao ler arquivo.'));
+      reader.onload = () => {
+        const dataUrl = reader.result;
+        const img = new Image();
+        img.onerror = () => reject(new Error('Imagem inválida.'));
+        img.onload = () => {
+          const maxDim = MAX_IMAGE_DIMENSION;
+          if (img.width <= maxDim && img.height <= maxDim && file.size <= MAX_IMAGE_SIZE_BYTES) {
+            // Não precisa redimensionar — extrai base64 puro
+            const base64 = String(dataUrl).split(',')[1] || '';
+            resolve({ base64, mediaType: _mediaTypeFromFile(file), width: img.width, height: img.height, resized: false });
+            return;
+          }
+          const ratio = Math.min(maxDim / img.width, maxDim / img.height);
+          const w = Math.round(img.width * ratio);
+          const h = Math.round(img.height * ratio);
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const out = canvas.toDataURL('image/jpeg', 0.85);
+          const base64 = out.split(',')[1] || '';
+          resolve({ base64, mediaType: 'image/jpeg', width: w, height: h, resized: true });
+        };
+        img.src = dataUrl;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function extractImage(file, onProgress) {
+    if (!file) throw new Error('Nenhum arquivo informado.');
+    if (!/\.(jpe?g|png|webp|gif)$/i.test(file.name) && !/^image\//i.test(file.type || '')) {
+      throw new Error('Formato não suportado. Use JPG, PNG, WEBP ou GIF.');
+    }
+    onProgress?.({ phase: 'reading' });
+    const out = await _resizeImageIfNeeded(file);
+    onProgress?.({ phase: 'done' });
+    return {
+      id: 'img_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7),
+      name: file.name,
+      size: file.size,
+      mediaType: out.mediaType,
+      base64: out.base64,
+      width: out.width,
+      height: out.height,
+      resized: out.resized,
+    };
+  }
+
+  function isImageFile(file) {
+    if (!file) return false;
+    return /\.(jpe?g|png|webp|gif)$/i.test(file.name) || /^image\//i.test(file.type || '');
+  }
+
+  function isPdfFile(file) {
+    if (!file) return false;
+    return /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+  }
+
+  /* ----------------------------------------------------------
      API pública
      ---------------------------------------------------------- */
   window.__jamesPdfReader = {
     extractPdf,
+    extractImage,
+    isImageFile,
+    isPdfFile,
     attachDoc,
     removeDoc,
     getAttachedDocs,
@@ -214,5 +297,6 @@
     detectType,
     tipoLabel,
     MAX_CHARS_PER_DOC,
+    MAX_IMAGE_SIZE_BYTES,
   };
 })();

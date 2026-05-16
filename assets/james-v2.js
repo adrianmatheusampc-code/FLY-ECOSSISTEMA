@@ -1027,10 +1027,10 @@
 
       <!-- Input de texto pra digitar comando -->
       <div class="jms-panel__input-row">
-        <button class="jms-attach-btn" id="jms-attach-pdf" type="button" aria-label="Anexar PDF" title="Anexar PDF pro James ler">📎</button>
+        <button class="jms-attach-btn" id="jms-attach-pdf" type="button" aria-label="Anexar PDF ou imagem" title="Anexar PDF ou imagem (print, screenshot) pro James ler">📎</button>
         <input type="text" id="jms-text-input" placeholder="Digite uma pergunta pro James..." autocomplete="off" />
         <button class="jms-btn jms-btn--primary jms-send-btn" id="jms-text-send" type="button" aria-label="Enviar">↑</button>
-        <input type="file" id="jms-attach-pdf-input" accept="application/pdf,.pdf" style="display:none;" />
+        <input type="file" id="jms-attach-pdf-input" accept="application/pdf,.pdf,image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" style="display:none;" />
       </div>
 
       <!-- Lista de PDFs anexados na sessão -->
@@ -1200,10 +1200,10 @@
         <div class="jms-card" style="grid-column: 1 / -1;">
           <h3>Escrever pro James</h3>
           <div class="jms-panel__input-row" style="padding:0;">
-            <button class="jms-attach-btn" id="jms-fs-attach-pdf" type="button" aria-label="Anexar PDF" title="Anexar PDF pro James ler">📎</button>
+            <button class="jms-attach-btn" id="jms-fs-attach-pdf" type="button" aria-label="Anexar PDF ou imagem" title="Anexar PDF ou imagem (print, screenshot) pro James ler">📎</button>
             <input type="text" id="jms-fs-text-input" placeholder="Digite uma pergunta ou comando pro James..." autocomplete="off" />
             <button class="jms-btn jms-btn--primary jms-send-btn" id="jms-fs-text-send" type="button" aria-label="Enviar">↑</button>
-            <input type="file" id="jms-fs-attach-pdf-input" accept="application/pdf,.pdf" style="display:none;" />
+            <input type="file" id="jms-fs-attach-pdf-input" accept="application/pdf,.pdf,image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" style="display:none;" />
           </div>
           <div class="jms-attached-docs" id="jms-fs-attached-docs" style="display:none; padding:6px 0 0;"></div>
         </div>
@@ -1779,10 +1779,10 @@
       renderAttachedDocsInto(ui.fsAttachList);
     }
 
-    function showLoadingChip(filename) {
+    function showLoadingChip(filename, icon) {
       const html = `
         <div class="jms-doc-chip is-loading">
-          <span class="jms-doc-chip__icon">⏳</span>
+          <span class="jms-doc-chip__icon">${icon || '⏳'}</span>
           <span class="jms-doc-chip__name">Lendo "${filename}"…</span>
           <span class="jms-doc-chip__meta jms-doc-prog">carregando biblioteca</span>
         </div>`;
@@ -1795,18 +1795,48 @@
     function updateLoadingChipProgress(text) {
       document.querySelectorAll('.jms-doc-prog').forEach(el => { el.textContent = text; });
     }
+    function showImageChip(filename, label) {
+      const html = `
+        <div class="jms-doc-chip is-image">
+          <span class="jms-doc-chip__icon">📷</span>
+          <span class="jms-doc-chip__name">${filename}</span>
+          <span class="jms-doc-chip__meta">${label || 'analisada (descartada da memória)'}</span>
+        </div>`;
+      [ui.attachList, ui.fsAttachList].forEach(c => {
+        if (!c) return;
+        c.style.display = 'block';
+        c.innerHTML = html;
+      });
+      // Auto-some após 4s (imagem é one-shot, não persiste)
+      setTimeout(() => {
+        [ui.attachList, ui.fsAttachList].forEach(c => {
+          if (!c) return;
+          if (c.querySelector('.jms-doc-chip.is-image')) {
+            c.innerHTML = '';
+            c.style.display = 'none';
+          }
+        });
+        renderAttachedDocs(); // re-render se houver PDFs anexados ainda
+      }, 4000);
+    }
 
-    async function handlePdfUpload(file) {
+    async function handleFileUpload(file) {
       const reader = window.__jamesPdfReader;
       if (!reader) {
-        updateReply('Leitor de PDF não disponível.');
+        updateReply('Leitor de arquivos não disponível.');
         return;
       }
-      // Mantém o lado que já está aberto; se nenhum, abre o painel mini
       const fsOpen = fsEl.classList.contains('open');
       if (!fsOpen) setPanelOpen(true);
 
-      showLoadingChip(file.name);
+      if (reader.isPdfFile(file)) return handlePdf(file);
+      if (reader.isImageFile(file)) return handleImage(file);
+      updateReply('Formato não suportado. Use PDF, JPG, PNG, WEBP ou GIF.');
+    }
+
+    async function handlePdf(file) {
+      const reader = window.__jamesPdfReader;
+      showLoadingChip(file.name, '⏳');
       try {
         const doc = await reader.extractPdf(file, (p) => {
           if (p.phase === 'loading_lib') updateLoadingChipProgress('carregando pdf.js…');
@@ -1816,16 +1846,69 @@
         reader.attachDoc(doc);
         renderAttachedDocs();
         updateReply(`Li o PDF "${doc.name}" (${doc.pages} pág, ${doc.words} palavras). Analisando…`);
-
-        // Auto-reação: dispara prompt no brain pra resumir + sugerir ação
         const intro = reader.buildAttachIntroPrompt(doc);
         setTimeout(() => voice.sendTextCommand(intro), 200);
       } catch (e) {
         console.error('[James] Erro lendo PDF:', e);
         updateReply('Erro ao ler PDF: ' + (e?.message || e));
-        renderAttachedDocs(); // limpa o loading
+        renderAttachedDocs();
       }
     }
+
+    async function handleImage(file) {
+      const reader = window.__jamesPdfReader;
+      const brain  = window.__jamesBrain;
+      if (!brain || !brain.isAvailable?.()) {
+        updateReply('Pra ler imagens preciso da chave Anthropic configurada (Config → 🧠 Conectar IA Real).');
+        return;
+      }
+      showLoadingChip(file.name, '📷');
+      try {
+        updateLoadingChipProgress('processando imagem…');
+        let img = await reader.extractImage(file);
+        updateLoadingChipProgress(`${Math.round(img.base64.length * 0.75 / 1024)} KB · enviando pro Claude Vision…`);
+
+        // Pergunta padrão pra extrair info da imagem (otimizada pra prints)
+        const prompt = 'Leia essa imagem. Se for um screenshot/print de dados estruturados (preços, datas, nomes, valores, tabela), extraia os dados-chave em formato curto e sugira UMA ação que faz sentido emitir (ex: criar pacote, lançar despesa, cadastrar cliente, atualizar custo mensal). NÃO emita ACTION ainda — só descreva o que viu e pergunte se quero executar. Resposta CURTA (2-3 frases).';
+        addMessageJS('user', '📷 ' + file.name);
+        setStatus(STATUS.THINKING);
+
+        let result;
+        try {
+          result = await brain.generateRealResponse(prompt, { images: [{ base64: img.base64, mediaType: img.mediaType }] });
+        } finally {
+          // ===== DESCARTE IMEDIATO: limpa o base64 da memória =====
+          img.base64 = null;
+          img = null;
+        }
+
+        if (!result || !result.text) {
+          updateReply('Não consegui ler a imagem. Tente outra ou verifique a configuração.');
+          return;
+        }
+        updateReply(result.text);
+        addMessageJS('james', result.text);
+        showImageChip(file.name, 'analisada · descartada da memória');
+        voice.speakText?.(result.text);
+      } catch (e) {
+        console.error('[James] Erro lendo imagem:', e);
+        updateReply('Erro ao ler imagem: ' + (e?.message || e));
+        renderAttachedDocs();
+      } finally {
+        setStatus(STATUS.IDLE);
+      }
+    }
+    // Helper interno: adiciona msg no histórico do voice hook (cria método se não existir)
+    function addMessageJS(role, content) {
+      try {
+        const handlers = voice;
+        if (role === 'user' && handlers?.onUserMessage) handlers.onUserMessage(content);
+        if (role === 'james' && handlers?.onJamesMessage) handlers.onJamesMessage(content);
+      } catch (e) {}
+    }
+
+    // Alias retro-compat (codigo existente chama handlePdfUpload)
+    const handlePdfUpload = handleFileUpload;
 
     ui.attachBtn?.addEventListener('click', () => ui.attachInput?.click());
     ui.fsAttachBtn?.addEventListener('click', () => ui.fsAttachInput?.click());
@@ -1833,8 +1916,8 @@
     async function onAttachInputChange(e) {
       const file = e.target.files?.[0];
       if (!file) return;
-      e.target.value = ''; // permite reanexar o mesmo PDF
-      await handlePdfUpload(file);
+      e.target.value = ''; // permite reanexar o mesmo arquivo
+      await handleFileUpload(file);
     }
     ui.attachInput?.addEventListener('change', onAttachInputChange);
     ui.fsAttachInput?.addEventListener('change', onAttachInputChange);
@@ -1861,7 +1944,8 @@
         counter = 0;
         zone.classList.remove('is-drop-target');
         const file = e.dataTransfer?.files?.[0];
-        if (file && /\.pdf$/i.test(file.name)) await handlePdfUpload(file);
+        if (!file) return;
+        if (/\.(pdf|jpe?g|png|webp|gif)$/i.test(file.name)) await handleFileUpload(file);
       });
     }
     bindDropZone(panelEl);
