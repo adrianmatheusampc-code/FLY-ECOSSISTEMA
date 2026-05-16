@@ -811,6 +811,46 @@
       },
     },
 
+    pacote_set_custo_mensal: {
+      desc: 'Define o valor de um custo do pacote pra um mês específico (variação sazonal). Útil pra voo/hotel que variam por mês. Deixe valor vazio pra remover a variação (volta pro valor base).',
+      params: {
+        pacote: 'nome do pacote (opcional)',
+        nome: 'nome do item de custo (obrigatório, ex: Voo Emirates, Hotel Novotel)',
+        mes: 'número 1-12 OU nome do mês (jan, fev, mar...) — obrigatório',
+        valor: 'valor R$ pra esse mês (vazio = remover variação)',
+      },
+      run(p) {
+        if (!p.nome) return { ok: false, msg: 'Nome do item é obrigatório.' };
+        if (p.mes === undefined || p.mes === null || p.mes === '') return { ok: false, msg: 'Mês é obrigatório (1-12 ou jan/fev/...).' };
+        // Resolve mês: número ou nome
+        const mesesNomes = { jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12,
+                             janeiro:1,fevereiro:2,marco:3,março:3,abril:4,maio:5,junho:6,julho:7,agosto:8,setembro:9,outubro:10,novembro:11,dezembro:12 };
+        const rawMes = String(p.mes).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim().slice(0, 10);
+        let mesNum = parseInt(rawMes, 10);
+        if (isNaN(mesNum)) mesNum = mesesNomes[rawMes] || mesesNomes[rawMes.slice(0, 3)] || 0;
+        if (mesNum < 1 || mesNum > 12) return { ok: false, msg: 'Mês inválido. Use 1-12 ou jan/fev/mar/...' };
+        const mk = String(mesNum).padStart(2, '0');
+        const r = _resolvePacote(p);
+        if (r.err) return { ok: false, msg: r.err };
+        const { api, item, D } = r;
+        const arr = D?.produto?.custosPacote?.items;
+        const idx = _findIndexByName(arr, 'nome', p.nome);
+        if (idx === -1) return { ok: false, msg: `Custo "${p.nome}" não encontrado em ${item.name}.` };
+        const it = arr[idx];
+        if (!it.mensal) it.mensal = {};
+        const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+        if (p.valor === undefined || p.valor === null || p.valor === '') {
+          delete it.mensal[mk];
+          api.save(item);
+          return { ok: true, msg: `Variação de "${it.nome}" em ${meses[mesNum-1]} removida (volta pro valor base R$ ${(Number(it.valor)||0).toLocaleString('pt-BR')}).` };
+        }
+        const valor = parseValue(p.valor);
+        it.mensal[mk] = valor;
+        api.save(item);
+        return { ok: true, msg: `${it.nome} em ${meses[mesNum-1]}: R$ ${valor.toLocaleString('pt-BR')} (variação mensal).` };
+      },
+    },
+
     pacote_remove_custo_pacote: {
       desc: 'Remove custo do pacote (por viagem) por nome',
       params: { pacote: 'nome do pacote (opcional)', nome: 'nome do item (obrigatório)' },

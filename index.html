@@ -6389,6 +6389,81 @@
   .dbx-margin-badge.bad  { background: rgba(255,107,107,0.15); color: #ff8c8c; }
   .dbx-margin-badge.neutral { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5); }
 
+  /* Bloco INFO dentro de modal (campo type='info') */
+  .dbx-modal-info {
+    padding: 10px 14px;
+    background: rgba(198,168,90,0.06);
+    border-left: 3px solid rgba(198,168,90,0.45);
+    border-radius: 6px;
+    color: rgba(255,255,255,0.85);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .dbx-modal-info strong { color: var(--dbx-gold-bright); font-weight: 700; }
+
+  /* Badge "var X/12" ao lado do nome do item */
+  .dbx-var-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    margin-left: 8px;
+    background: rgba(111,227,168,0.12);
+    color: #6fe3a8;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+  }
+  .dbx-act-btn.is-active {
+    background: rgba(111,227,168,0.18);
+    color: #6fe3a8;
+    border-color: rgba(111,227,168,0.4);
+  }
+
+  /* TIMELINE TABLE — 12 meses × 3 cenários × (custo, lucro) */
+  .dbx-timeline-table {
+    display: flex; flex-direction: column; gap: 1px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+  .dbx-timeline-row {
+    display: grid;
+    grid-template-columns: 64px repeat(6, 1fr);
+    gap: 4px;
+    padding: 10px 14px;
+    background: rgba(0,0,0,0.35);
+    align-items: center;
+    font-size: 12px;
+  }
+  .dbx-timeline-row:hover { background: rgba(0,0,0,0.5); }
+  .dbx-timeline-head {
+    background: rgba(198,168,90,0.08) !important;
+    font-size: 10px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    font-weight: 700;
+  }
+  .dbx-timeline-head:hover { background: rgba(198,168,90,0.08) !important; }
+  .dbx-timeline-foot {
+    background: rgba(198,168,90,0.06) !important;
+    border-top: 1px solid rgba(198,168,90,0.25);
+    font-weight: 700;
+    color: var(--dbx-gold-bright);
+  }
+  .dbx-timeline-foot .dbx-tl-mes { letter-spacing: 1.6px; font-size: 11px; }
+  .dbx-tl-mes { color: var(--dbx-gold-bright); font-weight: 700; }
+  .dbx-tl-c   { color: rgba(255,255,255,0.75); text-align: right; }
+  .dbx-tl-l   { text-align: right; font-weight: 600; }
+  .dbx-cell-good    { color: #6fe3a8; }
+  .dbx-cell-bad     { color: #ff8c8c; }
+  .dbx-cell-neutral { color: rgba(255,255,255,0.4); }
+  @media (max-width: 768px) {
+    .dbx-timeline-row { grid-template-columns: 50px repeat(6, 1fr); padding: 8px; font-size: 10px; }
+  }
+
   /* OPERAÇÃO */
   .dbx-base-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
   .dbx-base-item {
@@ -17571,18 +17646,52 @@
     }
     window.flyOpenComparador = flyOpenComparador;
 
+    // Retorna o valor de um item pra um mês específico ('01'..'12').
+    // Se o item tem item.mensal[mes] preenchido (numérico, > 0), usa isso.
+    // Senão, usa item.valor (base).
+    function dbxItemValorMes(item, mes) {
+      if (!item) return 0;
+      if (mes && item.mensal && item.mensal[mes] !== undefined && item.mensal[mes] !== null && item.mensal[mes] !== '') {
+        const v = Number(item.mensal[mes]);
+        if (!isNaN(v) && v >= 0) return v;
+      }
+      return Number(item.valor) || 0;
+    }
+
     // Custo por cliente do PACOTE para uma turma de tamanho `turmaSize`.
     // Cada item tem divPor: 1 = por pessoa; >1 = custo da turma dividido.
-    // Custo por cliente = item.valor / min(turmaSize, item.divPor)
-    function dbxComputeCustoPacotePorCliente(D, turmaSize) {
+    // Custo por cliente = valor(mes) / min(turmaSize, item.divPor)
+    // `mes` é opcional ('01'..'12'). Sem mes = usa item.valor base.
+    function dbxComputeCustoPacotePorCliente(D, turmaSize, mes) {
       const items = D?.produto?.custosPacote?.items || [];
       const t = Math.max(1, Number(turmaSize) || 1);
       return items.reduce((s, c) => {
-        const v = Number(c.valor) || 0;
+        const v = dbxItemValorMes(c, mes);
         const dp = Math.max(1, Number(c.divPor) || 1);
         return s + (v / Math.min(t, dp));
       }, 0);
     }
+
+    // Indica se algum item tem variação mensal preenchida
+    function dbxHasVariacaoMensal(D) {
+      const items = D?.produto?.custosPacote?.items || [];
+      return items.some(it => it && it.mensal && Object.values(it.mensal).some(v => v !== '' && v !== null && v !== undefined && Number(v) > 0));
+    }
+
+    const DBX_MESES = [
+      { k: '01', curto: 'JAN', nome: 'Janeiro' },
+      { k: '02', curto: 'FEV', nome: 'Fevereiro' },
+      { k: '03', curto: 'MAR', nome: 'Março' },
+      { k: '04', curto: 'ABR', nome: 'Abril' },
+      { k: '05', curto: 'MAI', nome: 'Maio' },
+      { k: '06', curto: 'JUN', nome: 'Junho' },
+      { k: '07', curto: 'JUL', nome: 'Julho' },
+      { k: '08', curto: 'AGO', nome: 'Agosto' },
+      { k: '09', curto: 'SET', nome: 'Setembro' },
+      { k: '10', curto: 'OUT', nome: 'Outubro' },
+      { k: '11', curto: 'NOV', nome: 'Novembro' },
+      { k: '12', curto: 'DEZ', nome: 'Dezembro' },
+    ];
 
     function dbxComputeFinance(D) {
       const clientesPagos = D.clientes.filter(c => c.status === 'pago').length;
@@ -17708,6 +17817,12 @@
             });
           }
           wrap.appendChild(row);
+        } else if (f.type === 'info') {
+          // Bloco informativo (não-editável). Não retorna valor no onSave.
+          const note = document.createElement('div');
+          note.className = 'dbx-modal-info';
+          note.innerHTML = f.html || escapeHtml(f.label || '');
+          wrap.appendChild(note);
         } else {
           const inp = document.createElement('input');
           inp.type = f.type === 'number' ? 'number' : 'text';
@@ -17728,13 +17843,14 @@
       overlay.querySelector('[data-act="save"]').addEventListener('click', () => {
         const out = {};
         fields.forEach(f => {
+          if (f.type === 'info') return; // bloco informativo não retorna valor
           if (f.type === 'photo') {
             out[f.key] = photoState[f.key] || '';
           } else {
             const el = form.querySelector(`[name="${f.key}"]`);
             if (!el) return;
             let val = el.value;
-            if (f.type === 'number') val = Number(val) || 0;
+            if (f.type === 'number') val = el.value === '' ? '' : (Number(el.value) || 0);
             out[f.key] = val;
           }
         });
@@ -18622,7 +18738,7 @@
       const cpItems = cp.items || [];
       const turmaGrupo = Number(cp.turmaGrupo) || 6;
       const precos = D.produto.precos || { solo: 0, duo: 0, grupo: 0 };
-      // Custo por cliente em cada cenário
+      // Custo por cliente em cada cenário (BASE — usando item.valor padrão)
       const custoSolo  = dbxComputeCustoPacotePorCliente(D, 1);
       const custoDuo   = dbxComputeCustoPacotePorCliente(D, 2);
       const custoGrupo = dbxComputeCustoPacotePorCliente(D, turmaGrupo);
@@ -18634,6 +18750,40 @@
         const cls = lucro > 0 ? 'good' : 'bad';
         return `<span class="dbx-margin-badge ${cls}">lucro ${dbxFmtMoney(lucro)} · ${pct.toFixed(1)}%</span>`;
       };
+      // Variação mensal — calcula custo + lucro por mês × cenário
+      const temVariacao = dbxHasVariacaoMensal(D);
+      const mensalData = DBX_MESES.map(m => {
+        const cSolo  = dbxComputeCustoPacotePorCliente(D, 1, m.k);
+        const cDuo   = dbxComputeCustoPacotePorCliente(D, 2, m.k);
+        const cGrupo = dbxComputeCustoPacotePorCliente(D, turmaGrupo, m.k);
+        return {
+          ...m,
+          custos: { solo: cSolo, duo: cDuo, grupo: cGrupo },
+          lucros: {
+            solo:  (precos.solo  || 0) - cSolo,
+            duo:   (precos.duo   || 0) - cDuo,
+            grupo: (precos.grupo || 0) - cGrupo,
+          },
+        };
+      });
+      // Médias anuais
+      const mediaCusto = {
+        solo:  mensalData.reduce((s, m) => s + m.custos.solo,  0) / 12,
+        duo:   mensalData.reduce((s, m) => s + m.custos.duo,   0) / 12,
+        grupo: mensalData.reduce((s, m) => s + m.custos.grupo, 0) / 12,
+      };
+      const mediaLucro = {
+        solo:  mensalData.reduce((s, m) => s + m.lucros.solo,  0) / 12,
+        duo:   mensalData.reduce((s, m) => s + m.lucros.duo,   0) / 12,
+        grupo: mensalData.reduce((s, m) => s + m.lucros.grupo, 0) / 12,
+      };
+      const lucroCellCls = (v) => v > 0 ? 'dbx-cell-good' : v < 0 ? 'dbx-cell-bad' : 'dbx-cell-neutral';
+      // Mês com maior / menor lucro (no cenário grupo — referência do volume)
+      let melhorMes = null, piorMes = null;
+      mensalData.forEach(m => {
+        if (!melhorMes || m.lucros.grupo > melhorMes.lucros.grupo) melhorMes = m;
+        if (!piorMes  || m.lucros.grupo < piorMes.lucros.grupo)   piorMes  = m;
+      });
       return `
         <div class="dbx-panel-head">
           <h2><span class="ico">📦</span>Produto · Banner + Experiências + Incluso</h2>
@@ -18715,36 +18865,51 @@
           <p class="dbx-desc dbx-callout-inline">
             Esses são custos que <strong>só existem quando um cliente compra</strong>. Voo, hotel, passeios, alimentação.
             Itens com <em>divisor &gt; 1</em> (ex: transfer ÷ 6) são compartilhados pela turma.
+            Clique em <strong>📅</strong> em qualquer item pra preencher variação mensal (ex: voo mais caro em dezembro).
           </p>
           <div class="dbx-list">
             <div class="dbx-list-row dbx-list-head">
               <span style="flex:2;">Item</span>
-              <span style="flex:1; text-align:right;">Valor (R$)</span>
+              <span style="flex:1; text-align:right;">Valor base (R$)</span>
               <span style="flex:1; text-align:center;">÷ Turma</span>
-              <span style="width:80px;"></span>
+              <span style="width:110px;"></span>
             </div>
-            ${cpItems.map((c, i) => `
+            ${cpItems.map((c, i) => {
+              const itemTemVar = c.mensal && Object.values(c.mensal).some(v => v !== '' && v !== null && v !== undefined && Number(v) > 0);
+              const varCount = itemTemVar ? Object.values(c.mensal).filter(v => v !== '' && v !== null && v !== undefined && Number(v) > 0).length : 0;
+              return `
               <div class="dbx-list-row dbx-editable" data-idx="${i}">
                 <div class="dbx-card-actions">
+                  <button class="dbx-act-btn ${itemTemVar ? 'is-active' : ''}" data-mes="custo-pacote" data-idx="${i}" title="${itemTemVar ? `Variação mensal · ${varCount}/12 meses preenchidos` : 'Adicionar variação mensal'}">📅</button>
                   <button class="dbx-act-btn" data-edit="custo-pacote" data-idx="${i}" title="Editar">✎</button>
                   <button class="dbx-act-btn danger" data-del="custo-pacote" data-idx="${i}" title="Excluir">✕</button>
                 </div>
-                <span style="flex:2;">${escapeHtml(c.nome || '')}${c.moedaOriginal ? ` <small style="opacity:0.5;">(${escapeHtml(c.moedaOriginal)})</small>` : ''}</span>
+                <span style="flex:2;">
+                  ${escapeHtml(c.nome || '')}${c.moedaOriginal ? ` <small style="opacity:0.5;">(${escapeHtml(c.moedaOriginal)})</small>` : ''}
+                  ${itemTemVar ? `<span class="dbx-var-badge" title="Variação mensal ativa em ${varCount}/12 meses">📅 var ${varCount}/12</span>` : ''}
+                </span>
                 <strong style="flex:1; text-align:right;">${dbxFmtMoney(c.valor)}</strong>
                 <span style="flex:1; text-align:center; opacity:${(c.divPor || 1) > 1 ? '1' : '0.4'};">${(c.divPor || 1) > 1 ? '÷' + c.divPor : 'por pessoa'}</span>
-                <span style="width:80px;"></span>
-              </div>
-            `).join('')}
+                <span style="width:110px;"></span>
+              </div>`;
+            }).join('')}
             <div class="dbx-add-row" data-add="custo-pacote">
               <span style="font-size:18px;">+</span>
               <span>Adicionar custo do pacote</span>
             </div>
           </div>
           <div class="dbx-stats-grid" style="margin-top:14px;">
-            <div class="dbx-stat"><div class="lbl">Custo / cliente (Solo)</div><div class="val">${dbxFmtMoney(custoSolo)}</div></div>
-            <div class="dbx-stat"><div class="lbl">Custo / cliente (Duo)</div><div class="val">${dbxFmtMoney(custoDuo)}</div></div>
-            <div class="dbx-stat"><div class="lbl">Custo / cliente (Grupo de ${turmaGrupo})</div><div class="val">${dbxFmtMoney(custoGrupo)}</div></div>
+            <div class="dbx-stat"><div class="lbl">Custo / cliente (Solo)${temVariacao ? ' · base' : ''}</div><div class="val">${dbxFmtMoney(custoSolo)}</div></div>
+            <div class="dbx-stat"><div class="lbl">Custo / cliente (Duo)${temVariacao ? ' · base' : ''}</div><div class="val">${dbxFmtMoney(custoDuo)}</div></div>
+            <div class="dbx-stat"><div class="lbl">Custo / cliente (Grupo de ${turmaGrupo})${temVariacao ? ' · base' : ''}</div><div class="val">${dbxFmtMoney(custoGrupo)}</div></div>
           </div>
+          ${temVariacao ? `
+            <div class="dbx-stats-grid" style="margin-top:8px;">
+              <div class="dbx-stat"><div class="lbl">Custo MÉDIO/ano (Solo)</div><div class="val">${dbxFmtMoney(mediaCusto.solo)}</div></div>
+              <div class="dbx-stat"><div class="lbl">Custo MÉDIO/ano (Duo)</div><div class="val">${dbxFmtMoney(mediaCusto.duo)}</div></div>
+              <div class="dbx-stat"><div class="lbl">Custo MÉDIO/ano (Grupo de ${turmaGrupo})</div><div class="val">${dbxFmtMoney(mediaCusto.grupo)}</div></div>
+            </div>
+          ` : ''}
         </div>
 
         <!-- ===== PREÇOS DE VENDA ===== -->
@@ -18773,6 +18938,54 @@
               <div class="dbx-preco-valor">${dbxFmtMoney(precos.grupo)}</div>
               <div class="dbx-preco-margin">${margemBadge(precos.grupo, custoGrupo)}</div>
               <div class="dbx-preco-custo">custo: ${dbxFmtMoney(custoGrupo)}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== LINHA DO TEMPO · VARIAÇÃO MENSAL ===== -->
+        <div class="dbx-block">
+          <div class="dbx-block-head">
+            <h3>📅 Linha do Tempo · 12 Meses</h3>
+            <div class="dbx-block-actions" style="opacity:0.65; font-size:11px;">
+              ${temVariacao
+                ? `<span>📈 melhor mês: <strong style="color:#6fe3a8;">${melhorMes.curto}</strong> · 📉 pior: <strong style="color:#ff8c8c;">${piorMes.curto}</strong></span>`
+                : `<span>preencha a variação em cada custo (botão 📅) pra ver lucro real por mês</span>`}
+            </div>
+          </div>
+          <p class="dbx-desc dbx-callout-inline">
+            ${temVariacao
+              ? `Custos com variação mensal (ex: voo mais caro em dezembro) fazem o lucro mudar mês a mês. Itens SEM variação usam o valor base. Linhas em verde = lucro positivo; vermelho = prejuízo.`
+              : `Ainda não há variação mensal. Quando você preencher (botão 📅 em um custo), essa tabela mostra automaticamente o custo e lucro de cada mês nos 3 cenários.`}
+          </p>
+          <div class="dbx-timeline-table">
+            <div class="dbx-timeline-row dbx-timeline-head">
+              <span class="dbx-tl-mes">Mês</span>
+              <span class="dbx-tl-c">Custo Solo</span>
+              <span class="dbx-tl-c">Custo Duo</span>
+              <span class="dbx-tl-c">Custo Grupo</span>
+              <span class="dbx-tl-l">Lucro Solo</span>
+              <span class="dbx-tl-l">Lucro Duo</span>
+              <span class="dbx-tl-l">Lucro Grupo</span>
+            </div>
+            ${mensalData.map(m => `
+              <div class="dbx-timeline-row">
+                <span class="dbx-tl-mes"><strong>${m.curto}</strong></span>
+                <span class="dbx-tl-c">${dbxFmtMoney(m.custos.solo)}</span>
+                <span class="dbx-tl-c">${dbxFmtMoney(m.custos.duo)}</span>
+                <span class="dbx-tl-c">${dbxFmtMoney(m.custos.grupo)}</span>
+                <span class="dbx-tl-l ${lucroCellCls(m.lucros.solo)}">${dbxFmtMoney(m.lucros.solo)}</span>
+                <span class="dbx-tl-l ${lucroCellCls(m.lucros.duo)}">${dbxFmtMoney(m.lucros.duo)}</span>
+                <span class="dbx-tl-l ${lucroCellCls(m.lucros.grupo)}">${dbxFmtMoney(m.lucros.grupo)}</span>
+              </div>
+            `).join('')}
+            <div class="dbx-timeline-row dbx-timeline-foot">
+              <span class="dbx-tl-mes">MÉDIA</span>
+              <span class="dbx-tl-c">${dbxFmtMoney(mediaCusto.solo)}</span>
+              <span class="dbx-tl-c">${dbxFmtMoney(mediaCusto.duo)}</span>
+              <span class="dbx-tl-c">${dbxFmtMoney(mediaCusto.grupo)}</span>
+              <span class="dbx-tl-l ${lucroCellCls(mediaLucro.solo)}">${dbxFmtMoney(mediaLucro.solo)}</span>
+              <span class="dbx-tl-l ${lucroCellCls(mediaLucro.duo)}">${dbxFmtMoney(mediaLucro.duo)}</span>
+              <span class="dbx-tl-l ${lucroCellCls(mediaLucro.grupo)}">${dbxFmtMoney(mediaLucro.grupo)}</span>
             </div>
           </div>
         </div>
@@ -18928,6 +19141,52 @@
           arr.splice(i, 1);
           dbxRefresh(D, item);
         }
+      }));
+
+      // Variação mensal — abre modal com 12 campos (jan-dez) por item
+      function openVariacaoMensalModal(idx) {
+        const arr = D.produto.custosPacote.items;
+        const it = arr[idx];
+        if (!it) return;
+        if (!it.mensal) it.mensal = {};
+        const fields = DBX_MESES.map(m => ({
+          key: `m_${m.k}`,
+          label: `${m.curto} (${m.nome})`,
+          type: 'number',
+          step: '0.01',
+          placeholder: `padrão: ${dbxFmtMoney(it.valor)}`,
+        }));
+        // Hint informativo no topo do modal
+        fields.unshift({
+          key: '_info',
+          type: 'info',
+          html: `💡 Deixe um mês em <strong>branco</strong> pra usar o valor padrão (<strong>${dbxFmtMoney(it.valor)}</strong>). Preencha só os meses que variam.`,
+        });
+        const values = {};
+        DBX_MESES.forEach(m => {
+          const v = it.mensal[m.k];
+          values[`m_${m.k}`] = (v !== undefined && v !== null && v !== '') ? v : '';
+        });
+        dbxOpenModal({
+          title: `📅 Variação mensal · ${it.nome}`,
+          fields,
+          values,
+          onSave: (vals) => {
+            const novo = {};
+            DBX_MESES.forEach(m => {
+              const raw = vals[`m_${m.k}`];
+              if (raw !== '' && raw !== null && raw !== undefined && !isNaN(Number(raw))) {
+                novo[m.k] = Number(raw);
+              }
+            });
+            it.mensal = novo;
+            dbxRefresh(D, item);
+          }
+        });
+      }
+      panelEl.querySelectorAll('[data-mes="custo-pacote"]').forEach(b => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openVariacaoMensalModal(parseInt(b.dataset.idx, 10));
       }));
 
       // Editar tamanho da turma "Grupo"

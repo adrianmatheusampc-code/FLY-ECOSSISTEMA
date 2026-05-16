@@ -87,6 +87,13 @@
       confidence: 0.95, requiresConfirmation: false,
     },
     {
+      // "voo em janeiro custa 8680" / "em dezembro voo é 9651" / "hotel em maio R$2000"
+      // Variação mensal de um item de custo
+      re: /\b(?:em|no|na)\s+(janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\b.*(?:custa|fica|sai|vale|[ée])|\b(?:custo\s+(?:de|do)\s+)?(?:voo|hotel|hospedagem|passagem|jet\s*ski|deserto|burj|aquaventure|museu|cruise|alimenta[cç][ãa]o|transfer|carro\s+de\s+passeio)\s+(?:em|no|na|do)\s+(janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)/i,
+      type: 'pacote', subtype: 'pacote_set_custo_mensal', category: 'pacotes',
+      confidence: 0.97, requiresConfirmation: false,
+    },
+    {
       // "remove custo X"
       re: /\b(?:remove|exclui|tira|apag[ae]|deleta)\s+(?:o\s+|um\s+)?custo\b/i,
       type: 'pacote', subtype: 'pacote_remove_custo', category: 'pacotes',
