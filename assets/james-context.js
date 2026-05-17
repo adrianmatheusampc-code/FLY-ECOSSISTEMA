@@ -603,7 +603,7 @@
         '<button class="jcd-b" data-jcd="purge">Limpar Prints</button>' +
       '</div>' +
       '<div class="jcd-btns">' +
-        '<button class="jcd-b" data-jcd="migrate" style="flex:1;background:rgba(126,207,255,.12);border-color:rgba(126,207,255,.35);color:#7ecfff;">⬆ Migrar mídia (base64→link)</button>' +
+        '<button class="jcd-b" data-jcd="migrate" style="flex:1;background:rgba(126,207,255,.12);border-color:rgba(126,207,255,.35);color:#7ecfff;" title="A migração já roda sozinha em background. Este botão só força agora.">⬆ Forçar migração agora (auto ON)</button>' +
       '</div>';
 
     body.querySelector('[data-jcd="reset"]').onclick = clearSession;

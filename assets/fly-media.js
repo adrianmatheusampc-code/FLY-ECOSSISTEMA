@@ -240,6 +240,84 @@
     return stats;
   }
 
+  /* -----------------------------------------------------------------
+     AUTO-SWEEP · migração SILENCIOSA em background (sem botão)
+     Roda sozinha: ao carregar, após uploads e periodicamente.
+     Só age se houver base64 sobrando. Seguro contra corrida:
+     relê a chave antes de gravar e pula se o app mexeu nela.
+     ----------------------------------------------------------------- */
+  let _sweeping = false;
+  function _hasBase64Anywhere() {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      let v; try { v = localStorage.getItem(k); } catch (e) { continue; }
+      if (v && (v.indexOf('data:image/') !== -1 || v.indexOf('data:video/') !== -1)) return true;
+    }
+    return false;
+  }
+
+  async function autoSweep() {
+    if (_sweeping) return null;
+    if (!navigator.onLine) return null;
+    if (!_hasBase64Anywhere()) return null; // nada a fazer (no-op instantâneo)
+    _sweeping = true;
+    const stats = { keys: 0, found: 0, migrated: 0, failed: 0, bytesSaved: 0 };
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+
+      for (const key of keys) {
+        let rawBefore;
+        try { rawBefore = localStorage.getItem(key); } catch (e) { continue; }
+        if (!rawBefore ||
+            (rawBefore.indexOf('data:image/') === -1 && rawBefore.indexOf('data:video/') === -1)) continue;
+
+        stats.keys++;
+        let migratedStr;
+        try {
+          const parsed = JSON.parse(rawBefore);
+          const out = await _walkAndUpload(parsed, stats, null);
+          migratedStr = JSON.stringify(out);
+        } catch (e) {
+          if (isDataUrl(rawBefore)) migratedStr = await _walkAndUpload(rawBefore, stats, null);
+          else continue;
+        }
+        // Guarda anti-corrida: o app pode ter regravado a chave enquanto
+        // subíamos. Se mudou, não sobrescreve — próximo sweep pega.
+        let rawNow;
+        try { rawNow = localStorage.getItem(key); } catch (e) { rawNow = rawBefore; }
+        if (rawNow === rawBefore && migratedStr && migratedStr !== rawBefore) {
+          try { localStorage.setItem(key, migratedStr); } catch (e) {}
+        }
+        await new Promise(r => setTimeout(r, 60)); // não trava a UI
+      }
+      if (stats.migrated) console.log('[FlyMedia] auto-sweep:', stats);
+    } finally {
+      _sweeping = false;
+    }
+    return stats;
+  }
+
+  let _sweepDebounce = null;
+  function scheduleSweep(delay) {
+    clearTimeout(_sweepDebounce);
+    _sweepDebounce = setTimeout(() => { autoSweep(); }, delay || 4000);
+  }
+
+  function setupAutoSweep() {
+    // 1) pouco depois do app carregar (deixa assentar)
+    setTimeout(() => autoSweep(), 7000);
+    // 2) depois de qualquer upload (caso o fallback base64 tenha disparado)
+    document.addEventListener('change', (e) => {
+      const t = e.target;
+      if (t && t.tagName === 'INPUT' && t.type === 'file') scheduleSweep(6000);
+    }, true);
+    // 3) ronda leve periódica — no-op instantâneo se não houver base64
+    setInterval(() => { if (!_sweeping) autoSweep(); }, 90000);
+    // 4) volta a varrer quando a conexão voltar
+    window.addEventListener('online', () => scheduleSweep(3000));
+  }
+
   /* =================================================================
      8 · COLAR IMAGEM (Ctrl+V) → upload
      Igual ao Claude: copia imagem do Google/qualquer lugar e cola.
@@ -378,14 +456,19 @@
     isDataUrl,
     isHttpUrl,
     migrate,
+    autoSweep,
     toast,
   };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupPasteUpload);
-  } else {
+  function _bootFlyMedia() {
     setupPasteUpload();
+    setupAutoSweep();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _bootFlyMedia);
+  } else {
+    _bootFlyMedia();
   }
 
-  console.log('[FlyMedia] ✅ online — fotos→Cloudinary · PDF/vídeo→Supabase · link YT/Vimeo · colar Ctrl+V ativo');
+  console.log('[FlyMedia] ✅ online — fotos→Cloudinary · PDF/vídeo→Supabase · link YT/Vimeo · colar Ctrl+V · auto-sweep base64 ON');
 })();
