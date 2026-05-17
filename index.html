@@ -19033,10 +19033,14 @@
             </div>
           </div>
         </div>
+
+        <!-- ===== ROTEIRO · dia a dia (abaixo da Linha do Tempo) ===== -->
+        ${dbxRoteiroHTML(D)}
       `;
     }
 
     function dbxBindProduto(panelEl, D, item) {
+      dbxBindRoteiro(panelEl, D, item);
       // Editar info geral do produto
       const infoBtn = panelEl.querySelector('[data-edit="produto-info"]');
       if (infoBtn) {
@@ -19408,6 +19412,84 @@
         const i = parseInt(b.dataset.idx, 10);
         if (dbxConfirm(`Excluir custo variável "${D.custos.variaveis[i].nome}"?`)) {
           D.custos.variaveis.splice(i, 1);
+          dbxRefresh(D, item);
+        }
+      }));
+    }
+
+    /* ===== ROTEIRO · bloco reutilizável (Produto + Operação) =====
+       Mesmo dado (D.operacao.roteiro) — editar num lugar reflete no outro. */
+    function dbxRoteiroHTML(D) {
+      const rot = (D.operacao && Array.isArray(D.operacao.roteiro)) ? D.operacao.roteiro : [];
+      return `
+        <div class="dbx-block">
+          <div class="dbx-block-head">
+            <h3>🗺️ Roteiro do pacote · dia a dia</h3>
+            <div class="dbx-block-actions">
+              <button class="dbx-mini-btn" data-add="roteiro">+ Adicionar Dia</button>
+            </div>
+          </div>
+          <p class="dbx-desc dbx-callout-inline">
+            O que o cliente vive em cada dia da viagem. Mesma informação da aba Operação — editar aqui atualiza lá também.
+          </p>
+          <div class="dbx-roteiro">
+            ${rot.map((r, i) => `
+              <div class="dbx-rot-row dbx-editable" data-idx="${i}">
+                <div class="dbx-card-actions">
+                  <button class="dbx-act-btn" data-edit="roteiro" data-idx="${i}" title="Editar">✎</button>
+                  <button class="dbx-act-btn danger" data-del="roteiro" data-idx="${i}" title="Excluir">✕</button>
+                </div>
+                <div class="dbx-rot-day">DIA ${escapeHtml(String(r.dia))}</div>
+                <div class="dbx-rot-time">${escapeHtml(r.hora)}</div>
+                <div class="dbx-rot-info">
+                  <div class="dbx-rot-titulo">${escapeHtml(r.titulo)}</div>
+                  <div class="dbx-rot-desc">${escapeHtml(r.desc)}</div>
+                </div>
+              </div>
+            `).join('')}
+            <div class="dbx-add-row" data-add="roteiro">
+              <span style="font-size:18px;">+</span>
+              <span>Adicionar dia ao roteiro</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function dbxBindRoteiro(panelEl, D, item) {
+      if (!D.operacao) D.operacao = {};
+      if (!Array.isArray(D.operacao.roteiro)) D.operacao.roteiro = [];
+      function openRotModal(idx) {
+        const isEdit = idx !== undefined && idx !== null;
+        const nextDia = (D.operacao.roteiro.length ? Math.max(...D.operacao.roteiro.map(r => Number(r.dia) || 0)) : 0) + 1;
+        const cur = isEdit ? D.operacao.roteiro[idx] : { dia: nextDia, hora: '09h', titulo: '', desc: '' };
+        dbxOpenModal({
+          title: isEdit ? 'Editar Dia do Roteiro' : 'Novo Dia no Roteiro',
+          fields: [
+            { key: 'dia', label: 'Dia (número)', type: 'number', min: 1 },
+            { key: 'hora', label: 'Horário', type: 'text', placeholder: 'Ex: 09h, 14h, 19h30' },
+            { key: 'titulo', label: 'Título da atividade', type: 'text', placeholder: 'Ex: Burj Khalifa + Dubai Mall' },
+            { key: 'desc', label: 'Descrição', type: 'textarea', placeholder: 'O que vai acontecer nesse dia...' }
+          ],
+          values: cur,
+          onSave: (vals) => {
+            if (isEdit) D.operacao.roteiro[idx] = vals;
+            else D.operacao.roteiro.push(vals);
+            D.operacao.roteiro.sort((a, b) => (Number(a.dia) || 0) - (Number(b.dia) || 0));
+            dbxRefresh(D, item);
+          }
+        });
+      }
+      panelEl.querySelectorAll('[data-add="roteiro"]').forEach(b => b.addEventListener('click', () => openRotModal()));
+      panelEl.querySelectorAll('[data-edit="roteiro"]').forEach(b => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openRotModal(parseInt(b.dataset.idx, 10));
+      }));
+      panelEl.querySelectorAll('[data-del="roteiro"]').forEach(b => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const i = parseInt(b.dataset.idx, 10);
+        if (dbxConfirm(`Excluir o dia ${D.operacao.roteiro[i].dia} (${D.operacao.roteiro[i].titulo})?`)) {
+          D.operacao.roteiro.splice(i, 1);
           dbxRefresh(D, item);
         }
       }));

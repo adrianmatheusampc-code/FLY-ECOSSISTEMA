@@ -263,7 +263,10 @@ Modo de dados: ${context.mode}${navPrompt}${docsPrompt}`;
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5-20250929',
-        max_tokens: 250,
+        // Alto o suficiente pra concluir tarefas grandes (vários [ACTION]
+        // em sequência) sem cortar no meio. A fala continua curta porque
+        // o texto falado é separado das ACTIONs.
+        max_tokens: 4000,
         system: systemPrompt,
         messages,
       }),
@@ -309,7 +312,7 @@ Modo de dados: ${context.mode}${navPrompt}${docsPrompt}`;
         model: 'gpt-4o-mini',
         messages,
         temperature: 0.4,
-        max_tokens: 250,
+        max_tokens: 4000,
       }),
     });
     if (!r.ok) {
