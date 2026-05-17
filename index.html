@@ -10022,6 +10022,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <!-- FLY Media: upload por link (Cloudinary fotos · Supabase PDF/vídeo) — tira mídia do localStorage -->
   <script src="assets/fly-media.js"></script>
+  <!-- FLY Operations: playbooks operacionais (central macro + por pacote) -->
+  <script src="assets/fly-operations.js"></script>
 
   <!-- VIEW 1: linear circles -->
   <div class="view grid-view" id="gridView">
@@ -15466,6 +15468,26 @@
     /* ============================================================
        METAS · Metas (template reutilizável)
        ============================================================ */
+    /* Formato de painel "Operações" — central macro (Estrutura Corporativa) */
+    function renderOperacoesItemView(item, topicData, idx) {
+      itemView.innerHTML = '';
+      const topicName = (currentTopic && currentTopic.name) || 'tópico';
+      const back = document.createElement('div');
+      back.className = 'hier-back-bar';
+      back.innerHTML = `<button class="apple-btn" id="ops-back"><span class="apple-icon">←</span><span>Voltar para ${escapeHtml(topicName)}</span></button>`;
+      itemView.appendChild(back);
+      back.querySelector('#ops-back').addEventListener('click', () => { switchTo('topic'); showTopic(currentTopic); });
+      const host = document.createElement('div');
+      host.style.cssText = 'max-width:1200px;margin:0 auto;padding:0 16px';
+      itemView.appendChild(host);
+      if (window.__flyOps && window.__flyOps.renderGeneral) {
+        window.__flyOps.renderGeneral(host);
+      } else {
+        host.innerHTML = '<p style="color:#c6a85a;padding:40px;text-align:center">Módulo de Operações carregando… recarregue a página (Cmd+Shift+R).</p>';
+      }
+      try { window.__jamesContext && window.__jamesContext.trackNavigation && window.__jamesContext.trackNavigation('operacoes', 'central'); } catch (e) {}
+    }
+
     function renderMetasItemView(item, topicData, idx) {
       itemView.innerHTML = '';
       const topicName = (currentTopic && currentTopic.name) || 'tópico';
@@ -19569,10 +19591,20 @@
             `).join('')}
           </div>
         </div>
+
+        <!-- ===== OPERAÇÃO DO PACOTE · playbook vinculado (FlyOps) ===== -->
+        <div id="dbx-ops-playbook" style="margin-top:18px"></div>
       `;
     }
 
     function dbxBindOperacao(panelEl, D, item) {
+      // Playbook operacional específico deste pacote (mesma fonte da Central)
+      try {
+        const opsHost = panelEl.querySelector('#dbx-ops-playbook');
+        if (opsHost && window.__flyOps && window.__flyOps.renderPackage) {
+          window.__flyOps.renderPackage(opsHost, (D.produto && D.produto.nome) || (item && item.name) || 'Pacote');
+        }
+      } catch (e) { console.warn('[FlyOps] render pacote falhou:', e && e.message); }
       // Editar base
       const baseBtn = panelEl.querySelector('[data-edit="base"]');
       if (baseBtn) {
@@ -21695,6 +21727,11 @@
           switchTo('item');
           return;
         }
+        if (it.format === 'operacoes') {
+          renderOperacoesItemView(it, topicData, idx);
+          switchTo('item');
+          return;
+        }
       }
 
       const hub = document.createElement('div');
@@ -22512,6 +22549,14 @@
                 <div class="format-ico">🎯</div>
                 <div class="format-name">Metas <span class="format-badge">PROGRESSO</span></div>
                 <div class="format-desc">Globais · por produto · por vendedor · por período · progresso automático via cascata</div>
+              </div>
+            </label>
+            <label class="format-opt ${it.format === 'operacoes' ? 'active' : ''}">
+              <input type="radio" name="m_format" value="operacoes" ${it.format === 'operacoes' ? 'checked' : ''}>
+              <div class="format-card operacoes">
+                <div class="format-ico">🛰️</div>
+                <div class="format-name">Operações <span class="format-badge">CENTRAL</span></div>
+                <div class="format-desc">Cérebro operacional · clientes em viagem · playbooks por pacote · bases · escala · contingências · logs · James</div>
               </div>
             </label>
           </div>
