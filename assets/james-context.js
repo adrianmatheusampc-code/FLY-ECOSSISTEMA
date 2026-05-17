@@ -559,6 +559,16 @@
     _renderDebugPanel();
   }
 
+  function _voiceStatusHTML() {
+    const vs = window.__jamesVoiceStatus;
+    if (!vs) return '<span class="jcd-v jcd-nul">—</span>';
+    let cls = 'jcd-v';
+    if (vs.provider === 'elevenlabs') cls += ' jcd-ent';   // verde-água (premium)
+    else if (vs.provider === 'piper') cls += ' jcd-mod';   // azul (offline)
+    else cls += ' jcd-warn';                                // vermelho (sem voz)
+    return '<span class="' + cls + '">' + String(vs.label || vs.provider) + '</span>';
+  }
+
   function _renderDebugPanel() {
     if (!_panel) return;
     const body = _panel.querySelector('#jcd-body');
@@ -590,6 +600,7 @@
       '<div class="jcd-r"><span class="jcd-k">Entidade</span>' + ent + '</div>' +
       '<div class="jcd-r"><span class="jcd-k">Última ação</span>' + act + '</div>' +
       '<div class="jcd-r"><span class="jcd-k">Prints</span>' + scr + '</div>' +
+      '<div class="jcd-r"><span class="jcd-k">Voz</span>' + _voiceStatusHTML() + '</div>' +
       '<div class="jcd-sep"></div>' +
       '<div class="jcd-r" style="flex-direction:column;gap:4px">' +
         '<span class="jcd-k">Histórico</span>' +
@@ -692,6 +703,9 @@
       };
       emit();
     });
+
+    // status da voz (Premium / Offline / Sem cota) → atualiza o painel
+    window.addEventListener('fly:voice-status', () => { _renderDebugPanel(); });
 
     console.log('[JAMES Context] ✅ online — o James está vendo a tela do Chefe.');
   }

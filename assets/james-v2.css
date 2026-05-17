@@ -378,7 +378,8 @@
   gap: 8px;
   padding: 10px 20px 4px;
 }
-.jms-panel__input-row input {
+.jms-panel__input-row input,
+.jms-panel__input-row textarea {
   flex: 1;
   padding: 10px 14px;
   background: rgba(0, 0, 0, 0.45);
@@ -388,12 +389,22 @@
   font-size: 13px;
   transition: border-color 0.2s ease;
 }
-.jms-panel__input-row input:focus {
+.jms-panel__input-row textarea {
+  resize: none;
+  font-family: inherit;
+  line-height: 1.45;
+  min-height: 42px;
+  max-height: 168px;       /* ~8 linhas; depois disso rola */
+  overflow-y: auto;
+}
+.jms-panel__input-row input:focus,
+.jms-panel__input-row textarea:focus {
   outline: none;
   border-color: var(--jms-gold);
   box-shadow: 0 0 8px rgba(245, 182, 66, 0.18);
 }
-.jms-panel__input-row input::placeholder { color: rgba(255, 255, 255, 0.35); }
+.jms-panel__input-row input::placeholder,
+.jms-panel__input-row textarea::placeholder { color: rgba(255, 255, 255, 0.35); }
 
 .jms-send-btn {
   padding: 0 16px !important;

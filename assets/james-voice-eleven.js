@@ -124,7 +124,10 @@
      STATUS · disponibilidade
   --------------------------------------------------------------- */
   let _available = null;
+  let _lastFailure = null; // { kind:'quota'|'auth'|'network'|'http', status, info }
   function isAvailable() { return _available !== false && !!getKey() && !!getVoiceId(); }
+  function getLastFailure() { return _lastFailure; }
+  function quotaExceeded() { return !!(_lastFailure && _lastFailure.kind === 'quota'); }
 
   /* ---------------------------------------------------------------
      TTS · speak()
@@ -179,8 +182,14 @@
         });
         if (!r.ok) {
           let info = '';
-          try { info = (await r.text()).slice(0, 200); } catch (e) {}
-          console.warn('[JamesVoice] TTS HTTP', r.status, info);
+          try { info = (await r.text()).slice(0, 300); } catch (e) {}
+          const low = info.toLowerCase();
+          let kind = 'http';
+          if (r.status === 401 && (low.includes('quota') || low.includes('exceeded') || low.includes('credit'))) kind = 'quota';
+          else if (r.status === 429) kind = 'quota';
+          else if (r.status === 401 || r.status === 403) kind = 'auth';
+          _lastFailure = { kind, status: r.status, info, at: Date.now() };
+          console.warn('[JamesVoice] TTS HTTP', r.status, '(' + kind + ')', info);
           _available = false;
           return null;
         }
@@ -188,7 +197,9 @@
         url = URL.createObjectURL(blob);
         cacheSet(key, url);
         _available = true;
+        _lastFailure = null;
       } catch (e) {
+        _lastFailure = { kind: 'network', status: 0, info: String(e?.message || e), at: Date.now() };
         console.warn('[JamesVoice] TTS fetch falhou:', e?.message || e);
         _available = false;
         return null;
@@ -398,6 +409,8 @@
     setKey,
     setSpeed,
     getSpeed,
+    getLastFailure,
+    quotaExceeded,
   };
 
   console.log('[JamesVoice ElevenLabs] Online (modo client-only). TTS + STT prontos. Speed:', getSpeed());

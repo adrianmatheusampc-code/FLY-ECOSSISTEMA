@@ -239,59 +239,117 @@
     function _cancelOngoingSpeech() {
       if (_speakFallbackTimer) { clearTimeout(_speakFallbackTimer); _speakFallbackTimer = null; }
       try { window.__jamesVoiceEleven?.stopSpeaking?.(); } catch (e) {}
+      try { window.__jamesVoicePiper?.stopSpeaking?.(); } catch (e) {}
       // Defensivo: mata qualquer voz do navegador que tente tocar.
       try { window.speechSynthesis?.cancel?.(); } catch (e) {}
     }
 
+    /* Status de voz global (Premium / Offline / Sem cota) — lido pelo
+       painel do James e pelo painel de contexto. */
+    function broadcastVoiceStatus(provider, label) {
+      window.__jamesVoiceStatus = { provider, label, at: Date.now() };
+      try { window.dispatchEvent(new CustomEvent('fly:voice-status', { detail: window.__jamesVoiceStatus })); } catch (e) {}
+      handlers.onVoiceStatus?.(window.__jamesVoiceStatus);
+    }
+    window.__jamesGetVoiceProvider = () => localStorage.getItem('fly_voice_provider') || 'auto';
+    window.__jamesSetVoiceProvider = (p) => {
+      if (['auto', 'elevenlabs', 'piper'].includes(p)) localStorage.setItem('fly_voice_provider', p);
+    };
+
+    /* VOZ COM FALLBACK · ElevenLabs (Premium) → Piper (Offline, grátis)
+       provider: 'auto' (padrão) tenta Eleven e cai pro Piper se falhar;
+       'elevenlabs' só Premium; 'piper' só Offline. O James NUNCA fica
+       inativo por falta de cota — sempre tem o Piper local de reserva. */
     function speak(text, onDone) {
       if (!text) { onDone?.(); return; }
-      // Cancela qualquer fala em curso (Eleven + qualquer voz do navegador)
       _cancelOngoingSpeech();
       const mySeq = ++_speakSeq;
       const isStale = () => mySeq !== _speakSeq;
 
-      // VOZ ÚNICA · O James fala SÓ com a voz oficial do ElevenLabs.
-      // Não existe mais fallback de voz do navegador. Se o ElevenLabs
-      // falhar (chave/cota/rede), o James fica em silêncio — nunca usa
-      // outra voz.
-      const useEleven = window.__jamesVoiceEleven && window.__jamesVoiceEleven.speak;
-
-      function elevenFail(reason) {
-        if (isStale()) return;
+      let _done = false;
+      function finishOK() {
+        if (_done || isStale()) return;
+        _done = true;
         if (_speakFallbackTimer) { clearTimeout(_speakFallbackTimer); _speakFallbackTimer = null; }
-        console.warn('[James] Voz oficial (ElevenLabs) indisponível:', reason);
-        setError('Voz oficial (ElevenLabs) indisponível. Verifique chave / cota / rede.');
+        handlers.onSpeakEnd?.(); onDone?.();
+      }
+      function hardFail(msg, statusLabel) {
+        if (_done || isStale()) return;
+        _done = true;
+        if (_speakFallbackTimer) { clearTimeout(_speakFallbackTimer); _speakFallbackTimer = null; }
+        console.warn('[James] Voz indisponível:', msg);
+        broadcastVoiceStatus('none', statusLabel || 'Voz indisponível');
+        setError(msg);
         handlers.onSpeakEnd?.(); onDone?.();
         setTimeout(() => { if (state.status === STATUS.ERROR) setStatus(STATUS.IDLE); }, 1200);
       }
 
-      if (!useEleven) {
-        console.warn('[James] Cliente ElevenLabs não carregado.');
-        setError('Cliente ElevenLabs não carregado. Recarregue a página.');
-        onDone?.();
+      const provider  = window.__jamesGetVoiceProvider();
+      const hasEleven = !!(window.__jamesVoiceEleven && window.__jamesVoiceEleven.speak);
+      const hasPiper  = !!(window.__jamesVoicePiper && window.__jamesVoicePiper.isSupported && window.__jamesVoicePiper.isSupported());
+
+      // ---- PIPER (offline / grátis) ----
+      function speakPiper(statusLabel) {
+        if (!hasPiper) {
+          hardFail('Voz offline (Piper) não suportada neste navegador.', 'Voz indisponível');
+          return;
+        }
+        if (state.status !== STATUS.SPEAKING) setStatus(STATUS.SPEAKING);
+        const ready = window.__jamesVoicePiper.isReady && window.__jamesVoicePiper.isReady();
+        broadcastVoiceStatus('piper', statusLabel || (ready ? 'Voz Offline ativa' : 'Carregando voz offline (1ª vez)…'));
+        if (!_done && !isStale()) handlers.onSpeakStart?.(text);
+        window.__jamesVoicePiper.speak(text, {
+          onProgress: (pct) => { if (!isStale()) broadcastVoiceStatus('piper', `Baixando voz offline… ${pct}%`); },
+          onStart: () => { broadcastVoiceStatus('piper', 'Voz Offline ativa'); },
+          onEnd:   () => finishOK(),
+        }).then((audio) => {
+          if (isStale()) return;
+          if (audio === null) hardFail('Não consegui sintetizar a voz offline.', 'Voz indisponível');
+          else broadcastVoiceStatus('piper', 'Voz Offline ativa');
+        }).catch((e) => hardFail('Voz offline falhou: ' + (e?.message || e), 'Voz indisponível'));
+      }
+
+      // ---- Modo forçado: só Piper ----
+      if (provider === 'piper') {
+        setStatus(STATUS.SPEAKING);
+        speakPiper('Voz Offline ativa');
         return;
       }
 
+      // ---- ElevenLabs ausente ----
+      if (!hasEleven) {
+        if (provider === 'elevenlabs') { hardFail('Cliente ElevenLabs não carregado. Recarregue a página.', 'Voz indisponível'); return; }
+        setStatus(STATUS.SPEAKING);
+        speakPiper('Voz Offline ativa'); // auto → cai pro Piper
+        return;
+      }
+
+      // ---- ElevenLabs (Premium) primeiro ----
       setStatus(STATUS.SPEAKING);
       handlers.onSpeakStart?.(text);
-      _speakFallbackTimer = setTimeout(() => {
-        if (isStale()) return;
-        _speakFallbackTimer = null;
-        handlers.onSpeakEnd?.(); onDone?.();
-      }, Math.max(8000, text.length * 100));
+      _speakFallbackTimer = setTimeout(() => { finishOK(); }, Math.max(8000, text.length * 100));
 
       window.__jamesVoiceEleven.speak(text, {
-        onStart: () => { /* onSpeakStart já chamado acima */ },
-        onEnd: () => {
-          if (isStale()) return;
-          if (_speakFallbackTimer) { clearTimeout(_speakFallbackTimer); _speakFallbackTimer = null; }
-          handlers.onSpeakEnd?.(); onDone?.();
-        },
+        onStart: () => { broadcastVoiceStatus('elevenlabs', 'Voz Premium ativa'); },
+        onEnd:   () => finishOK(),
       }).then((audio) => {
         if (isStale()) return;
-        if (audio === null) elevenFail('ElevenLabs retornou null');
+        if (audio !== null) { broadcastVoiceStatus('elevenlabs', 'Voz Premium ativa'); return; }
+        // ElevenLabs falhou
+        const quota = !!(window.__jamesVoiceEleven.quotaExceeded && window.__jamesVoiceEleven.quotaExceeded());
+        if (_speakFallbackTimer) { clearTimeout(_speakFallbackTimer); _speakFallbackTimer = null; }
+        if (provider === 'elevenlabs') {
+          hardFail(quota ? 'ElevenLabs sem cota neste mês.' : 'ElevenLabs indisponível (chave/rede).',
+                   quota ? 'ElevenLabs sem cota' : 'Voz indisponível');
+          return;
+        }
+        // auto → fallback automático pro Piper
+        speakPiper(quota ? 'ElevenLabs sem cota — Voz Offline ativa' : 'Voz Offline ativa');
       }).catch((e) => {
-        elevenFail(e?.message || e);
+        if (isStale()) return;
+        if (_speakFallbackTimer) { clearTimeout(_speakFallbackTimer); _speakFallbackTimer = null; }
+        if (provider === 'elevenlabs') { hardFail('ElevenLabs falhou: ' + (e?.message || e), 'Voz indisponível'); return; }
+        speakPiper('Voz Offline ativa');
       });
     }
 
@@ -960,7 +1018,7 @@
       <!-- Input de texto pra digitar comando -->
       <div class="jms-panel__input-row">
         <button class="jms-attach-btn" id="jms-attach-pdf" type="button" aria-label="Anexar PDF ou imagem" title="Anexar PDF ou imagem (print, screenshot) pro James ler">📎</button>
-        <input type="text" id="jms-text-input" placeholder="Digite uma pergunta pro James..." autocomplete="off" />
+        <textarea id="jms-text-input" rows="1" placeholder="Digite uma pergunta pro James... (Enter envia · Shift+Enter pula linha)" autocomplete="off"></textarea>
         <button class="jms-btn jms-btn--primary jms-send-btn" id="jms-text-send" type="button" aria-label="Enviar">↑</button>
         <input type="file" id="jms-attach-pdf-input" accept="application/pdf,.pdf,image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" style="display:none;" />
       </div>
@@ -1131,7 +1189,7 @@
           <h3>Escrever pro James</h3>
           <div class="jms-panel__input-row" style="padding:0;">
             <button class="jms-attach-btn" id="jms-fs-attach-pdf" type="button" aria-label="Anexar PDF ou imagem" title="Anexar PDF ou imagem (print, screenshot) pro James ler">📎</button>
-            <input type="text" id="jms-fs-text-input" placeholder="Digite uma pergunta ou comando pro James..." autocomplete="off" />
+            <textarea id="jms-fs-text-input" rows="1" placeholder="Digite uma pergunta ou comando pro James... (Enter envia · Shift+Enter pula linha)" autocomplete="off"></textarea>
             <button class="jms-btn jms-btn--primary jms-send-btn" id="jms-fs-text-send" type="button" aria-label="Enviar">↑</button>
             <input type="file" id="jms-fs-attach-pdf-input" accept="application/pdf,.pdf,image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" style="display:none;" />
           </div>
@@ -1895,14 +1953,23 @@
     // Input de TEXTO — enviar pergunta por digitação (painel + fullscreen)
     function bindTextInput(inputEl, sendBtn, ensureOpen) {
       if (!inputEl) return;
+      const isTA = inputEl.tagName === 'TEXTAREA';
+      const autoGrow = () => {
+        if (!isTA) return;
+        inputEl.style.height = 'auto';
+        inputEl.style.height = Math.min(inputEl.scrollHeight, 168) + 'px';
+      };
       const send = () => {
         const txt = inputEl.value.trim();
-        if (!txt) return;
+        if (!txt) return;          // sem limite de caracteres — manda o prompt inteiro
         inputEl.value = '';
+        if (isTA) inputEl.style.height = 'auto';
         ensureOpen?.();
         voice.sendTextCommand(txt);
       };
+      inputEl.addEventListener('input', autoGrow);
       inputEl.addEventListener('keydown', (e) => {
+        // Enter envia · Shift+Enter pula linha (prompt grande, multi-linha)
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
           send();
