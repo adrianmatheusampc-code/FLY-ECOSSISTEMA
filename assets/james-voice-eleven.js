@@ -36,15 +36,28 @@
      Pra trocar a voz sem mexer no código:
        window.__jamesVoiceEleven.setKey(null, 'NOVO_VOICE_ID')
   --------------------------------------------------------------- */
-  const ELEVEN_API_KEY_DEFAULT  = 'sk_4a23b74a2d652a1c3caa7eddc81eff496eb361490022bc77';
-  const ELEVEN_VOICE_ID_DEFAULT = 'My6nGPXbjD5XyteAZ4FM'; // James Oficial (IVC própria)
+  const ELEVEN_API_KEY_DEFAULT  = '9f754f7bc45eed1c7da0b8ff35319d7dd8e62b5b76f0ea04eed91b34c0523b27';
+  const ELEVEN_VOICE_ID_DEFAULT = 'My6nGPXbjD5XyteAZ4FM'; // JAMES — voz oficial (TRAVADA)
 
-  function getKey()     { return localStorage.getItem('fly_eleven_key')      || ELEVEN_API_KEY_DEFAULT; }
-  function getVoiceId() { return localStorage.getItem('fly_eleven_voice_id') || ELEVEN_VOICE_ID_DEFAULT; }
+  // VOZ TRAVADA: o James fala SÓ com esta voz ElevenLabs. Ignoramos
+  // qualquer override antigo de voice_id no localStorage e limpamos
+  // chaves obsoletas pra nenhuma outra voz competir.
+  try {
+    ['fly_eleven_voice_id', 'fly_tts_force_browser', 'fly_tts_eleven_only'].forEach(k => {
+      try { localStorage.removeItem(k); } catch (e) {}
+    });
+    const savedKey = localStorage.getItem('fly_eleven_key');
+    if (savedKey && savedKey !== ELEVEN_API_KEY_DEFAULT) {
+      localStorage.removeItem('fly_eleven_key'); // descarta chave antiga
+    }
+  } catch (e) {}
 
-  function setKey(key, voiceId) {
-    if (key)     localStorage.setItem('fly_eleven_key', key);
-    if (voiceId) localStorage.setItem('fly_eleven_voice_id', voiceId);
+  function getKey()     { return localStorage.getItem('fly_eleven_key') || ELEVEN_API_KEY_DEFAULT; }
+  // voice_id é IMUTÁVEL — sempre a voz oficial do James.
+  function getVoiceId() { return ELEVEN_VOICE_ID_DEFAULT; }
+
+  function setKey(key /*, voiceId ignorado de propósito */) {
+    if (key) localStorage.setItem('fly_eleven_key', key);
     _available = null; // força nova checagem
   }
 
@@ -133,7 +146,7 @@
   async function speak(text, opts = {}) {
     if (!text || !String(text).trim()) return null;
     const apiKey  = getKey();
-    const voiceId = opts.voice_id || getVoiceId();
+    const voiceId = getVoiceId(); // SEMPRE a voz oficial do James (travada)
     if (!apiKey || !voiceId) {
       console.warn('[JamesVoice] sem chave/voice_id — pulando ElevenLabs');
       _available = false;

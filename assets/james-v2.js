@@ -196,27 +196,7 @@
       handlers.onStop?.();
     }
 
-    // Voz masculina cacheada
-    let _maleVoice = null;
-    function pickMaleVoice() {
-      if (_maleVoice) return _maleVoice;
-      if (!hasTTS) return null;
-      const voices = window.speechSynthesis.getVoices();
-      if (!voices.length) return null;
-      const PRIORITY = ['Felipe', 'Luciano', 'Joaquim', 'Daniel', 'Ricardo', 'Eduardo', 'Fernando', 'Diego', 'Diogo', 'Microsoft Daniel', 'Microsoft Ricardo'];
-      const FEMALE = /\b(luciana|maria|paulina|monica|helena|samantha|victoria|karen|tessa|fiona|alice|joana|female|fem\b|woman)/i;
-      for (const name of PRIORITY) {
-        const v = voices.find(x => (x.name || '').toLowerCase().includes(name.toLowerCase()) && !FEMALE.test(x.name || ''));
-        if (v) { _maleVoice = v; return v; }
-      }
-      const ptVoices = voices.filter(v => /^pt/i.test(v.lang));
-      _maleVoice = ptVoices.find(v => !FEMALE.test(v.name || '')) || ptVoices[0] || voices[0];
-      return _maleVoice;
-    }
-    if (hasTTS) {
-      window.speechSynthesis.onvoiceschanged = () => { _maleVoice = null; pickMaleVoice(); };
-      setTimeout(() => { _maleVoice = null; pickMaleVoice(); }, 250);
-    }
+    // (Seleção de voz do navegador REMOVIDA — James fala só com ElevenLabs.)
 
     function setStatus(s) {
       state.status = s;
@@ -245,9 +225,9 @@
     }
 
     /* ----------------- TTS -----------------
-       Tenta ElevenLabs (voz oficial do James) primeiro; cai pra
-       SpeechSynthesis do navegador como fallback se backend falhar.
-       Pode ser desabilitado via localStorage.fly_tts_force_browser='1'.
+       VOZ ÚNICA: o James fala EXCLUSIVAMENTE com a voz oficial do
+       ElevenLabs (My6nGPXbjD5XyteAZ4FM). Não existe fallback de voz
+       do navegador — se o ElevenLabs falhar, o James fica em silêncio.
 
        Proteção contra vozes sobrepostas: cada chamada a speak() ganha um
        seq incremental; quando uma nova fala começa, qualquer callback /
@@ -255,112 +235,64 @@
        então não dispara onSpeakEnd zombie que reabriria o ciclo. */
     let _speakSeq = 0;
     let _speakFallbackTimer = null;
-    let _speakUtterance = null;
 
     function _cancelOngoingSpeech() {
       if (_speakFallbackTimer) { clearTimeout(_speakFallbackTimer); _speakFallbackTimer = null; }
       try { window.__jamesVoiceEleven?.stopSpeaking?.(); } catch (e) {}
+      // Defensivo: mata qualquer voz do navegador que tente tocar.
       try { window.speechSynthesis?.cancel?.(); } catch (e) {}
-      _speakUtterance = null;
     }
 
     function speak(text, onDone) {
       if (!text) { onDone?.(); return; }
-      // Cancela qualquer fala em curso (Eleven, browser, fallback timer)
+      // Cancela qualquer fala em curso (Eleven + qualquer voz do navegador)
       _cancelOngoingSpeech();
       const mySeq = ++_speakSeq;
       const isStale = () => mySeq !== _speakSeq;
 
-      // Default: SÓ ElevenLabs. Voz do navegador é fallback opt-in.
-      // - fly_tts_eleven_only='1' (default) → silêncio se Eleven falhar
-      // - fly_tts_eleven_only='0'           → cai pro navegador como fallback
-      // - fly_tts_force_browser='1'         → força navegador, ignora Eleven (debug)
-      const forceBrowser = localStorage.getItem('fly_tts_force_browser') === '1';
-      const elevenOnly   = localStorage.getItem('fly_tts_eleven_only') !== '0';
-      const useEleven = !forceBrowser && window.__jamesVoiceEleven && window.__jamesVoiceEleven.speak;
+      // VOZ ÚNICA · O James fala SÓ com a voz oficial do ElevenLabs.
+      // Não existe mais fallback de voz do navegador. Se o ElevenLabs
+      // falhar (chave/cota/rede), o James fica em silêncio — nunca usa
+      // outra voz.
+      const useEleven = window.__jamesVoiceEleven && window.__jamesVoiceEleven.speak;
 
-      function elevenFailFallback(reason) {
+      function elevenFail(reason) {
         if (isStale()) return;
         if (_speakFallbackTimer) { clearTimeout(_speakFallbackTimer); _speakFallbackTimer = null; }
-        if (elevenOnly) {
-          console.warn('[James] ElevenLabs falhou e fallback do navegador desativado:', reason);
-          setError('Voz oficial (ElevenLabs) indisponível. Verifique configuração / cota / rede.');
-          handlers.onSpeakEnd?.(); onDone?.();
-          // Volta pra IDLE depois do alerta
-          setTimeout(() => { if (state.status === STATUS.ERROR) setStatus(STATUS.IDLE); }, 1200);
-        } else {
-          console.warn('[James] ElevenLabs falhou — usando voz do navegador (fallback opt-in):', reason);
-          speakBrowser(text, onDone, mySeq);
-        }
+        console.warn('[James] Voz oficial (ElevenLabs) indisponível:', reason);
+        setError('Voz oficial (ElevenLabs) indisponível. Verifique chave / cota / rede.');
+        handlers.onSpeakEnd?.(); onDone?.();
+        setTimeout(() => { if (state.status === STATUS.ERROR) setStatus(STATUS.IDLE); }, 1200);
       }
 
-      if (useEleven) {
-        setStatus(STATUS.SPEAKING);
-        handlers.onSpeakStart?.(text);
-        _speakFallbackTimer = setTimeout(() => {
-          if (isStale()) return;
-          _speakFallbackTimer = null;
-          handlers.onSpeakEnd?.(); onDone?.();
-        }, Math.max(8000, text.length * 100));
-
-        window.__jamesVoiceEleven.speak(text, {
-          onStart: () => { /* já chamamos onSpeakStart acima */ },
-          onEnd: () => {
-            if (isStale()) return;
-            if (_speakFallbackTimer) { clearTimeout(_speakFallbackTimer); _speakFallbackTimer = null; }
-            handlers.onSpeakEnd?.(); onDone?.();
-          },
-        }).then((audio) => {
-          if (isStale()) return;
-          if (audio === null) elevenFailFallback('ElevenLabs indisponível');
-        }).catch((e) => {
-          elevenFailFallback(e?.message || e);
-        });
-        return;
-      }
-
-      // Sem Eleven disponível
-      if (elevenOnly && !forceBrowser) {
-        console.warn('[James] Cliente ElevenLabs não carregado e fallback desativado.');
+      if (!useEleven) {
+        console.warn('[James] Cliente ElevenLabs não carregado.');
         setError('Cliente ElevenLabs não carregado. Recarregue a página.');
         onDone?.();
         return;
       }
-      speakBrowser(text, onDone, mySeq);
-    }
 
-    function speakBrowser(text, onDone, seq) {
-      const mySeq = seq != null ? seq : ++_speakSeq;
-      const isStale = () => mySeq !== _speakSeq;
-      if (!hasTTS) { if (!isStale()) onDone?.(); return; }
-      try { window.speechSynthesis.cancel(); } catch (e) {}
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'pt-BR';
-      u.rate = 1.08;
-      u.pitch = 0.7;
-      u.volume = 1;
-      const v = pickMaleVoice();
-      if (v) u.voice = v;
       setStatus(STATUS.SPEAKING);
       handlers.onSpeakStart?.(text);
-      _speakUtterance = u;
-      const fallbackTimer = setTimeout(() => {
+      _speakFallbackTimer = setTimeout(() => {
         if (isStale()) return;
         _speakFallbackTimer = null;
         handlers.onSpeakEnd?.(); onDone?.();
-      }, Math.max(2500, text.length * 70));
-      _speakFallbackTimer = fallbackTimer;
-      u.onend = () => {
-        clearTimeout(fallbackTimer);
+      }, Math.max(8000, text.length * 100));
+
+      window.__jamesVoiceEleven.speak(text, {
+        onStart: () => { /* onSpeakStart já chamado acima */ },
+        onEnd: () => {
+          if (isStale()) return;
+          if (_speakFallbackTimer) { clearTimeout(_speakFallbackTimer); _speakFallbackTimer = null; }
+          handlers.onSpeakEnd?.(); onDone?.();
+        },
+      }).then((audio) => {
         if (isStale()) return;
-        handlers.onSpeakEnd?.(); onDone?.();
-      };
-      u.onerror = () => {
-        clearTimeout(fallbackTimer);
-        if (isStale()) return;
-        handlers.onSpeakEnd?.(); onDone?.();
-      };
-      window.speechSynthesis.speak(u);
+        if (audio === null) elevenFail('ElevenLabs retornou null');
+      }).catch((e) => {
+        elevenFail(e?.message || e);
+      });
     }
 
     /* ----------------- Permissão de microfone ----------------- */
@@ -1101,9 +1033,7 @@
           <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
             <input type="checkbox" id="jms-stt-eleven-toggle" /> Usar ElevenLabs Scribe pra ouvir (melhor qualidade)
           </label>
-          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;" title="Quando o ElevenLabs falha (sem chave, cota esgotada, etc), permitir que o James use a voz do navegador (macOS / Windows TTS) como fallback. POR PADRÃO desligado — só ElevenLabs.">
-            <input type="checkbox" id="jms-tts-allow-browser-toggle" /> Permitir voz do navegador como fallback <small style="opacity:0.5;">(padrão: desligado · só ElevenLabs)</small>
-          </label>
+          <span style="opacity:0.55;">🔒 Voz única: ElevenLabs (James oficial). Sem voz do navegador.</span>
         </div>
         <div class="jms-config__status" id="jms-voice-status" style="margin-top:6px;"></div>
 
@@ -2027,10 +1957,7 @@
       }
       // Sincroniza toggles de voz com localStorage
       const sttToggle = $('jms-stt-eleven-toggle');
-      const allowBrowserToggle = $('jms-tts-allow-browser-toggle');
       if (sttToggle) sttToggle.checked = localStorage.getItem('fly_stt_use_eleven') === '1';
-      // "permitir voz do navegador" = inverso de "eleven_only". Default desligado.
-      if (allowBrowserToggle) allowBrowserToggle.checked = localStorage.getItem('fly_tts_eleven_only') === '0';
     });
 
     /* ----- Voz oficial do James (ElevenLabs) ----- */
@@ -2038,7 +1965,6 @@
     const testSttBtn   = $('jms-test-stt');
     const resetVoiceBtn= $('jms-reset-voice');
     const sttToggle    = $('jms-stt-eleven-toggle');
-    const allowBrowserToggle = $('jms-tts-allow-browser-toggle');
     const voiceStatus  = $('jms-voice-status');
     const speedSlider  = $('jms-voice-speed');
     const speedVal     = $('jms-voice-speed-val');
@@ -2074,9 +2000,7 @@
         onEnd: () => setVoiceStatus('✓ Voz oficial funcionando perfeitamente.', '#6dffb0'),
       });
       if (audio === null) {
-        setVoiceStatus('⚠ ElevenLabs falhou — verifique env vars no Vercel (ELEVENLABS_API_KEY + ELEVENLABS_VOICE_ID). Fallback: voz do navegador.', '#ff9b3a');
-        // Tenta browser como fallback no teste
-        speakBrowser(text);
+        setVoiceStatus('⚠ ElevenLabs falhou — verifique a chave / cota / rede. (Voz única: sem fallback de navegador.)', '#ff9b3a');
       }
     });
 
@@ -2109,27 +2033,12 @@
         : 'STT via ElevenLabs desativado — usando Web Speech API do navegador.', '#ffd770');
     });
 
-    allowBrowserToggle?.addEventListener('change', () => {
-      // "permitir fallback" = inverso de "eleven_only"
-      if (allowBrowserToggle.checked) {
-        localStorage.setItem('fly_tts_eleven_only', '0');
-        setVoiceStatus('Fallback do navegador permitido. Se ElevenLabs falhar, James usa voz do macOS/Windows.', '#ffd770');
-      } else {
-        localStorage.removeItem('fly_tts_eleven_only'); // default = eleven_only ativo
-        setVoiceStatus('✓ Só ElevenLabs. Se a voz oficial falhar, James fica em silêncio (sem voz do navegador).', '#6dffb0');
-      }
-      // Sempre limpa o force_browser quando o user mexe nesse toggle
-      localStorage.removeItem('fly_tts_force_browser');
-    });
-
     resetVoiceBtn?.addEventListener('click', () => {
-      if (!confirm('Resetar configuração de voz?\n\nIsso vai:\n- Apagar key/voice_id customizados do localStorage\n- Voltar pro DEFAULT hardcoded (voz IVC oficial: My6nGPXbjD5XyteAZ4FM)\n- Cancelar qualquer fala em curso\n\nNão mexe nas keys do brain (Claude/OpenAI).')) return;
+      if (!confirm('Resetar configuração de voz?\n\nIsso vai:\n- Apagar overrides do localStorage\n- Voltar pro DEFAULT hardcoded (voz oficial do James: My6nGPXbjD5XyteAZ4FM)\n- Cancelar qualquer fala em curso\n\nNão mexe nas keys do brain (Claude/OpenAI).')) return;
       ['fly_eleven_key', 'fly_eleven_voice_id', 'fly_tts_force_browser', 'fly_tts_eleven_only', 'fly_eleven_speed'].forEach(k => localStorage.removeItem(k));
       try { window.__jamesVoiceEleven?.stopSpeaking?.(); } catch (e) {}
       try { window.speechSynthesis?.cancel?.(); } catch (e) {}
-      // Sincroniza toggles
-      if (allowBrowserToggle) allowBrowserToggle.checked = false;
-      setVoiceStatus('✓ Voz resetada. Próxima fala usa a voz IVC oficial direto do DEFAULT.', '#6dffb0');
+      setVoiceStatus('✓ Voz resetada. Próxima fala usa a voz oficial do James direto do DEFAULT.', '#6dffb0');
     });
 
     cancelKeysBtn?.addEventListener('click', () => {
