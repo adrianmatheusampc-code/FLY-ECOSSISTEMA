@@ -478,7 +478,7 @@
     const s = document.createElement('style');
     s.id = 'jcd-style';
     s.textContent = `
-      #james-context-debug{position:fixed;bottom:18px;right:18px;width:266px;
+      #james-context-debug{position:fixed;bottom:56px;left:16px;width:266px;
         background:rgba(10,12,20,.94);border:1px solid rgba(198,168,90,.32);
         border-radius:12px;font-family:'SF Mono',ui-monospace,Consolas,monospace;
         font-size:11px;color:#d6c8a4;z-index:2147483600;

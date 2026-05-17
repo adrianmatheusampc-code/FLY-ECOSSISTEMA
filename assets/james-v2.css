@@ -24,8 +24,8 @@
   position: fixed;
   right: 24px;     /* sozinho no canto inferior direito */
   bottom: 18px;
-  width: 78px;
-  height: 78px;
+  width: 101px;    /* +30% — orbe maior, canto livre (painel foi pra esquerda) */
+  height: 101px;
   border-radius: 50%;
   border: none;
   cursor: pointer;
@@ -891,8 +891,8 @@
    ============================================================ */
 @media (max-width: 720px) {
   #jms-orb {
-    width: 64px;
-    height: 64px;
+    width: 83px;   /* +30% no mobile também */
+    height: 83px;
     right: 16px;
     bottom: 16px;
   }
