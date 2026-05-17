@@ -84,6 +84,13 @@
       };
     } catch (e) {}
 
+    // CONTEXTO NAVEGACIONAL — onde o Chefe está AGORA (JamesContext)
+    try {
+      if (window.__jamesContext) {
+        ctx.navegacao = window.__jamesContext.getContext();
+      }
+    } catch (e) {}
+
     return ctx;
   }
 
@@ -99,6 +106,25 @@
     const docsPrompt = (window.__jamesPdfReader && typeof window.__jamesPdfReader.buildContextSection === 'function')
       ? window.__jamesPdfReader.buildContextSection()
       : '';
+
+    // CONTEXTO DE TELA — o James "vê" onde o Chefe está navegando
+    const nav = context.navegacao || null;
+    const navPrompt = nav ? `
+
+CONTEXTO DE TELA AGORA (o Chefe está vendo isto neste momento):
+- Módulo atual: ${nav.currentModule}
+- Página atual: ${nav.currentPage}
+- Aba ativa: ${nav.currentTab || '(nenhuma)'}
+- Item/entidade aberto: ${nav.selectedEntity ? `${nav.selectedEntity.type} "${nav.selectedEntity.name}" (id: ${nav.selectedEntity.id})` : '(nenhum)'}
+- Última ação do Chefe: ${nav.lastUserAction ? nav.lastUserAction.type : '(nenhuma)'}
+- Telas recentes: ${(nav.recentNavigation || []).slice(-5).map(n => `${n.module}/${n.page}`).join(' → ') || '(início)'}
+- Prints enviados nesta sessão: ${nav.uploadedScreenshots && nav.uploadedScreenshots.length ? nav.uploadedScreenshots.length + ' (analise as imagens anexadas)' : 'nenhum'}
+
+REGRA DE CONSCIÊNCIA DE TELA:
+- SEMPRE responda levando em conta o módulo, página, aba e entidade acima.
+- Se o Chefe disser "esse produto", "essa tela", "aqui", "isso" — ele se refere ao item/aba acima.
+- Quando fizer sentido, dê uma DICA curta e proativa do que ele pode fazer nessa tela.
+- Se houver prints anexados, descreva o que vê e oriente com base na imagem real.` : '';
 
     return `Você é JAMES, assistente de IA do Ecossistema Fly (turismo de luxo focado em Dubai, com Plano WAR de expansão, Cofre AEY financeiro entre sócios, Fly Cup de eventos esportivos, Central de Vendas e CRM).
 
@@ -121,7 +147,7 @@ ${actionsPrompt}
 DADOS ATUAIS DO ECOSSISTEMA (JSON):
 ${JSON.stringify(context, null, 2)}
 
-Modo de dados: ${context.mode}${docsPrompt}`;
+Modo de dados: ${context.mode}${navPrompt}${docsPrompt}`;
   }
 
   /* ----------------------------------------------------------
@@ -302,7 +328,29 @@ Modo de dados: ${context.mode}${docsPrompt}`;
     if (!keys.anthropic && !keys.openai) {
       return null; // sem IA, usa mock
     }
-    const images = (opts && Array.isArray(opts.images)) ? opts.images : null;
+    let images = (opts && Array.isArray(opts.images)) ? opts.images : null;
+
+    // Prints temporários da sessão (JamesContext) → vão pro Vision e depois
+    // são DESCARTADOS (regra: print só vive na sessão, nunca persiste).
+    let _purgeShots = false;
+    try {
+      if (window.__jamesContext && typeof window.__jamesContext.getScreenshotsRaw === 'function') {
+        const shots = window.__jamesContext.getScreenshotsRaw();
+        if (shots && shots.length) {
+          const shotImgs = shots.map(s => {
+            const raw = String(s.data || '');
+            const m = raw.match(/^data:(image\/[a-z.+-]+);base64,(.*)$/i);
+            return {
+              base64: m ? m[2] : raw,
+              mediaType: m ? m[1] : 'image/jpeg',
+            };
+          });
+          images = (images || []).concat(shotImgs);
+          _purgeShots = true;
+        }
+      }
+    } catch (e) {}
+
     const ctx = buildFlyContext();
     const sys = buildSystemPrompt(ctx);
 
@@ -359,6 +407,11 @@ Modo de dados: ${context.mode}${docsPrompt}`;
     conversationHistory.push({ role: 'user', content: userText });
     conversationHistory.push({ role: 'assistant', content: finalText });
     if (conversationHistory.length > 14) conversationHistory = conversationHistory.slice(-14);
+
+    // Print analisado → descartado (não persiste nada sensível)
+    if (_purgeShots) {
+      try { window.__jamesContext?.purgeScreenshots?.(); } catch (e) {}
+    }
 
     return { text: finalText, actions, results };
   }
