@@ -10020,6 +10020,8 @@
 
   <!-- Supabase JS SDK (UMD via CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- FLY Media: upload por link (Cloudinary fotos · Supabase PDF/vídeo) — tira mídia do localStorage -->
+  <script src="assets/fly-media.js"></script>
 
   <!-- VIEW 1: linear circles -->
   <div class="view grid-view" id="gridView">
@@ -13825,11 +13827,24 @@
       try { localStorage.setItem(flyModeKey(BASES_VISUAL_KEY), JSON.stringify(map)); }
       catch (e) { console.warn('saveBasesVisual failed:', e); }
     }
-    // Lê arquivo de vídeo como dataURL (vídeos curtos · max ~15MB)
+    // Vídeo → Supabase Storage (link). Vídeo pesado: use link YouTube/Vimeo.
     function readVideoFile(file) {
       return new Promise((resolve, reject) => {
-        if (file.size > 20 * 1024 * 1024) {
-          alert('Vídeo muito grande (máx ~20MB). Comprima antes de enviar.');
+        if (window.__flyMedia) {
+          window.__flyMedia.uploadToStorage(file, { folder: 'video' })
+            .then(resolve)
+            .catch((err) => {
+              const big = file.size > 50 * 1024 * 1024;
+              alert(big
+                ? 'Vídeo grande demais pra subir direto. Suba no YouTube/Vimeo como "Não listado" e cole o link no botão 🔗.'
+                : ('Falha ao subir o vídeo: ' + (err && err.message || err)));
+              reject(err instanceof Error ? err : new Error(String(err)));
+            });
+          return;
+        }
+        // Sem módulo de mídia: fallback base64 só p/ clipes pequenos
+        if (file.size > 8 * 1024 * 1024) {
+          alert('Vídeo muito grande. Cole um link do YouTube/Vimeo.');
           return reject(new Error('video too large'));
         }
         const r = new FileReader();
@@ -14790,25 +14805,35 @@
         });
       }
 
-      // ---------- COMPRIMIR IMAGEM (canvas → data URL) ----------
+      // ---------- IMAGEM → Cloudinary (link) · fallback base64 canvas ----------
       function compressImage(file, maxW) {
         return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-              const ratio = img.width > maxW ? maxW / img.width : 1;
-              const w = Math.round(img.width * ratio), h = Math.round(img.height * ratio);
-              const cv = document.createElement('canvas');
-              cv.width = w; cv.height = h;
-              cv.getContext('2d').drawImage(img, 0, 0, w, h);
-              resolve(cv.toDataURL('image/jpeg', 0.82));
+          function fallbackCanvas() {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const img = new Image();
+              img.onload = () => {
+                const ratio = img.width > maxW ? maxW / img.width : 1;
+                const w = Math.round(img.width * ratio), h = Math.round(img.height * ratio);
+                const cv = document.createElement('canvas');
+                cv.width = w; cv.height = h;
+                cv.getContext('2d').drawImage(img, 0, 0, w, h);
+                resolve(cv.toDataURL('image/jpeg', 0.82));
+              };
+              img.onerror = reject;
+              img.src = e.target.result;
             };
-            img.onerror = reject;
-            img.src = e.target.result;
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          }
+          if (window.__flyMedia && file && (file.type || '').startsWith('image/')) {
+            window.__flyMedia.uploadImage(file).then(resolve).catch((err) => {
+              console.warn('[FlyMedia] upload falhou, usando base64:', err && err.message);
+              fallbackCanvas();
+            });
+          } else {
+            fallbackCanvas();
+          }
         });
       }
 
@@ -14964,20 +14989,28 @@
         <div class="lbl">Vídeo Demonstrativo · Operação FLY Dubai</div>
         <div class="visual-edit-btns">
           <button class="visual-edit-btn" data-act="upload" title="Enviar foto ou vídeo">📷</button>
+          <button class="visual-edit-btn" data-act="link" title="Colar link do YouTube/Vimeo">🔗</button>
           <button class="visual-edit-btn danger" data-act="remove" title="Remover">✕</button>
         </div>
         <input type="file" accept="image/*,video/*" hidden class="visual-file-input-big">
       `;
       function buildBigMedia() {
         const m = visualMap['video_main'];
-        // remove imagens/vídeos antigos
-        videoCard.querySelectorAll('img, video').forEach(el => el.remove());
+        // remove imagens/vídeos/embeds antigos
+        videoCard.querySelectorAll('img, video, .vm-embed').forEach(el => el.remove());
         videoCard.classList.remove('is-photo', 'is-video');
         if (m && m.type === 'photo' && m.data) {
           videoCard.classList.add('is-photo');
           const im = document.createElement('img');
           im.src = m.data;
           videoCard.insertBefore(im, videoCard.firstChild);
+        } else if (m && m.type === 'embed' && m.data && window.__flyMedia) {
+          videoCard.classList.add('is-video');
+          const box = document.createElement('div');
+          box.className = 'vm-embed';
+          box.style.cssText = 'position:absolute;inset:0;border-radius:inherit;overflow:hidden;';
+          box.innerHTML = window.__flyMedia.videoEmbedHTML(m.data);
+          videoCard.insertBefore(box, videoCard.firstChild);
         } else if (m && m.type === 'video' && m.data) {
           videoCard.classList.add('is-video');
           const vd = document.createElement('video');
@@ -14989,6 +15022,17 @@
       }
       const bigFileIn = videoCard.querySelector('.visual-file-input-big');
       videoCard.querySelector('[data-act="upload"]').addEventListener('click', (e) => { e.stopPropagation(); bigFileIn.click(); });
+      videoCard.querySelector('[data-act="link"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cur = (visualMap['video_main'] && visualMap['video_main'].type === 'embed') ? visualMap['video_main'].data : '';
+        const link = prompt('Cole o link do vídeo (YouTube ou Vimeo · suba como "Não listado"):', cur || '');
+        if (link == null) return;
+        const ok = window.__flyMedia && window.__flyMedia.toEmbed(link.trim());
+        if (!ok) { alert('Link inválido. Use um link do YouTube ou Vimeo.'); return; }
+        visualMap['video_main'] = { type: 'embed', data: link.trim() };
+        saveBasesVisual(visualMap);
+        buildBigMedia();
+      });
       videoCard.addEventListener('click', (e) => {
         if (e.target.closest('.visual-edit-btns') || e.target.tagName === 'VIDEO') return;
         if (!visualMap['video_main']) bigFileIn.click();
@@ -22197,6 +22241,11 @@
     /* compress images so we don't blow localStorage */
     async function compressImage(file, maxW = 1400, quality = 0.82) {
       if (!file) return '';
+      // Imagem → Cloudinary (link otimizado). Fallback: base64 canvas.
+      if (window.__flyMedia && (file.type || '').startsWith('image/')) {
+        try { return await window.__flyMedia.uploadImage(file); }
+        catch (err) { console.warn('[FlyMedia] upload falhou, usando base64:', err && err.message); }
+      }
       const dataUrl = await fileToDataURL(file);
       return new Promise(resolve => {
         const img = new Image();
@@ -22221,8 +22270,13 @@
       if (!file) return '';
       const name = (file.name || '').toLowerCase();
       const isSvg = file.type === 'image/svg+xml' || name.endsWith('.svg');
-      // SVG é vetorial — devolve direto sem rasterizar
+      // SVG é vetorial e leve — devolve direto sem rasterizar nem subir
       if (isSvg) return await fileToDataURL(file);
+      // PNG/JPEG → Cloudinary (link otimizado, preserva alpha do PNG)
+      if (window.__flyMedia) {
+        try { return await window.__flyMedia.uploadImage(file); }
+        catch (err) { console.warn('[FlyMedia] logo upload falhou, usando base64:', err && err.message); }
+      }
       const isPng = file.type === 'image/png' || name.endsWith('.png');
       const dataUrl = await fileToDataURL(file);
       return new Promise(resolve => {
@@ -23695,9 +23749,18 @@
           renderMoves();
         }
         if (file && file.size > 0) {
-          const reader = new FileReader();
-          reader.onload = ev => saveMove({ dataURL: ev.target.result, name: file.name, type: file.type, size: file.size });
-          reader.readAsDataURL(file);
+          const finishB64 = () => {
+            const reader = new FileReader();
+            reader.onload = ev => saveMove({ dataURL: ev.target.result, name: file.name, type: file.type, size: file.size });
+            reader.readAsDataURL(file);
+          };
+          if (window.__flyMedia) {
+            window.__flyMedia.upload(file)
+              .then(res => saveMove({ dataURL: res.url, url: res.url, name: file.name, type: file.type, size: file.size }))
+              .catch(err => { console.warn('[FlyMedia] comprovante upload falhou, base64:', err && err.message); finishB64(); });
+          } else {
+            finishB64();
+          }
         } else {
           saveMove(null);
         }

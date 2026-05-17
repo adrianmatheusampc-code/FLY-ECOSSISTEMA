@@ -601,10 +601,61 @@
       '<div class="jcd-btns">' +
         '<button class="jcd-b" data-jcd="reset">Reset Sessão</button>' +
         '<button class="jcd-b" data-jcd="purge">Limpar Prints</button>' +
+      '</div>' +
+      '<div class="jcd-btns">' +
+        '<button class="jcd-b" data-jcd="migrate" style="flex:1;background:rgba(126,207,255,.12);border-color:rgba(126,207,255,.35);color:#7ecfff;">⬆ Migrar mídia (base64→link)</button>' +
       '</div>';
 
     body.querySelector('[data-jcd="reset"]').onclick = clearSession;
     body.querySelector('[data-jcd="purge"]').onclick = purgeScreenshots;
+    body.querySelector('[data-jcd="migrate"]').onclick = _runMediaMigration;
+  }
+
+  // Migração base64 → link (delega pro __flyMedia). Roda no navegador
+  // logado do Chefe pra enxergar os dados atuais.
+  let _migrating = false;
+  async function _runMediaMigration() {
+    if (_migrating) return;
+    if (!window.__flyMedia || typeof window.__flyMedia.migrate !== 'function') {
+      alert('Módulo de mídia (fly-media.js) não carregou. Recarregue a página.');
+      return;
+    }
+    if (!confirm(
+      'MIGRAR MÍDIA\n\n' +
+      'Vou varrer as fotos/vídeos que já estão salvos como base64 e ' +
+      'subir pra nuvem (fotos→Cloudinary, vídeos→Supabase), trocando ' +
+      'pelo link.\n\n' +
+      '• Seguro: se algum upload falhar, aquele item continua como está.\n' +
+      '• Pode demorar uns minutos se tiver muita mídia pesada.\n' +
+      '• Não feche a aba durante o processo.\n\nComeçar?'
+    )) return;
+
+    _migrating = true;
+    const btn = _panel && _panel.querySelector('[data-jcd="migrate"]');
+    const setLbl = (t) => { if (btn) btn.textContent = t; };
+    try {
+      setLbl('⏳ Migrando… 0');
+      const report = await window.__flyMedia.migrate({
+        onProgress: (s) => setLbl(`⏳ ${s.migrated}/${s.found} (falhas: ${s.failed})`),
+      });
+      const mb = (report.bytesSaved / (1024 * 1024)).toFixed(2);
+      setLbl('✅ Migração concluída');
+      alert(
+        'MIGRAÇÃO CONCLUÍDA\n\n' +
+        `Chaves varridas: ${report.keys}\n` +
+        `Mídias encontradas: ${report.found}\n` +
+        `Migradas p/ link: ${report.migrated}\n` +
+        `Falhas (mantidas como base64): ${report.failed}\n` +
+        `localStorage aliviado: ~${mb} MB\n\n` +
+        'Recarregue a página (Cmd+Shift+R) pra ver tudo via link.'
+      );
+    } catch (e) {
+      setLbl('⚠ Erro na migração');
+      alert('Erro na migração: ' + (e && e.message || e));
+    } finally {
+      _migrating = false;
+      setTimeout(() => { if (btn) btn.textContent = '⬆ Migrar mídia (base64→link)'; }, 4000);
+    }
   }
 
   function showDebug() {

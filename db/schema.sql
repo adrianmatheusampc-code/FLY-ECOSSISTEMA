@@ -304,3 +304,34 @@ create policy "auth write war_connections" on war_connections for all to authent
 insert into partners (name) values
   ('Victor'), ('Emanuel'), ('Alen/Adrian'), ('Juninho')
 on conflict do nothing;
+
+-- =============================================================
+-- 7 · STORAGE · bucket fly-media (PDF / vídeo-arquivo)
+-- Fotos vão pro Cloudinary (não precisa de policy aqui).
+-- O bucket público libera só LEITURA; estas policies liberam
+-- UPLOAD/UPDATE/DELETE escopados SÓ ao bucket fly-media.
+-- Rode no Supabase → SQL Editor. Pode rodar várias vezes.
+-- =============================================================
+do $$
+begin
+  -- leitura pública
+  if not exists (select 1 from pg_policies where policyname = 'fly_media_read') then
+    create policy "fly_media_read" on storage.objects
+      for select to public using ( bucket_id = 'fly-media' );
+  end if;
+  -- upload (qualquer um com a anon key — app client-only; escopado ao bucket)
+  if not exists (select 1 from pg_policies where policyname = 'fly_media_insert') then
+    create policy "fly_media_insert" on storage.objects
+      for insert to public with check ( bucket_id = 'fly-media' );
+  end if;
+  -- substituir arquivo (upsert)
+  if not exists (select 1 from pg_policies where policyname = 'fly_media_update') then
+    create policy "fly_media_update" on storage.objects
+      for update to public using ( bucket_id = 'fly-media' );
+  end if;
+  -- apagar
+  if not exists (select 1 from pg_policies where policyname = 'fly_media_delete') then
+    create policy "fly_media_delete" on storage.objects
+      for delete to public using ( bucket_id = 'fly-media' );
+  end if;
+end $$;
