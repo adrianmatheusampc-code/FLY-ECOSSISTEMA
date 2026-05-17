@@ -78,35 +78,40 @@
   /* ---------------------------------------------------------------
      SESSÃO — baixa o modelo (1x) e mantém quente
   --------------------------------------------------------------- */
+  function _mkProgress(onProgress) {
+    return (p) => {
+      let pct = null;
+      if (typeof p === 'number') pct = p > 1 ? Math.round(p) : Math.round(p * 100);
+      else if (p && typeof p.loaded === 'number' && p.total) pct = Math.round((p.loaded / p.total) * 100);
+      else if (p && typeof p.progress === 'number') pct = Math.round(p.progress * 100);
+      if (pct != null && onProgress) onProgress(Math.max(0, Math.min(100, pct)));
+    };
+  }
+
   async function ensureSession(onProgress) {
     if (_session && _ready) return _session;
     const lib = await loadLib();
     const voiceId = getVoiceId();
-    if (lib.TtsSession) {
-      _session = new lib.TtsSession({
-        voiceId,
-        progress: (p) => {
-          // p pode ser número 0-100 ou objeto {loaded,total}
-          let pct = null;
-          if (typeof p === 'number') pct = Math.round(p);
-          else if (p && p.total) pct = Math.round((p.loaded / p.total) * 100);
-          if (pct != null && onProgress) onProgress(pct);
-        },
-        logger: () => {},
-      });
-      // primeira predição força o download/carga do modelo
-      await _session.predict(' ');
+    const progress = _mkProgress(onProgress);
+
+    // API correta: TtsSession.create() já espera o modelo carregar
+    // (waitReady = init()). NÃO fazer warm-up com texto vazio — o
+    // phonemizer quebra com string vazia.
+    if (lib.TtsSession && typeof lib.TtsSession.create === 'function') {
+      _session = await lib.TtsSession.create({ voiceId, progress, logger: () => {} });
       _ready = true;
       return _session;
     }
-    // sem TtsSession → usa predict() one-shot (sem cache de modelo em sessão)
-    _session = {
-      predict: (t) => lib.predict({ text: t, voiceId }, (p) => {
-        const pct = typeof p === 'number' ? Math.round(p)
-          : (p && p.total ? Math.round((p.loaded / p.total) * 100) : null);
-        if (pct != null && onProgress) onProgress(pct);
-      }),
-    };
+    if (lib.TtsSession) {
+      _session = new lib.TtsSession({ voiceId, progress, logger: () => {} });
+      if (_session.waitReady && typeof _session.waitReady.then === 'function') {
+        await _session.waitReady;
+      }
+      _ready = true;
+      return _session;
+    }
+    // sem TtsSession → predict() one-shot
+    _session = { predict: (t) => lib.predict({ text: t, voiceId }, progress) };
     _ready = true;
     return _session;
   }
