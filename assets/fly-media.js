@@ -355,16 +355,24 @@
         _acceptsImage(_lastFileInput)) {
       return _lastFileInput;
     }
-    // 2) fallback: input de imagem dentro de um modal/overlay aberto
-    const open = document.querySelector(
-      '.modal:not(.hidden), .cofre-overlay:not(.hidden), .dash-overlay:not(.hidden), ' +
-      '[class*="modal"]:not(.hidden), [class*="overlay"]:not(.hidden)'
+    // 2) fallback robusto: último input de imagem ALCANÇÁVEL no DOM.
+    // Modais são anexados por último → o último visível é o de cima.
+    const all = Array.prototype.slice.call(
+      document.querySelectorAll('input[type="file"]')
     );
-    if (open) {
-      const inputs = open.querySelectorAll('input[type="file"]');
-      for (let i = inputs.length - 1; i >= 0; i--) {
-        if (_acceptsImage(inputs[i])) return inputs[i];
+    for (let i = all.length - 1; i >= 0; i--) {
+      const inp = all[i];
+      if (!_acceptsImage(inp) || inp.disabled) continue;
+      // o input costuma ser hidden — checa a visibilidade do CONTAINER
+      const host = (inp.closest &&
+        inp.closest('.dbx-modal-overlay, .dbx-modal, .modal, [role="dialog"], ' +
+                     '[class*="overlay"], [class*="modal"]')) || inp;
+      let visible = inp.offsetParent !== null;
+      if (!visible && host.getBoundingClientRect) {
+        const r = host.getBoundingClientRect();
+        visible = r.width > 0 && r.height > 0;
       }
+      if (visible) return inp;
     }
     return null;
   }
