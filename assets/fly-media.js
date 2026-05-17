@@ -241,7 +241,130 @@
   }
 
   /* =================================================================
-     8 · API PÚBLICA
+     8 · COLAR IMAGEM (Ctrl+V) → upload
+     Igual ao Claude: copia imagem do Google/qualquer lugar e cola.
+     A imagem colada é injetada no MESMO input que o Chefe clicou,
+     e dispara o 'change' — reaproveita TODO o pipeline existente
+     (que já manda pro Cloudinary).
+     ================================================================= */
+  let _lastFileInput = null;
+  let _lastFileInputAt = 0;
+  const FRESH_MS = 3 * 60 * 1000; // alvo "fresco" por 3 min após o clique
+
+  function _acceptsImage(input) {
+    const acc = (input.getAttribute('accept') || '').toLowerCase();
+    return !acc || acc.indexOf('image') !== -1 || acc.indexOf('*') !== -1;
+  }
+
+  // Captura QUALQUER clique em input[type=file] (inclusive .click()
+  // disparado por botões 📷) — fase de captura pega antes de tudo.
+  function _trackFileInputs() {
+    document.addEventListener('click', (e) => {
+      const inp = e.target && e.target.closest && e.target.closest('input[type="file"]');
+      if (inp && _acceptsImage(inp)) {
+        _lastFileInput = inp;
+        _lastFileInputAt = Date.now();
+      }
+    }, true);
+  }
+
+  function _resolveTargetInput() {
+    // 1) o input que o Chefe clicou há pouco (mais confiável)
+    if (_lastFileInput &&
+        document.contains(_lastFileInput) &&
+        !_lastFileInput.disabled &&
+        (Date.now() - _lastFileInputAt) < FRESH_MS &&
+        _acceptsImage(_lastFileInput)) {
+      return _lastFileInput;
+    }
+    // 2) fallback: input de imagem dentro de um modal/overlay aberto
+    const open = document.querySelector(
+      '.modal:not(.hidden), .cofre-overlay:not(.hidden), .dash-overlay:not(.hidden), ' +
+      '[class*="modal"]:not(.hidden), [class*="overlay"]:not(.hidden)'
+    );
+    if (open) {
+      const inputs = open.querySelectorAll('input[type="file"]');
+      for (let i = inputs.length - 1; i >= 0; i--) {
+        if (_acceptsImage(inputs[i])) return inputs[i];
+      }
+    }
+    return null;
+  }
+
+  // Toast simples (feedback do colar)
+  let _toastEl = null;
+  function toast(msg, kind) {
+    if (!_toastEl) {
+      const st = document.createElement('style');
+      st.textContent =
+        '#flymedia-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%)' +
+        ' translateY(20px);background:rgba(10,12,20,.96);color:#ecd9a6;' +
+        'border:1px solid rgba(198,168,90,.4);border-radius:30px;padding:10px 20px;' +
+        "font:600 13px/1 'SF Pro Text',system-ui,sans-serif;z-index:2147483646;" +
+        'box-shadow:0 8px 30px rgba(0,0,0,.5);opacity:0;pointer-events:none;' +
+        'transition:opacity .2s,transform .2s;backdrop-filter:blur(10px)}' +
+        '#flymedia-toast.on{opacity:1;transform:translateX(-50%) translateY(0)}' +
+        '#flymedia-toast.warn{border-color:#ffb347;color:#ffb347}' +
+        '#flymedia-toast.err{border-color:#ff7676;color:#ff7676}';
+      document.head.appendChild(st);
+      _toastEl = document.createElement('div');
+      _toastEl.id = 'flymedia-toast';
+      document.body.appendChild(_toastEl);
+    }
+    _toastEl.textContent = msg;
+    _toastEl.className = (kind === 'warn' ? 'warn' : kind === 'err' ? 'err' : '') + ' on';
+    clearTimeout(_toastEl._t);
+    _toastEl._t = setTimeout(() => { _toastEl.className = _toastEl.className.replace('on', '').trim(); }, 3200);
+  }
+
+  function setupPasteUpload() {
+    _trackFileInputs();
+    document.addEventListener('paste', (e) => {
+      const cd = e.clipboardData || window.clipboardData;
+      if (!cd) return;
+
+      // Extrai imagem do clipboard (bytes reais)
+      let blob = null;
+      if (cd.items) {
+        for (const it of cd.items) {
+          if (it.kind === 'file' && it.type && it.type.indexOf('image/') === 0) {
+            blob = it.getAsFile(); break;
+          }
+        }
+      }
+      if (!blob && cd.files && cd.files.length) {
+        for (const f of cd.files) {
+          if (f.type && f.type.indexOf('image/') === 0) { blob = f; break; }
+        }
+      }
+      if (!blob) return; // sem imagem → deixa o paste normal (texto etc.)
+
+      const target = _resolveTargetInput();
+      if (!target) {
+        e.preventDefault();
+        toast('Clique no botão de foto (📷) primeiro, depois cole (Ctrl+V).', 'warn');
+        return;
+      }
+
+      e.preventDefault();
+      try {
+        const ext = (blob.type.split('/')[1] || 'png').split('+')[0];
+        const file = new File([blob], `colado-${Date.now()}.${ext}`, { type: blob.type });
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        target.files = dt.files;
+        target.dispatchEvent(new Event('input',  { bubbles: true }));
+        target.dispatchEvent(new Event('change', { bubbles: true }));
+        toast('📋 Imagem colada — enviando pra nuvem…');
+      } catch (err) {
+        console.warn('[FlyMedia] paste falhou:', err);
+        toast('Não consegui colar aqui. Use o botão 📷 e escolha o arquivo.', 'err');
+      }
+    });
+  }
+
+  /* =================================================================
+     9 · API PÚBLICA
      ================================================================= */
   window.__flyMedia = {
     config: CFG,
@@ -255,7 +378,14 @@
     isDataUrl,
     isHttpUrl,
     migrate,
+    toast,
   };
 
-  console.log('[FlyMedia] ✅ online — fotos→Cloudinary · PDF/vídeo→Supabase · link YT/Vimeo');
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupPasteUpload);
+  } else {
+    setupPasteUpload();
+  }
+
+  console.log('[FlyMedia] ✅ online — fotos→Cloudinary · PDF/vídeo→Supabase · link YT/Vimeo · colar Ctrl+V ativo');
 })();
