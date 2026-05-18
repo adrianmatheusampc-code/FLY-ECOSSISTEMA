@@ -10477,25 +10477,29 @@
           const remoteJSON = JSON.stringify(row.value);
           const localJSON = localStorage.getItem(row.key);
           if (remoteJSON === localJSON) continue;
-          // RESOLUÇÃO POR TIMESTAMP — nunca atropelar trabalho mais novo.
-          // O pull antigo sobrescrevia o local com o remoto sempre que
-          // diferiam, mesmo o remoto sendo MAIS VELHO → destruía o
-          // trabalho recente do aparelho. Agora compara o quão novo é
-          // cada lado.
+          // RESOLUÇÃO SEGURA (modo recuperação).
+          // Regra: só EMPURRA o local por cima do remoto se o local tiver
+          // um carimbo (::mtime) PROVANDO que foi editado depois. Sem
+          // carimbo confiável, NUNCA empurra (evita que um cache vazio /
+          // recém-aberto destrua a nuvem boa) — em vez disso ADOTA o
+          // remoto e guarda o local atual em ::local_backup como rede de
+          // segurança. Nada é destruído: nuvem tem backup externo e o
+          // local vira ::local_backup.
           const remoteMs = Date.parse(row.updated_at) || 0;
           const tsRaw = localStorage.getItem(row.key + '::mtime');
-          // Sem mtime mas COM conteúdo local = trabalho deste aparelho
-          // ainda não carimbado → trata como "agora" pra preservar
-          // (sobe), em vez de atropelar com remoto antigo.
-          const localMs = tsRaw != null ? Number(tsRaw) : (localJSON != null ? Date.now() : 0);
-          if (localJSON != null && localMs > remoteMs) {
-            // LOCAL é mais novo → sobe pro Supabase (preserva trabalho)
+          const localProvenMs = tsRaw != null ? Number(tsRaw) : -1;
+          if (localJSON != null && localProvenMs > remoteMs) {
+            // LOCAL comprovadamente mais novo (tem carimbo) → sobe
             const v = safeJSONParse(localJSON);
             if (v !== null) {
               try { await kvFrom().upsert({ key: row.key, value: v }); } catch (e) {}
             }
           } else {
-            // REMOTO é mais novo (veio de outro aparelho) → adota
+            // Remoto mais novo OU local sem carimbo confiável → adota o
+            // remoto, mas preserva o local atual antes (rede de segurança)
+            if (localJSON != null && localJSON !== remoteJSON) {
+              try { localStorage.setItem(row.key + '::local_backup', localJSON); } catch (e) {}
+            }
             __supaSilent = true;
             localStorage.setItem(row.key, remoteJSON);
             localStorage.setItem(row.key + '::mtime', String(remoteMs || Date.now()));
