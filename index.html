@@ -10459,9 +10459,29 @@
         for (const row of (rows || [])) {
           const remoteJSON = JSON.stringify(row.value);
           const localJSON = localStorage.getItem(row.key);
-          if (remoteJSON !== localJSON) {
+          if (remoteJSON === localJSON) continue;
+          // RESOLUÇÃO POR TIMESTAMP — nunca atropelar trabalho mais novo.
+          // O pull antigo sobrescrevia o local com o remoto sempre que
+          // diferiam, mesmo o remoto sendo MAIS VELHO → destruía o
+          // trabalho recente do aparelho. Agora compara o quão novo é
+          // cada lado.
+          const remoteMs = Date.parse(row.updated_at) || 0;
+          const tsRaw = localStorage.getItem(row.key + '::mtime');
+          // Sem mtime mas COM conteúdo local = trabalho deste aparelho
+          // ainda não carimbado → trata como "agora" pra preservar
+          // (sobe), em vez de atropelar com remoto antigo.
+          const localMs = tsRaw != null ? Number(tsRaw) : (localJSON != null ? Date.now() : 0);
+          if (localJSON != null && localMs > remoteMs) {
+            // LOCAL é mais novo → sobe pro Supabase (preserva trabalho)
+            const v = safeJSONParse(localJSON);
+            if (v !== null) {
+              try { await supaClient.from('fly_kv').upsert({ key: row.key, value: v }); } catch (e) {}
+            }
+          } else {
+            // REMOTO é mais novo (veio de outro aparelho) → adota
             __supaSilent = true;
             localStorage.setItem(row.key, remoteJSON);
+            localStorage.setItem(row.key + '::mtime', String(remoteMs || Date.now()));
             __supaSilent = false;
             pulled++;
           }
@@ -10543,7 +10563,19 @@
       const _del = Storage.prototype.removeItem;
       Storage.prototype.setItem = function(k, v) {
         _set.call(this, k, v);
-        if (this === localStorage) queueSupabaseSync(k);
+        if (this === localStorage) {
+          // Carimba QUANDO este aparelho editou a chave (ignora escrita
+          // vinda do pull, marcada por __supaSilent). Esse mtime é o que
+          // o pull usa pra decidir quem é mais novo e NUNCA perder
+          // trabalho. Usa _set cru pra não recursar nem disparar sync.
+          try {
+            if (!__supaSilent && k.indexOf('::mtime') === -1 &&
+                typeof SYNCED_KEYS !== 'undefined' && SYNCED_KEYS.includes(k)) {
+              _set.call(this, k + '::mtime', String(Date.now()));
+            }
+          } catch (e) {}
+          queueSupabaseSync(k);
+        }
       };
       Storage.prototype.removeItem = function(k) {
         _del.call(this, k);
