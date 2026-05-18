@@ -2564,6 +2564,7 @@
     bottom: max(env(safe-area-inset-bottom), 16px);
     left: 16px;
     z-index: 100;
+    appearance: none;
     background: rgba(0,0,0,0.7);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255,255,255,.1);
@@ -2573,15 +2574,29 @@
     align-items: center;
     gap: 8px;
     font-size: 10px;
+    font-family: inherit;
     letter-spacing: 1.5px;
     font-weight: 600;
     color: rgba(255,255,255,.7);
     transition: all .2s;
-    cursor: default;
+    cursor: pointer;
     box-shadow: 0 4px 14px rgba(0,0,0,.4);
+    text-transform: uppercase;
   }
   .sync-status:hover {
     background: rgba(0,0,0,.85);
+    border-color: rgba(245,184,66,.42);
+    transform: translateY(-1px);
+  }
+  .sync-status:disabled {
+    cursor: wait;
+    opacity: .82;
+  }
+  .sync-status .sync-action {
+    color: rgba(255,255,255,.42);
+    font-size: 8px;
+    letter-spacing: 1.1px;
+    white-space: nowrap;
   }
   .sync-status .sync-dot {
     width: 8px;
@@ -2624,6 +2639,127 @@
     background: #ff6b6b;
     animation: syncBlink 0.6s infinite;
   }
+  .sync-status[data-check="checking"] {
+    border-color: rgba(245,184,66,.7);
+    color: var(--gold-bright);
+  }
+  .cloud-check-panel {
+    position: fixed;
+    left: 16px;
+    bottom: calc(max(env(safe-area-inset-bottom), 16px) + 48px);
+    z-index: 2200;
+    width: min(390px, calc(100vw - 32px));
+    max-height: min(56vh, 430px);
+    overflow: auto;
+    padding: 16px;
+    border: 1px solid rgba(245,184,66,.28);
+    border-radius: 18px;
+    background:
+      radial-gradient(circle at 18% 0%, rgba(245,184,66,.14), transparent 34%),
+      rgba(4, 4, 5, .92);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 18px 70px rgba(0,0,0,.58), 0 0 26px rgba(245,184,66,.12);
+    color: rgba(255,255,255,.84);
+  }
+  .cloud-check-panel[data-result="ok"] {
+    border-color: rgba(111,227,168,.45);
+    box-shadow: 0 18px 70px rgba(0,0,0,.58), 0 0 24px rgba(111,227,168,.12);
+  }
+  .cloud-check-panel[data-result="error"] {
+    border-color: rgba(255,107,107,.48);
+  }
+  .cloud-check-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  .cloud-check-kicker {
+    color: var(--gold-bright);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 2px;
+  }
+  .cloud-check-title {
+    margin-top: 5px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+  .cloud-check-close {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 999px;
+    background: rgba(255,255,255,.04);
+    color: rgba(255,255,255,.74);
+    cursor: pointer;
+  }
+  .cloud-check-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .cloud-check-stat {
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    background: rgba(255,255,255,.035);
+  }
+  .cloud-check-stat b {
+    display: block;
+    color: #fff;
+    font-size: 15px;
+  }
+  .cloud-check-stat span {
+    display: block;
+    margin-top: 3px;
+    color: rgba(255,255,255,.52);
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+  .cloud-check-note {
+    margin: 0 0 12px;
+    color: rgba(255,255,255,.62);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+  .cloud-check-list {
+    display: grid;
+    gap: 7px;
+  }
+  .cloud-check-item {
+    padding: 9px 10px;
+    border: 1px solid rgba(255,255,255,.09);
+    border-left-color: rgba(245,184,66,.62);
+    border-radius: 11px;
+    background: rgba(255,255,255,.035);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .cloud-check-item strong {
+    display: block;
+    margin-bottom: 3px;
+    color: #fff;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .cloud-check-item em {
+    display: block;
+    margin-top: 2px;
+    color: rgba(255,255,255,.48);
+    font-style: normal;
+    font-size: 10px;
+  }
   @keyframes syncPulse {
     0%, 100% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.4); opacity: .65; }
@@ -2642,6 +2778,12 @@
       gap: 6px;
     }
     .sync-status .sync-dot { width: 7px; height: 7px; }
+    .sync-status .sync-action { display: none; }
+    .cloud-check-panel {
+      left: 12px;
+      bottom: calc(max(env(safe-area-inset-bottom), 14px) + 44px);
+      width: min(360px, calc(100vw - 24px));
+    }
   }
 
   /* ================================================ */
@@ -10111,10 +10253,11 @@
       <span class="vm-ico">🖥</span><span class="vm-lbl">DESKTOP</span>
     </button>
   </div>
-  <div class="sync-status" id="syncStatus" data-status="idle" title="Status de sincronização com banco de dados">
+  <button class="sync-status" id="syncStatus" data-status="idle" type="button" title="JAMES · checar se as alterações deste dispositivo já subiram para o Supabase">
     <span class="sync-dot"></span>
     <span class="sync-msg">Conectando…</span>
-  </div>
+    <span class="sync-action">☁ JAMES · NUVEM</span>
+  </button>
 
   <!-- Supabase JS SDK (UMD via CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -10267,6 +10410,104 @@
     }
 
     function safeJSONParse(s) { try { return JSON.parse(s); } catch (e) { return null; } }
+
+    function parseStoredJSON(raw) {
+      try { return { ok: true, value: JSON.parse(raw) }; }
+      catch (e) { return { ok: false, error: e }; }
+    }
+
+    function stableStringify(value) {
+      if (value === null || typeof value !== 'object') return JSON.stringify(value);
+      if (Array.isArray(value)) return '[' + value.map(stableStringify).join(',') + ']';
+      return '{' + Object.keys(value).sort().map(k => JSON.stringify(k) + ':' + stableStringify(value[k])).join(',') + '}';
+    }
+
+    function cloudEscapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function labelSyncKey(key) {
+      const mode = key.endsWith('_operational') ? ' · Normal' : key.endsWith('_goal') ? ' · Meta' : '';
+      const base = key.replace(/_(operational|goal)$/, '');
+      const labels = {
+        fly_7anos_data_v1: 'Ecossistema / produtos',
+        fly_basesfly_pins_v2: 'Bases Fly · pins',
+        fly_basesfly_visual_v1: 'Bases Fly · fotos e vídeos',
+        fly_basesfly_inline_v1: 'Bases Fly · textos',
+        fly_hierarquia_inline_v1: 'Hierarquia',
+        fly_basesfly_custom_cities_v1: 'Cidades customizadas',
+        fly_design_overrides_v1: 'Design / logos / textos',
+        fly_changelog_v1: 'Histórico de alterações',
+        fly_turmas_v1: 'Turmas',
+        fly_war_territories_v1: 'Plano WAR · territórios',
+        fly_war_connections_v1: 'Plano WAR · conexões',
+        fly_james_keys_v1: 'JAMES · chaves IA'
+      };
+      return (labels[base] || base) + mode;
+    }
+
+    function formatCloudDate(value) {
+      if (!value) return 'sem horário do banco';
+      try {
+        return new Date(value).toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (e) {
+        return value;
+      }
+    }
+
+    function closeCloudCheckPanel() {
+      const panel = document.getElementById('cloudCheckPanel');
+      if (panel) panel.remove();
+    }
+
+    function showCloudCheckPanel(result) {
+      closeCloudCheckPanel();
+      const panel = document.createElement('div');
+      panel.className = 'cloud-check-panel';
+      panel.id = 'cloudCheckPanel';
+      panel.dataset.result = result.status || 'warning';
+
+      const issues = result.issues || [];
+      const issueMarkup = issues.length
+        ? issues.slice(0, 8).map(issue => `
+          <div class="cloud-check-item">
+            <strong>${cloudEscapeHtml(issue.label)}</strong>
+            ${cloudEscapeHtml(issue.message)}
+            ${issue.updatedAt ? `<em>Nuvem: ${cloudEscapeHtml(formatCloudDate(issue.updatedAt))}</em>` : ''}
+          </div>
+        `).join('')
+        : `<div class="cloud-check-item"><strong>Tudo certo</strong>O que este dispositivo tem salvo bate com o Supabase.</div>`;
+
+      panel.innerHTML = `
+        <div class="cloud-check-head">
+          <div>
+            <div class="cloud-check-kicker">JAMES · NUVEM</div>
+            <div class="cloud-check-title">${cloudEscapeHtml(result.title || 'Checagem concluída')}</div>
+          </div>
+          <button class="cloud-check-close" type="button" aria-label="Fechar">×</button>
+        </div>
+        <div class="cloud-check-summary">
+          <div class="cloud-check-stat"><b>${result.synced || 0}</b><span>batendo</span></div>
+          <div class="cloud-check-stat"><b>${result.pending || 0}</b><span>pendências</span></div>
+          <div class="cloud-check-stat"><b>${result.empty || 0}</b><span>vazias</span></div>
+        </div>
+        <p class="cloud-check-note">${cloudEscapeHtml(result.note || '')}</p>
+        <div class="cloud-check-list">${issueMarkup}</div>
+      `;
+      document.body.appendChild(panel);
+      panel.querySelector('.cloud-check-close')?.addEventListener('click', closeCloudCheckPanel);
+      if (result.status === 'ok') setTimeout(closeCloudCheckPanel, 6500);
+    }
 
     /* =====================  AUTH GATE (LAYER 2 · Supabase Auth)  ===================== */
     // Login via email + senha. Sem signup público — somente o admin cria contas
@@ -10553,6 +10794,32 @@
     }
 
     let __supaSilent = false;
+    async function syncSupabaseKeyNow(key) {
+      if (!supaClient || !SYNCED_KEYS.includes(key)) return;
+      const raw = localStorage.getItem(key);
+      if (raw === null) {
+        const { error } = await kvFrom().delete().eq('key', key);
+        if (error) throw error;
+        return;
+      }
+
+      const parsed = parseStoredJSON(raw);
+      if (!parsed.ok) throw new Error(`JSON local inválido em ${key}`);
+      const { error } = await kvFrom().upsert({ key, value: parsed.value });
+      if (error) throw error;
+    }
+
+    async function flushPendingSupabaseSync() {
+      if (!supaClient || __supaPending.size === 0) return;
+      const keys = Array.from(__supaPending.keys());
+      keys.forEach((key) => {
+        clearTimeout(__supaPending.get(key));
+        __supaPending.delete(key);
+      });
+      await Promise.all(keys.map(key => syncSupabaseKeyNow(key)));
+      if (__supaPending.size === 0) setSyncStatus('online', 'Sincronizado');
+    }
+
     function queueSupabaseSync(key) {
       if (!supaClient || !__supaInitialPullDone) return;
       if (__supaSilent) return;
@@ -10562,16 +10829,7 @@
       __supaPending.set(key, setTimeout(async () => {
         __supaPending.delete(key);
         try {
-          const raw = localStorage.getItem(key);
-          if (raw === null) {
-            // Foi removido do cache — apaga do banco também
-            await kvFrom().delete().eq('key', key);
-          } else {
-            const value = safeJSONParse(raw);
-            if (value === null) return;
-            const { error } = await kvFrom().upsert({ key, value });
-            if (error) throw error;
-          }
+          await syncSupabaseKeyNow(key);
           if (__supaPending.size === 0) setSyncStatus('online', 'Sincronizado');
         } catch (e) {
           console.warn('[FLY] Sync falhou pra', key, ':', e?.message || e);
@@ -10579,6 +10837,126 @@
         }
       }, 700));
     }
+
+    async function checkCloudSync() {
+      const btn = document.getElementById('syncStatus');
+      if (btn) {
+        btn.disabled = true;
+        btn.dataset.check = 'checking';
+      }
+
+      try {
+        if (!supaClient) {
+          const result = {
+            status: 'error',
+            title: 'Sem conexão com Supabase',
+            synced: 0,
+            pending: 1,
+            empty: 0,
+            note: 'Não consegui conectar na nuvem agora. O app segue salvando no cache local deste dispositivo.',
+            issues: [{ label: 'Supabase', message: 'SDK ou conexão indisponível neste navegador.' }]
+          };
+          setSyncStatus('offline', 'Offline · cache');
+          showCloudCheckPanel(result);
+          return result;
+        }
+
+        setSyncStatus('syncing', 'Checando nuvem…');
+        await flushPendingSupabaseSync();
+
+        const { data: rows, error } = await kvFrom()
+          .select('key, value, updated_at')
+          .in('key', SYNCED_KEYS);
+        if (error) throw error;
+
+        const remoteByKey = new Map((rows || []).map(row => [row.key, row]));
+        const issues = [];
+        let synced = 0;
+        let empty = 0;
+
+        SYNCED_KEYS.forEach((key) => {
+          const localRaw = localStorage.getItem(key);
+          const remote = remoteByKey.get(key);
+
+          if (localRaw === null && !remote) {
+            empty++;
+            return;
+          }
+
+          if (localRaw === null && remote) {
+            issues.push({
+              label: labelSyncKey(key),
+              message: 'Existe dado na nuvem que este dispositivo ainda não carregou.',
+              updatedAt: remote.updated_at
+            });
+            return;
+          }
+
+          const parsed = parseStoredJSON(localRaw);
+          if (!parsed.ok) {
+            issues.push({
+              label: labelSyncKey(key),
+              message: 'O cache local desta chave não está em JSON válido. Melhor revisar antes de sobrescrever.'
+            });
+            return;
+          }
+
+          if (!remote) {
+            issues.push({
+              label: labelSyncKey(key),
+              message: 'Existe dado local, mas ainda não achei essa chave no Supabase.'
+            });
+            return;
+          }
+
+          if (stableStringify(parsed.value) === stableStringify(remote.value)) {
+            synced++;
+          } else {
+            issues.push({
+              label: labelSyncKey(key),
+              message: 'Local e nuvem estão diferentes. Pode ser alteração pendente ou outro dispositivo mexendo junto.',
+              updatedAt: remote.updated_at
+            });
+          }
+        });
+
+        const result = {
+          status: issues.length ? 'warning' : 'ok',
+          title: issues.length ? 'Atenção na sincronização' : 'Nuvem OK',
+          synced,
+          pending: issues.length,
+          empty,
+          note: issues.length
+            ? 'Forcei o envio do que estava pendente neste dispositivo e comparei com o Supabase. Revise os itens abaixo antes de alimentar mais coisa em paralelo.'
+            : 'Forcei pendências locais, consultei o Supabase e tudo que este dispositivo tem salvo está batendo com a nuvem.',
+          issues
+        };
+
+        setSyncStatus(issues.length ? 'error' : 'online', issues.length ? `${issues.length} pendência(s)` : 'Nuvem OK');
+        showCloudCheckPanel(result);
+        return result;
+      } catch (e) {
+        console.warn('[FLY] Checagem de nuvem falhou:', e?.message || e);
+        const result = {
+          status: 'error',
+          title: 'Falha na checagem',
+          synced: 0,
+          pending: 1,
+          empty: 0,
+          note: 'Não consegui comparar local vs Supabase agora. Tenta de novo em alguns segundos.',
+          issues: [{ label: 'Supabase', message: e?.message || 'Erro desconhecido' }]
+        };
+        setSyncStatus('error', 'Falha na checagem');
+        showCloudCheckPanel(result);
+        return result;
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          delete btn.dataset.check;
+        }
+      }
+    }
+    window.flyCheckCloudSync = checkCloudSync;
 
     // Patcha localStorage.setItem/removeItem pra disparar sync automático
     (function patchLocalStorage() {
@@ -10605,6 +10983,10 @@
         if (this === localStorage) queueSupabaseSync(k);
       };
     })();
+
+    document.getElementById('syncStatus')?.addEventListener('click', () => {
+      checkCloudSync();
+    });
 
     /* =====================  STORAGE  ===================== */
     const STORAGE_KEY = 'fly_7anos_data_v1';
