@@ -10478,9 +10478,21 @@
         }
         __supaInitialPullDone = true;
         setSyncStatus('online', 'Sincronizado');
-        if (pulled > 0 && typeof showHome === 'function') {
-          if (typeof loadData === 'function' && typeof data !== 'undefined') {
-            try { Object.assign(data, loadData()); } catch (e) {}
+        if (pulled > 0) {
+          // Vieram dados novos de OUTRO aparelho. O app já renderizou a
+          // tela com o cache antigo; só dar Object.assign não atualiza o
+          // que está na tela — ERA ESSE o motivo de "não aparece no
+          // outro PC/celular". Recarrega UMA vez pra reinicializar tudo
+          // a partir do cache que JÁ foi sobrescrito com o remoto acima.
+          // Auto-terminante: no reload seguinte local === remoto → pulled
+          // = 0; e o guard de sessão impede qualquer loop.
+          try { if (typeof loadData === 'function' && typeof data !== 'undefined') Object.assign(data, loadData()); } catch (e) {}
+          if (!sessionStorage.getItem('__fly_synced_reload')) {
+            sessionStorage.setItem('__fly_synced_reload', '1');
+            console.log('[FLY] Dados novos sincronizados de outro aparelho — recarregando a tela…');
+            setSyncStatus('syncing', 'Atualizando tela…');
+            setTimeout(() => { try { location.reload(); } catch (e) {} }, 150);
+            return true;
           }
         }
         return true;
