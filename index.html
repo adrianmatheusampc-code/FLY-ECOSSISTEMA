@@ -10502,11 +10502,31 @@
           <div class="cloud-check-stat"><b>${result.empty || 0}</b><span>vazias</span></div>
         </div>
         <p class="cloud-check-note">${cloudEscapeHtml(result.note || '')}</p>
+        <div class="cloud-check-actions" style="display:flex;gap:8px;margin:10px 0 4px;">
+          <button class="cloud-check-push" type="button" style="flex:1;padding:10px 12px;border-radius:8px;border:1px solid rgba(245,182,66,.5);background:rgba(245,182,66,.16);color:#f5b642;font-weight:700;font-size:12px;cursor:pointer;">⬆ Subir agora (forçar)</button>
+        </div>
         <div class="cloud-check-list">${issueMarkup}</div>
       `;
       document.body.appendChild(panel);
       panel.querySelector('.cloud-check-close')?.addEventListener('click', closeCloudCheckPanel);
-      if (result.status === 'ok') setTimeout(closeCloudCheckPanel, 6500);
+      const pushBtn = panel.querySelector('.cloud-check-push');
+      if (pushBtn) pushBtn.addEventListener('click', async () => {
+        pushBtn.disabled = true;
+        pushBtn.style.opacity = '0.7';
+        pushBtn.textContent = '⏳ Subindo tudo pra nuvem…';
+        try {
+          const r = await forceUploadPending();
+          pushBtn.textContent = r.ok
+            ? (r.pushed ? `✅ Subiu ${r.pushed} — reconferindo…` : '✅ Já estava tudo na nuvem')
+            : `⚠️ ${r.pushed} ok / ${r.failed || 0} falhou`;
+          await checkCloudSync(); // re-renderiza o painel já com o estado atualizado
+        } catch (e) {
+          pushBtn.disabled = false;
+          pushBtn.style.opacity = '1';
+          pushBtn.textContent = '⚠️ Erro — tentar de novo';
+        }
+      });
+      if (result.status === 'ok') setTimeout(closeCloudCheckPanel, 9000);
     }
 
     /* =====================  AUTH GATE (LAYER 2 · Supabase Auth)  ===================== */
@@ -10957,6 +10977,35 @@
       }
     }
     window.flyCheckCloudSync = checkCloudSync;
+
+    // Sobe MANUALMENTE tudo que está local mas diferente/ausente na nuvem.
+    // (botão "Subir agora" do painel JAMES · NUVEM)
+    async function forceUploadPending() {
+      if (!supaClient) return { ok: false, pushed: 0, failed: 0, msg: 'Sem conexão com a nuvem.' };
+      let pushed = 0, failed = 0;
+      try {
+        const { data: rows } = await kvFrom().select('key, value').in('key', SYNCED_KEYS);
+        const remoteByKey = new Map((rows || []).map(r => [r.key, r]));
+        for (const key of SYNCED_KEYS) {
+          const localRaw = localStorage.getItem(key);
+          if (localRaw === null) continue;            // nada local — não apaga nuvem
+          const parsed = parseStoredJSON(localRaw);
+          if (!parsed.ok) continue;                   // json local quebrado — não arrisca
+          const remote = remoteByKey.get(key);
+          if (remote && stableStringify(parsed.value) === stableStringify(remote.value)) continue; // já bate
+          try {
+            if (__supaPending.has(key)) { clearTimeout(__supaPending.get(key)); __supaPending.delete(key); }
+            await syncSupabaseKeyNow(key);
+            pushed++;
+          } catch (e) { failed++; }
+        }
+        if (__supaPending.size === 0) setSyncStatus(failed ? 'error' : 'online', failed ? 'Erro · cache local' : 'Sincronizado');
+        return { ok: failed === 0, pushed, failed };
+      } catch (e) {
+        return { ok: false, pushed, failed, msg: e?.message || String(e) };
+      }
+    }
+    window.flyForceUploadNow = forceUploadPending;
 
     // Patcha localStorage.setItem/removeItem pra disparar sync automático
     (function patchLocalStorage() {
