@@ -23254,7 +23254,12 @@
     /* =====================  ADMIN  ===================== */
     adminToggle.addEventListener('click', () => {
       document.body.classList.toggle('admin-mode');
-      adminToggle.textContent = document.body.classList.contains('admin-mode') ? 'ADMIN ON' : 'ADMIN';
+      const _adminOn = document.body.classList.contains('admin-mode');
+      adminToggle.textContent = _adminOn ? 'ADMIN ON' : 'ADMIN';
+      // Persiste por APARELHO (local, NUNCA sincroniza — investidor/sócio
+      // sem admin não pode ver botões de edição). Resolve o admin sumir
+      // a cada reload (sync/recuperação forçam recarga).
+      try { localStorage.setItem('fly_admin_mode', _adminOn ? '1' : '0'); } catch (e) {}
       // exit selection mode whenever admin toggles off
       if (!document.body.classList.contains('admin-mode')) {
         selectMode = false;
@@ -23269,6 +23274,20 @@
       if (currentView === 'topic') showTopic(currentTopic);
       if (currentView === 'item' && currentItemRef) showItem(currentItemRef.topicData, currentItemRef.kind, currentItemRef.idx);
     });
+
+    // Restaura o ADMIN salvo neste aparelho (some o problema do
+    // "Subir vídeo / botões sumiram" depois de cada recarga).
+    try {
+      if (localStorage.getItem('fly_admin_mode') === '1' && !document.body.classList.contains('admin-mode')) {
+        document.body.classList.add('admin-mode');
+        adminToggle.textContent = 'ADMIN ON';
+        if (window.FlyDesign && FlyDesign.refreshAdminHighlight) FlyDesign.refreshAdminHighlight();
+        if (typeof currentView !== 'undefined') {
+          if (currentView === 'topic' && typeof showTopic === 'function') showTopic(currentTopic);
+          else if (currentView === 'item' && currentItemRef && typeof showItem === 'function') showItem(currentItemRef.topicData, currentItemRef.kind, currentItemRef.idx);
+        }
+      }
+    } catch (e) {}
 
     /* =====================  FILE -> DATA URL  ===================== */
     function fileToDataURL(file) {
