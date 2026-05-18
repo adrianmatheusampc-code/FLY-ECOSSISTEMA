@@ -16812,7 +16812,7 @@
       it.id = it.id || base.id;
       it.categoria = it.categoria || '';
       it.folder = it.folder || '';
-      it.format = ['pacotes', 'presskit', 'hierarchy', 'bases', 'sellers', 'influencers', 'metas', 'default'].includes(it.format) ? it.format : 'default';
+      it.format = ['pacotes', 'presskit', 'hierarchy', 'bases', 'sellers', 'influencers', 'metas', 'operacoes', 'default'].includes(it.format) ? it.format : 'default';
       it.descricao = it.descricao || '';
       it.inclui = Array.isArray(it.inclui) ? it.inclui : [];
       it.publico = it.publico || '';
@@ -22903,7 +22903,7 @@
         }
 
         const formatRadio = modal.querySelector('input[name="m_format"]:checked');
-        const chosenFormat = ['default', 'pacotes', 'presskit', 'hierarchy', 'bases', 'sellers', 'influencers', 'metas'].includes(formatRadio?.value) ? formatRadio.value : 'default';
+        const chosenFormat = ['default', 'pacotes', 'presskit', 'hierarchy', 'bases', 'sellers', 'influencers', 'metas', 'operacoes'].includes(formatRadio?.value) ? formatRadio.value : 'default';
         const updated = {
           id: it.id,
           name: modal.querySelector('#m_name').value.trim(),
