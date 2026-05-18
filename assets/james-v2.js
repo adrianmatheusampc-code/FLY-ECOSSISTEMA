@@ -996,7 +996,10 @@
             <span class="jms-panel__ai-badge" id="jms-ai-badge">MOCK</span>
           </div>
         </div>
-        <button class="jms-panel__close" id="jms-close" type="button" aria-label="Fechar">×</button>
+        <div class="jms-panel__header-actions">
+          <button class="jms-panel__reset" id="jms-reset-chat" type="button" aria-label="Limpar conversa" title="Limpar conversa do James">↺</button>
+          <button class="jms-panel__close" id="jms-close" type="button" aria-label="Fechar">×</button>
+        </div>
       </header>
 
       <div class="jms-panel__visual">
@@ -1010,9 +1013,9 @@
         <div class="jms-panel__transcript empty" id="jms-transcript">Sua fala aparecerá aqui...</div>
       </section>
 
-      <section class="jms-panel__section">
+      <section class="jms-panel__section jms-panel__section--reply">
         <h4>James:</h4>
-        <div class="jms-panel__reply empty" id="jms-reply">Aguardando comando.</div>
+        <div class="jms-panel__reply empty" id="jms-reply" tabindex="0">Aguardando comando.</div>
       </section>
 
       <!-- Input de texto pra digitar comando -->
@@ -1255,6 +1258,7 @@
       attachList: $('jms-attached-docs'),
       stop:       $('jms-stop'),
       fsOpen:     $('jms-fs-open'),
+      resetChat:  $('jms-reset-chat'),
       close:      $('jms-close'),
       // FS
       fsOrb:        $('jms-fs-orb'),
@@ -1340,8 +1344,10 @@
       const t = text || '';
       ui.reply.textContent = t || 'Aguardando comando.';
       ui.reply.classList.toggle('empty', !t);
+      ui.reply.scrollTop = 0;
       ui.fsReply.textContent = t || 'Aguardando comando.';
       ui.fsReply.classList.toggle('empty', !t);
+      ui.fsReply.scrollTop = 0;
     }
 
     function appendMessage(msg) {
@@ -1371,6 +1377,28 @@
         ui.error.classList.remove('hidden');
         ui.error.textContent = msg;
       }
+    }
+
+    function clearFullscreenHistory() {
+      ui.fsHistory.innerHTML = 'Sem mensagens ainda.';
+      ui.fsHistory.classList.add('empty');
+      ui.fsHistory.scrollTop = 0;
+    }
+
+    function resetConversationUI() {
+      updateTranscript('');
+      updateReply('');
+      setError(null);
+      clearEngineUI();
+      clearFullscreenHistory();
+      const confirmBtns = document.querySelector('.jms-engine-confirm__btns');
+      if (confirmBtns) confirmBtns.style.display = '';
+      const panelInput = $('jms-text-input');
+      [panelInput, ui.fsTextInput].forEach((input) => {
+        if (!input) return;
+        input.value = '';
+        if (input.tagName === 'TEXTAREA') input.style.height = 'auto';
+      });
     }
 
     function updatePowerButton(on) {
@@ -1646,6 +1674,7 @@
       onSpeakEnd:     () => {},
       onError:        setError,
       onIAError:      (msg) => { setError('IA real falhou: ' + msg + ' (usando modo simulado)'); },
+      onMessagesClear: resetConversationUI,
       onSourceChange: (src) => {
         if (src === 'thinking-real') setAIBadge('PENSANDO…', true);
         else if (src === 'real') setAIBadge('IA REAL ✓', true);
@@ -1696,6 +1725,11 @@
     });
 
     ui.close.addEventListener('click', () => setPanelOpen(false));
+
+    ui.resetChat?.addEventListener('click', () => {
+      voice.clearMessages();
+      setPanelOpen(true);
+    });
 
     ui.activate.addEventListener('click', async () => {
       setPanelOpen(true);

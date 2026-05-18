@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/fly-timeline-landing.css">
-<link rel="stylesheet" href="assets/james-v2.css">
+<link rel="stylesheet" href="assets/james-v2.css?v=20260518-james-reset">
 <link rel="stylesheet" href="assets/fly-dock.css">
 <link rel="stylesheet" href="assets/mobile-fix.css">
 <style>
@@ -6009,6 +6009,93 @@
     box-shadow: 0 0 18px rgba(198,168,90,.35);
   }
 
+  /* VIDEO SLOT · aparece abaixo das abas somente quando há vídeo ou ADMIN ON */
+  .dbx-video-slot {
+    margin: 18px 0 20px;
+    border: 1px solid rgba(198,168,90,.20);
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(0,0,0,.34));
+    box-shadow: 0 18px 46px rgba(0,0,0,.32);
+    overflow: hidden;
+  }
+  .dbx-video-slot[data-has-video="1"] {
+    padding: 10px;
+  }
+  .dbx-video-slot[data-has-video="0"] {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .dbx-video-frame {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .dbx-video-frame iframe,
+  .dbx-video-frame video {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    object-fit: cover;
+    border-radius: inherit;
+    background: #000;
+  }
+  .dbx-video-empty {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  .dbx-video-empty-ico {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(198,168,90,.12);
+    border: 1px solid rgba(198,168,90,.28);
+    flex-shrink: 0;
+  }
+  .dbx-video-empty strong {
+    display: block;
+    color: var(--dbx-gold-bright);
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .dbx-video-empty span {
+    display: block;
+    margin-top: 3px;
+    color: rgba(255,255,255,.58);
+    font-size: 11px;
+  }
+  .dbx-video-admin {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .dbx-video-slot[data-has-video="0"] .dbx-video-admin {
+    margin-top: 0;
+    margin-left: auto;
+  }
+  .dbx-video-status {
+    min-height: 14px;
+    color: rgba(255,255,255,.52);
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+
   /* PANEL */
   .dbx-panel {
     background: var(--dbx-card);
@@ -9454,6 +9541,17 @@
       letter-spacing: 1.2px;
       white-space: nowrap;
       flex-shrink: 0;
+    }
+    .dbx-video-slot[data-has-video="0"] {
+      align-items: stretch;
+      flex-direction: column;
+    }
+    .dbx-video-slot[data-has-video="0"] .dbx-video-admin {
+      justify-content: flex-start;
+      margin-left: 0;
+    }
+    .dbx-video-frame {
+      border-radius: 12px;
     }
 
     /* DBX panel grids */
@@ -16889,12 +16987,108 @@
        12 painéis: Produto · Custos · Operação · Equipe · Clientes ·
        Vendas · Marketing · Análise · Retenção · Upsell · Conteúdo · Alertas
        ============================================================ */
+    const DBX_TEXT_DEFAULTS = {
+      heroEyebrow: 'PACOTE FLY · DUBAI',
+      kpiClientes: 'Clientes Pagos',
+      kpiReceita: 'Receita',
+      kpiLucro: 'Lucro',
+      kpiMargem: 'Margem',
+      tabProduto: '📦 Produto',
+      tabCustos: '💰 Custos',
+      tabOperacao: '⚙️ Operação',
+      tabEquipe: '👥 Equipe',
+      tabClientes: '🎯 Clientes',
+      tabVendas: '📊 Vendas',
+      tabMarketing: '📣 Marketing',
+      tabAnalise: '🧠 Análise',
+      tabDre: '📈 DRE',
+      tabForecast: '🔮 Forecast',
+      tabRetencao: '🔁 Retenção',
+      tabUpsell: '💎 Upsell',
+      tabConteudo: '📸 Conteúdo',
+      tabAlertas: '🚨 Alertas',
+      videoTitulo: 'Vídeo do pacote',
+      videoHint: 'Arquivo MP4/MOV ou link YouTube/Vimeo',
+      videoUploadBtn: '🎬 Subir vídeo',
+      videoTrocarBtn: '🎬 Trocar vídeo',
+      videoLinkBtn: '🔗 Usar link',
+      videoRemoverBtn: '✕ Remover vídeo',
+      panelTitulo: 'Produto · Banner + Experiências + Incluso',
+      descricaoTitulo: 'Descrição do pacote',
+      experienciasTitulo: 'Experiências',
+      addPasseioBtn: '+ Adicionar Passeio',
+      novoPasseioCard: 'Novo Passeio',
+      inclusoTitulo: 'O que está incluso',
+      addInclusoBtn: '+ Adicionar Item',
+      addInclusoRow: 'Adicionar item incluído (hotel, transporte, refeições...)',
+      custosTitulo: 'Custos do Pacote (por viagem)',
+      custosTexto: 'Esses são custos que só existem quando um cliente compra. Voo, hotel, passeios, alimentação. Itens com divisor maior que 1 são compartilhados pela turma. Clique em 📅 em qualquer item para preencher variação mensal.',
+      precosTitulo: 'Preços de Venda',
+      editarPrecosBtn: '✎ Editar preços',
+      timelineTitulo: 'Linha do Tempo · 12 Meses',
+      timelineComVariacao: 'Custos com variação mensal fazem o lucro mudar mês a mês. Itens sem variação usam o valor base. Linhas em verde indicam lucro positivo; vermelho indica prejuízo.',
+      timelineSemVariacao: 'Ainda não há variação mensal. Quando você preencher a variação em um custo, essa tabela mostra automaticamente custo e lucro de cada mês nos 3 cenários.',
+      roteiroTitulo: 'Roteiro do pacote · dia a dia',
+      roteiroTexto: 'O que o cliente vive em cada dia da viagem. Mesma informação da aba Operação — editar aqui atualiza lá também.',
+      roteiroAddBtn: '+ Adicionar Dia',
+      roteiroAddRow: 'Adicionar dia ao roteiro'
+    };
+
+    const DBX_TEXT_FIELDS = [
+      { key: 'heroEyebrow', label: 'Topo do banner principal', type: 'text' },
+      { key: 'panelTitulo', label: 'Título da aba Produto', type: 'text' },
+      { key: 'descricaoTitulo', label: 'Título da descrição', type: 'text' },
+      { key: 'experienciasTitulo', label: 'Título das experiências', type: 'text' },
+      { key: 'addPasseioBtn', label: 'Botão · adicionar passeio', type: 'text' },
+      { key: 'novoPasseioCard', label: 'Card · novo passeio', type: 'text' },
+      { key: 'inclusoTitulo', label: 'Título dos inclusos', type: 'text' },
+      { key: 'addInclusoBtn', label: 'Botão · adicionar incluso', type: 'text' },
+      { key: 'addInclusoRow', label: 'Linha · adicionar incluso', type: 'text' },
+      { key: 'custosTitulo', label: 'Título dos custos do pacote', type: 'text' },
+      { key: 'custosTexto', label: 'Texto explicativo dos custos', type: 'textarea' },
+      { key: 'precosTitulo', label: 'Título dos preços de venda', type: 'text' },
+      { key: 'editarPrecosBtn', label: 'Botão · editar preços', type: 'text' },
+      { key: 'timelineTitulo', label: 'Título da linha do tempo', type: 'text' },
+      { key: 'timelineComVariacao', label: 'Texto com variação mensal', type: 'textarea' },
+      { key: 'timelineSemVariacao', label: 'Texto sem variação mensal', type: 'textarea' },
+      { key: 'roteiroTitulo', label: 'Título do roteiro', type: 'text' },
+      { key: 'roteiroTexto', label: 'Texto do roteiro', type: 'textarea' },
+      { key: 'roteiroAddBtn', label: 'Botão · adicionar dia', type: 'text' },
+      { key: 'roteiroAddRow', label: 'Linha · adicionar dia', type: 'text' },
+      { key: 'videoTitulo', label: 'Título do vídeo', type: 'text' },
+      { key: 'videoHint', label: 'Subtexto do vídeo', type: 'text' },
+      { key: 'videoUploadBtn', label: 'Botão · subir vídeo', type: 'text' },
+      { key: 'videoTrocarBtn', label: 'Botão · trocar vídeo', type: 'text' },
+      { key: 'videoLinkBtn', label: 'Botão · link de vídeo', type: 'text' },
+      { key: 'videoRemoverBtn', label: 'Botão · remover vídeo', type: 'text' },
+      { key: 'kpiClientes', label: 'KPI · clientes', type: 'text' },
+      { key: 'kpiReceita', label: 'KPI · receita', type: 'text' },
+      { key: 'kpiLucro', label: 'KPI · lucro', type: 'text' },
+      { key: 'kpiMargem', label: 'KPI · margem', type: 'text' },
+      { key: 'tabProduto', label: 'Aba · Produto', type: 'text' },
+      { key: 'tabCustos', label: 'Aba · Custos', type: 'text' },
+      { key: 'tabOperacao', label: 'Aba · Operação', type: 'text' },
+      { key: 'tabEquipe', label: 'Aba · Equipe', type: 'text' },
+      { key: 'tabClientes', label: 'Aba · Clientes', type: 'text' },
+      { key: 'tabVendas', label: 'Aba · Vendas', type: 'text' },
+      { key: 'tabMarketing', label: 'Aba · Marketing', type: 'text' },
+      { key: 'tabAnalise', label: 'Aba · Análise', type: 'text' },
+      { key: 'tabDre', label: 'Aba · DRE', type: 'text' },
+      { key: 'tabForecast', label: 'Aba · Forecast', type: 'text' },
+      { key: 'tabRetencao', label: 'Aba · Retenção', type: 'text' },
+      { key: 'tabUpsell', label: 'Aba · Upsell', type: 'text' },
+      { key: 'tabConteudo', label: 'Aba · Conteúdo', type: 'text' },
+      { key: 'tabAlertas', label: 'Aba · Alertas', type: 'text' }
+    ];
+
     const DUBAI_EXPLORER_DEFAULTS = {
       produto: {
         nome: 'DUBAI EXPLORER',
         duracao: '7 dias / 6 noites',
         tipo: 'Aventura · Premium',
         banner: '',
+        video: { url: '', name: '', provider: '', type: '' },
+        textos: { ...DBX_TEXT_DEFAULTS },
         descricao: 'O pacote mais procurado da FLY — Dubai do alto, do mar e do deserto. Experiência completa, hotel 5★ e roteiro premium curado pela FLY Company.',
         experiencias: [
           { nome: 'Burj Khalifa', icon: '🏙️', desc: 'Topo do mundo · 148º andar' },
@@ -17174,6 +17368,8 @@
       e.produto.tipo = '';
       e.produto.descricao = '';
       e.produto.banner = '';
+      e.produto.video = { url: '', name: '', provider: '', type: '' };
+      e.produto.textos = { ...DBX_TEXT_DEFAULTS };
       e.produto.experiencias = [];
       e.produto.incluso = [];
       e.produto.custosPacote = { turmaGrupo: 6, items: [] };
@@ -17306,7 +17502,7 @@
       for (const k of Object.keys(def)) {
         if (item[key][k] === undefined) item[key][k] = JSON.parse(JSON.stringify(def[k]));
       }
-      // Garante novos sub-campos em produto (custosPacote / precos)
+      // Garante novos sub-campos em produto (custosPacote / precos / video / textos)
       if (item[key].produto) {
         if (!item[key].produto.custosPacote) {
           item[key].produto.custosPacote = { turmaGrupo: 6, items: [] };
@@ -17316,6 +17512,17 @@
         if (!item[key].produto.precos) {
           item[key].produto.precos = { solo: 0, duo: 0, grupo: 0 };
         }
+        if (!item[key].produto.video) {
+          item[key].produto.video = { url: '', name: '', provider: '', type: '' };
+        } else if (typeof item[key].produto.video === 'string') {
+          item[key].produto.video = { url: item[key].produto.video, name: '', provider: 'legacy', type: 'video' };
+        }
+        if (!item[key].produto.textos || typeof item[key].produto.textos !== 'object') {
+          item[key].produto.textos = {};
+        }
+        Object.keys(DBX_TEXT_DEFAULTS).forEach(k => {
+          if (item[key].produto.textos[k] === undefined) item[key].produto.textos[k] = DBX_TEXT_DEFAULTS[k];
+        });
       }
       // Migração one-shot: D.custos no modelo antigo tinha custos do pacote
       // (Hotel/Voo/Passagem) misturados com tudo. Como o conceito mudou —
@@ -17331,6 +17538,143 @@
       return item[key];
     }
     function saveDubaiExplorer() { try { saveData(); } catch (e) {} }
+
+    function dbxText(D, key) {
+      const val = D?.produto?.textos?.[key];
+      return val === undefined || val === null ? (DBX_TEXT_DEFAULTS[key] || '') : String(val);
+    }
+    function dbxIsAdmin() {
+      return document.body.classList.contains('admin-mode');
+    }
+    function dbxVideoData(D) {
+      const raw = D?.produto?.video;
+      if (!raw) return { url: '', name: '', provider: '', type: '' };
+      if (typeof raw === 'string') return { url: raw, name: '', provider: 'legacy', type: 'video' };
+      return raw;
+    }
+    function dbxRenderVideoPlayer(url) {
+      const clean = String(url || '').trim();
+      if (!clean) return '';
+      if (window.__flyMedia && typeof window.__flyMedia.videoEmbedHTML === 'function') {
+        const embed = window.__flyMedia.videoEmbedHTML(clean, 'title="Vídeo do pacote" loading="lazy"');
+        if (embed) return embed;
+      }
+      return `<video src="${escapeHtml(clean)}" controls playsinline preload="metadata"></video>`;
+    }
+    function dbxRenderFeaturedVideo(D) {
+      const video = dbxVideoData(D);
+      const url = String(video.url || '').trim();
+      const hasVideo = !!url;
+      const isAdmin = dbxIsAdmin();
+      if (!hasVideo && !isAdmin) return '';
+      const title = escapeHtml(dbxText(D, 'videoTitulo'));
+      const hint = escapeHtml(dbxText(D, 'videoHint'));
+      return `
+        <div class="dbx-video-slot" id="dbx-video-slot" data-has-video="${hasVideo ? '1' : '0'}">
+          ${hasVideo ? `<div class="dbx-video-frame">${dbxRenderVideoPlayer(url)}</div>` : `
+            <div class="dbx-video-empty">
+              <div class="dbx-video-empty-ico">🎬</div>
+              <div>
+                <strong>${title}</strong>
+                <span>${hint}</span>
+              </div>
+            </div>
+          `}
+          ${isAdmin ? `
+            <div class="dbx-video-admin">
+              <input type="file" id="dbx-video-input" accept="video/*" hidden>
+              <button class="dbx-mini-btn" type="button" data-act="video-upload">${escapeHtml(dbxText(D, hasVideo ? 'videoTrocarBtn' : 'videoUploadBtn'))}</button>
+              <button class="dbx-mini-btn" type="button" data-act="video-link">${escapeHtml(dbxText(D, 'videoLinkBtn'))}</button>
+              ${hasVideo ? `<button class="dbx-mini-btn danger" type="button" data-act="video-remove">${escapeHtml(dbxText(D, 'videoRemoverBtn'))}</button>` : ''}
+              <span class="dbx-video-status" aria-live="polite"></span>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+    function dbxRefreshFeaturedVideo(root, D, item) {
+      const host = root?.querySelector?.('#dbx-video-host') || document.getElementById('dbx-video-host');
+      if (!host) return;
+      host.innerHTML = dbxRenderFeaturedVideo(D);
+      dbxBindFeaturedVideo(host, D, item);
+    }
+    async function dbxUploadVideoFile(file) {
+      if (window.__flyMedia && typeof window.__flyMedia.upload === 'function') {
+        return await window.__flyMedia.upload(file);
+      }
+      return { url: await fileToDataURL(file), type: 'video', provider: 'local' };
+    }
+    function dbxBindFeaturedVideo(root, D, item) {
+      const host = root?.querySelector?.('#dbx-video-host') || root;
+      if (!host) return;
+      const slot = host.querySelector('#dbx-video-slot');
+      if (!slot) return;
+      const status = slot.querySelector('.dbx-video-status');
+      const setStatus = (msg) => { if (status) status.textContent = msg || ''; };
+      const input = slot.querySelector('#dbx-video-input');
+      const uploadBtn = slot.querySelector('[data-act="video-upload"]');
+      if (uploadBtn && input) {
+        uploadBtn.addEventListener('click', () => input.click());
+        input.addEventListener('change', async () => {
+          const file = input.files && input.files[0];
+          if (!file) return;
+          setStatus('Enviando...');
+          uploadBtn.disabled = true;
+          try {
+            const result = await dbxUploadVideoFile(file);
+            D.produto.video = {
+              url: result.url || '',
+              type: result.type || 'video',
+              provider: result.provider || 'upload',
+              name: file.name || '',
+              size: file.size || 0,
+              updatedAt: Date.now()
+            };
+            saveDubaiExplorer();
+            showToast('Vídeo salvo.');
+            dbxRefreshFeaturedVideo(host, D, item);
+          } catch (err) {
+            console.warn('[DBX] upload de vídeo falhou:', err);
+            setStatus('Falha no upload.');
+            alert('Não consegui subir esse vídeo. Tente um arquivo menor ou use um link do YouTube/Vimeo.');
+          } finally {
+            uploadBtn.disabled = false;
+          }
+        });
+      }
+      const linkBtn = slot.querySelector('[data-act="video-link"]');
+      if (linkBtn) {
+        linkBtn.addEventListener('click', () => {
+          const current = dbxVideoData(D).url || '';
+          dbxOpenModal({
+            title: 'Adicionar vídeo por link',
+            fields: [
+              { key: 'url', label: 'URL do vídeo', type: 'text', placeholder: 'https://youtube.com/... ou https://.../video.mp4' }
+            ],
+            values: { url: current },
+            onSave: (vals) => {
+              const url = String(vals.url || '').trim();
+              D.produto.video = url
+                ? { url, type: 'video-link', provider: (window.__flyMedia?.toEmbed?.(url) ? 'embed' : 'link'), name: '', updatedAt: Date.now() }
+                : { url: '', name: '', provider: '', type: '' };
+              saveDubaiExplorer();
+              showToast(url ? 'Vídeo salvo.' : 'Vídeo removido.');
+              dbxRefreshFeaturedVideo(host, D, item);
+            }
+          });
+        });
+      }
+      const removeBtn = slot.querySelector('[data-act="video-remove"]');
+      if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+          if (!dbxConfirm('Remover o vídeo deste pacote?')) return;
+          D.produto.video = { url: '', name: '', provider: '', type: '' };
+          saveDubaiExplorer();
+          showToast('Vídeo removido.');
+          dbxRefreshFeaturedVideo(host, D, item);
+        });
+      }
+    }
 
     /* ============================================================
        API GLOBAL · PAINEL DE PACOTE (pra o James operar lá dentro)
@@ -17941,10 +18285,10 @@
       const heroKpis = document.querySelector('.dbx-hero-kpis');
       if (heroKpis) {
         heroKpis.innerHTML = `
-          <div class="dbx-kpi"><div class="lbl">Clientes Pagos</div><div class="val">${fin.totalClientes}</div></div>
-          <div class="dbx-kpi"><div class="lbl">Receita</div><div class="val">${dbxFmtMoney(fin.totalReceita + fin.upsellReceita)}</div></div>
-          <div class="dbx-kpi"><div class="lbl">Lucro</div><div class="val ${fin.lucro<0?'neg':'pos'}">${dbxFmtMoney(fin.lucro)}</div></div>
-          <div class="dbx-kpi"><div class="lbl">Margem</div><div class="val ${fin.margem<20?'warn':'pos'}">${fin.margem.toFixed(1)}%</div></div>
+          <div class="dbx-kpi"><div class="lbl">${escapeHtml(dbxText(D, 'kpiClientes'))}</div><div class="val">${fin.totalClientes}</div></div>
+          <div class="dbx-kpi"><div class="lbl">${escapeHtml(dbxText(D, 'kpiReceita'))}</div><div class="val">${dbxFmtMoney(fin.totalReceita + fin.upsellReceita)}</div></div>
+          <div class="dbx-kpi"><div class="lbl">${escapeHtml(dbxText(D, 'kpiLucro'))}</div><div class="val ${fin.lucro<0?'neg':'pos'}">${dbxFmtMoney(fin.lucro)}</div></div>
+          <div class="dbx-kpi"><div class="lbl">${escapeHtml(dbxText(D, 'kpiMargem'))}</div><div class="val ${fin.margem<20?'warn':'pos'}">${fin.margem.toFixed(1)}%</div></div>
         `;
       }
       // Re-render active panel
@@ -18511,12 +18855,28 @@
       wrap.className = 'dbx-module';
 
       const fin = dbxComputeFinance(D);
+      const dbxTabs = [
+        { key: 'produto', label: 'tabProduto' },
+        { key: 'custos', label: 'tabCustos' },
+        { key: 'operacao', label: 'tabOperacao' },
+        { key: 'equipe', label: 'tabEquipe' },
+        { key: 'clientes', label: 'tabClientes' },
+        { key: 'vendas', label: 'tabVendas' },
+        { key: 'marketing', label: 'tabMarketing' },
+        { key: 'analise', label: 'tabAnalise' },
+        { key: 'dre', label: 'tabDre' },
+        { key: 'forecast', label: 'tabForecast' },
+        { key: 'retencao', label: 'tabRetencao' },
+        { key: 'upsell', label: 'tabUpsell' },
+        { key: 'conteudo', label: 'tabConteudo' },
+        { key: 'alertas', label: 'tabAlertas' }
+      ];
       wrap.innerHTML = `
         <div class="dbx-hero" id="dbx-hero">
           <div class="dbx-hero-bg" id="dbx-hero-bg" style="${D.produto.banner ? `background-image:url('${D.produto.banner}');` : ''}"></div>
           <div class="dbx-hero-overlay"></div>
           <div class="dbx-hero-content">
-            <div class="dbx-eyebrow">PACOTE FLY · DUBAI</div>
+            <div class="dbx-eyebrow">${escapeHtml(dbxText(D, 'heroEyebrow'))}</div>
             <h1>${escapeHtml(D.produto.nome)}</h1>
             <div class="dbx-meta">
               <span>⏱ ${escapeHtml(D.produto.duracao)}</span>
@@ -18524,10 +18884,10 @@
               <span>✦ ${escapeHtml(D.produto.tipo)}</span>
             </div>
             <div class="dbx-hero-kpis">
-              <div class="dbx-kpi"><div class="lbl">Clientes Pagos</div><div class="val">${fin.totalClientes}</div></div>
-              <div class="dbx-kpi"><div class="lbl">Receita</div><div class="val">${dbxFmtMoney(fin.totalReceita + fin.upsellReceita)}</div></div>
-              <div class="dbx-kpi"><div class="lbl">Lucro</div><div class="val ${fin.lucro<0?'neg':'pos'}">${dbxFmtMoney(fin.lucro)}</div></div>
-              <div class="dbx-kpi"><div class="lbl">Margem</div><div class="val ${fin.margem<20?'warn':'pos'}">${fin.margem.toFixed(1)}%</div></div>
+              <div class="dbx-kpi"><div class="lbl">${escapeHtml(dbxText(D, 'kpiClientes'))}</div><div class="val">${fin.totalClientes}</div></div>
+              <div class="dbx-kpi"><div class="lbl">${escapeHtml(dbxText(D, 'kpiReceita'))}</div><div class="val">${dbxFmtMoney(fin.totalReceita + fin.upsellReceita)}</div></div>
+              <div class="dbx-kpi"><div class="lbl">${escapeHtml(dbxText(D, 'kpiLucro'))}</div><div class="val ${fin.lucro<0?'neg':'pos'}">${dbxFmtMoney(fin.lucro)}</div></div>
+              <div class="dbx-kpi"><div class="lbl">${escapeHtml(dbxText(D, 'kpiMargem'))}</div><div class="val ${fin.margem<20?'warn':'pos'}">${fin.margem.toFixed(1)}%</div></div>
             </div>
           </div>
         </div>
@@ -18535,21 +18895,10 @@
         <div id="dbx-meta-vs-real">${dbxRenderMetaReal(D)}</div>
 
         <div class="dbx-tabs" id="dbx-tabs">
-          <button class="dbx-tab active" data-tab="produto">📦 Produto</button>
-          <button class="dbx-tab" data-tab="custos">💰 Custos</button>
-          <button class="dbx-tab" data-tab="operacao">⚙️ Operação</button>
-          <button class="dbx-tab" data-tab="equipe">👥 Equipe</button>
-          <button class="dbx-tab" data-tab="clientes">🎯 Clientes</button>
-          <button class="dbx-tab" data-tab="vendas">📊 Vendas</button>
-          <button class="dbx-tab" data-tab="marketing">📣 Marketing</button>
-          <button class="dbx-tab" data-tab="analise">🧠 Análise</button>
-          <button class="dbx-tab" data-tab="dre">📈 DRE</button>
-          <button class="dbx-tab" data-tab="forecast">🔮 Forecast</button>
-          <button class="dbx-tab" data-tab="retencao">🔁 Retenção</button>
-          <button class="dbx-tab" data-tab="upsell">💎 Upsell</button>
-          <button class="dbx-tab" data-tab="conteudo">📸 Conteúdo</button>
-          <button class="dbx-tab" data-tab="alertas">🚨 Alertas</button>
+          ${dbxTabs.map((t, i) => `<button class="dbx-tab ${i === 0 ? 'active' : ''}" data-tab="${t.key}">${escapeHtml(dbxText(D, t.label))}</button>`).join('')}
         </div>
+
+        <div id="dbx-video-host">${dbxRenderFeaturedVideo(D)}</div>
 
         <div class="dbx-panel" id="dbx-panel"></div>
       `;
@@ -18563,6 +18912,7 @@
       }
       tabs.forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
       setTab('produto');
+      dbxBindFeaturedVideo(wrap, D, item);
       dbxBindMetaReal(wrap, D, item);
     }
 
@@ -18850,28 +19200,30 @@
         if (!melhorMes || m.lucros.grupo > melhorMes.lucros.grupo) melhorMes = m;
         if (!piorMes  || m.lucros.grupo < piorMes.lucros.grupo)   piorMes  = m;
       });
+      const txt = (key) => escapeHtml(dbxText(D, key));
       return `
         <div class="dbx-panel-head">
-          <h2><span class="ico">📦</span>Produto · Banner + Experiências + Incluso</h2>
+          <h2><span class="ico">📦</span>${txt('panelTitulo')}</h2>
           <div class="dbx-actions">
             <input type="file" id="dbx-banner-input" accept="image/*" hidden>
             <button class="dbx-btn ghost" id="dbx-banner-btn">🖼 Trocar Banner</button>
             <button class="dbx-mini-btn" data-edit="produto-info">✎ Editar Info</button>
+            ${dbxIsAdmin() ? `<button class="dbx-mini-btn" data-edit="produto-textos">✎ Editar Textos</button>` : ''}
           </div>
         </div>
 
         <div class="dbx-block">
           <div class="dbx-block-head">
-            <h3>Descrição do pacote</h3>
+            <h3>${txt('descricaoTitulo')}</h3>
           </div>
           <p class="dbx-desc">${escapeHtml(D.produto.descricao || '')}</p>
         </div>
 
         <div class="dbx-block">
           <div class="dbx-block-head">
-            <h3>✦ Experiências (${exp.length})</h3>
+            <h3>✦ ${txt('experienciasTitulo')} (${exp.length})</h3>
             <div class="dbx-block-actions">
-              <button class="dbx-mini-btn" data-add="exp">+ Adicionar Passeio</button>
+              <button class="dbx-mini-btn" data-add="exp">${txt('addPasseioBtn')}</button>
             </div>
           </div>
           <div class="dbx-exp-grid">
@@ -18889,16 +19241,16 @@
             `).join('')}
             <div class="dbx-add-card" data-add="exp">
               <div class="ico">+</div>
-              <div class="lbl">Novo Passeio</div>
+              <div class="lbl">${txt('novoPasseioCard')}</div>
             </div>
           </div>
         </div>
 
         <div class="dbx-block">
           <div class="dbx-block-head">
-            <h3>✓ O que está incluso</h3>
+            <h3>✓ ${txt('inclusoTitulo')}</h3>
             <div class="dbx-block-actions">
-              <button class="dbx-mini-btn" data-add="inc">+ Adicionar Item</button>
+              <button class="dbx-mini-btn" data-add="inc">${txt('addInclusoBtn')}</button>
             </div>
           </div>
           <div class="dbx-inc-list">
@@ -18914,7 +19266,7 @@
             `).join('')}
             <div class="dbx-add-row" data-add="inc">
               <span style="font-size:18px;">+</span>
-              <span>Adicionar item incluído (hotel, transporte, refeições...)</span>
+              <span>${txt('addInclusoRow')}</span>
             </div>
           </div>
         </div>
@@ -18922,16 +19274,14 @@
         <!-- ===== CUSTOS DO PACOTE (por viagem) ===== -->
         <div class="dbx-block">
           <div class="dbx-block-head">
-            <h3>💰 Custos do Pacote (por viagem)</h3>
+            <h3>💰 ${txt('custosTitulo')}</h3>
             <div class="dbx-block-actions">
               <button class="dbx-mini-btn" data-edit="turma-grupo" title="Tamanho da turma 'Grupo' pra dividir custos compartilhados">👥 Turma grupo: ${turmaGrupo}</button>
               <button class="dbx-mini-btn" data-add="custo-pacote">+ Adicionar custo</button>
             </div>
           </div>
           <p class="dbx-desc dbx-callout-inline">
-            Esses são custos que <strong>só existem quando um cliente compra</strong>. Voo, hotel, passeios, alimentação.
-            Itens com <em>divisor &gt; 1</em> (ex: transfer ÷ 6) são compartilhados pela turma.
-            Clique em <strong>📅</strong> em qualquer item pra preencher variação mensal (ex: voo mais caro em dezembro).
+            ${txt('custosTexto')}
           </p>
           <div class="dbx-list">
             <div class="dbx-list-row dbx-list-head">
@@ -18981,9 +19331,9 @@
         <!-- ===== PREÇOS DE VENDA ===== -->
         <div class="dbx-block">
           <div class="dbx-block-head">
-            <h3>🏷 Preços de Venda</h3>
+            <h3>🏷 ${txt('precosTitulo')}</h3>
             <div class="dbx-block-actions">
-              <button class="dbx-mini-btn" data-edit="precos">✎ Editar preços</button>
+              <button class="dbx-mini-btn" data-edit="precos">${txt('editarPrecosBtn')}</button>
             </div>
           </div>
           <div class="dbx-precos-grid">
@@ -19011,7 +19361,7 @@
         <!-- ===== LINHA DO TEMPO · VARIAÇÃO MENSAL ===== -->
         <div class="dbx-block">
           <div class="dbx-block-head">
-            <h3>📅 Linha do Tempo · 12 Meses</h3>
+            <h3>📅 ${txt('timelineTitulo')}</h3>
             <div class="dbx-block-actions" style="opacity:0.65; font-size:11px;">
               ${temVariacao
                 ? `<span>📈 melhor mês: <strong style="color:#6fe3a8;">${melhorMes.curto}</strong> · 📉 pior: <strong style="color:#ff8c8c;">${piorMes.curto}</strong></span>`
@@ -19020,8 +19370,8 @@
           </div>
           <p class="dbx-desc dbx-callout-inline">
             ${temVariacao
-              ? `Custos com variação mensal (ex: voo mais caro em dezembro) fazem o lucro mudar mês a mês. Itens SEM variação usam o valor base. Linhas em verde = lucro positivo; vermelho = prejuízo.`
-              : `Ainda não há variação mensal. Quando você preencher (botão 📅 em um custo), essa tabela mostra automaticamente o custo e lucro de cada mês nos 3 cenários.`}
+              ? txt('timelineComVariacao')
+              : txt('timelineSemVariacao')}
           </p>
           <div class="dbx-timeline-table">
             <div class="dbx-timeline-row dbx-timeline-head">
@@ -19063,6 +19413,29 @@
 
     function dbxBindProduto(panelEl, D, item) {
       dbxBindRoteiro(panelEl, D, item);
+      // Editar textos/títulos desta tela do pacote
+      const textosBtn = panelEl.querySelector('[data-edit="produto-textos"]');
+      if (textosBtn) {
+        textosBtn.addEventListener('click', () => {
+          const values = {};
+          DBX_TEXT_FIELDS.forEach(f => { values[f.key] = dbxText(D, f.key); });
+          dbxOpenModal({
+            title: 'Editar Textos do Produto',
+            fields: DBX_TEXT_FIELDS,
+            values,
+            onSave: (vals) => {
+              D.produto.textos = Object.assign({}, D.produto.textos || {}, vals);
+              saveDubaiExplorer();
+              showToast('Textos salvos.');
+              if (currentItemRef && typeof showItem === 'function') {
+                showItem(currentItemRef.topicData, currentItemRef.kind, currentItemRef.idx);
+              } else {
+                dbxRefresh(D, item);
+              }
+            }
+          });
+        });
+      }
       // Editar info geral do produto
       const infoBtn = panelEl.querySelector('[data-edit="produto-info"]');
       if (infoBtn) {
@@ -19443,16 +19816,17 @@
        Mesmo dado (D.operacao.roteiro) — editar num lugar reflete no outro. */
     function dbxRoteiroHTML(D) {
       const rot = (D.operacao && Array.isArray(D.operacao.roteiro)) ? D.operacao.roteiro : [];
+      const txt = (key) => escapeHtml(dbxText(D, key));
       return `
         <div class="dbx-block">
           <div class="dbx-block-head">
-            <h3>🗺️ Roteiro do pacote · dia a dia</h3>
+            <h3>🗺️ ${txt('roteiroTitulo')}</h3>
             <div class="dbx-block-actions">
-              <button class="dbx-mini-btn" data-add="roteiro">+ Adicionar Dia</button>
+              <button class="dbx-mini-btn" data-add="roteiro">${txt('roteiroAddBtn')}</button>
             </div>
           </div>
           <p class="dbx-desc dbx-callout-inline">
-            O que o cliente vive em cada dia da viagem. Mesma informação da aba Operação — editar aqui atualiza lá também.
+            ${txt('roteiroTexto')}
           </p>
           <div class="dbx-roteiro">
             ${rot.map((r, i) => `
@@ -19471,7 +19845,7 @@
             `).join('')}
             <div class="dbx-add-row" data-add="roteiro">
               <span style="font-size:18px;">+</span>
-              <span>Adicionar dia ao roteiro</span>
+              <span>${txt('roteiroAddRow')}</span>
             </div>
           </div>
         </div>
@@ -24906,7 +25280,7 @@
   <script src="assets/james-engine.js"></script>
   <script src="assets/james-pdf-reader.js"></script>
   <script src="assets/james-brain-real.js"></script>
-  <script src="assets/james-v2.js"></script>
+  <script src="assets/james-v2.js?v=20260518-james-reset"></script>
   <script src="assets/fly-dock.js"></script>
 
   <!-- ONBOARDING WIZARD -->

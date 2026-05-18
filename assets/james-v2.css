@@ -140,6 +140,7 @@
   width: 380px;
   max-width: calc(100vw - 48px);
   max-height: calc(100vh - 160px);
+  max-height: calc(100dvh - 140px);
   background: linear-gradient(170deg, rgba(15, 12, 6, 0.96) 0%, rgba(5, 5, 5, 0.98) 100%);
   border: 1px solid rgba(245, 182, 66, 0.22);
   border-radius: 18px;
@@ -295,6 +296,14 @@
   min-height: 16px;
 }
 
+.jms-panel__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.jms-panel__reset,
 .jms-panel__close {
   background: rgba(255, 255, 255, 0.06);
   border: none;
@@ -305,7 +314,25 @@
   font-size: 16px;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
+
+.jms-panel__reset {
+  background: rgba(245, 182, 66, 0.08);
+  border: 1px solid rgba(245, 182, 66, 0.22);
+  color: var(--jms-gold);
+  font-size: 15px;
+}
+
+.jms-panel__reset:hover {
+  background: rgba(245, 182, 66, 0.18);
+  border-color: rgba(245, 182, 66, 0.5);
+  color: #ffd770;
+}
+
 .jms-panel__close:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
@@ -346,6 +373,10 @@
   border-top: 1px solid rgba(245, 182, 66, 0.06);
 }
 
+.jms-panel__section--reply {
+  min-height: 0;
+}
+
 .jms-panel__section h4 {
   font-size: 9px;
   font-weight: 700;
@@ -369,8 +400,21 @@
   line-height: 1.55;
   color: #ffe6a8;
   min-height: 22px;
+  max-height: clamp(132px, 28vh, 260px);
+  max-height: clamp(132px, 28dvh, 260px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(245, 182, 66, 0.45) rgba(255, 255, 255, 0.05);
 }
 .jms-panel__reply.empty { color: rgba(255, 255, 255, 0.3); font-style: italic; }
+.jms-panel__reply::-webkit-scrollbar { width: 6px; }
+.jms-panel__reply::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 999px; }
+.jms-panel__reply::-webkit-scrollbar-thumb { background: rgba(245, 182, 66, 0.45); border-radius: 999px; }
+.jms-panel__reply::-webkit-scrollbar-thumb:hover { background: rgba(245, 182, 66, 0.7); }
 
 /* Input de texto rápido */
 .jms-panel__input-row {
@@ -918,6 +962,8 @@
     bottom: 90px;
     width: auto;
     max-width: none;
+    max-height: calc(100vh - 112px);
+    max-height: calc(100dvh - 112px);
   }
   .jms-fs__big-orb {
     width: 180px;
