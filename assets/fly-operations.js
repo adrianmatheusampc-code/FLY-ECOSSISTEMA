@@ -1,29 +1,28 @@
 /* =====================================================================
-   FLY OPERATIONS — Operational Playbooks (cérebro operacional da Fly)
-   Versão 1.0 · FLY Ecossistema
+   FLY OPERATIONS — Sistema Operacional VIVO (editável · por data · James)
+   Versão 2.0 · FLY Ecossistema
 
-   ARQUITETURA (sem duplicar dados):
-   - Um playbook por produto (chaveado por slug do produto).
-   - A CENTRAL macro (formato de painel "Operações", dentro da Estrutura
-     Corporativa) usa TODOS os playbooks + dados de operação ao vivo.
-   - A página de cada pacote (formato PACOTES · aba "Operação") usa
-     APENAS o playbook daquele produto. Mesma fonte → zero duplicação.
+   - PLAYBOOK do pacote = modelo padrão (etapas com dia relativo).
+   - OPERAÇÃO REAL do cliente = execução com datas reais calculadas a
+     partir da data de ida. Tudo editável pelo painel e pelo James.
+   - Data Operacional global (default 18/05/2026) = "hoje" do sistema.
+   - Persistência em localStorage (estrutura pronta p/ Supabase).
 
-   API · window.__flyOps
-     getPlaybook(slug)        → playbook do produto (ou gerado)
-     listPlaybooks()          → todos os playbooks
-     slugify(name)            → 'Dubai Explorer' → 'dubai-explorer'
-     renderGeneral(host)      → central macro (Estrutura Corporativa)
-     renderPackage(host,slug,{presentation}) → operação de 1 pacote
-     liveData()               → clientes/escala/ocorrências/logs (mock)
+   API pública · window.__flyOps  (mantém nomes antigos + novos)
+     renderGeneral(host)            → central macro (Estrutura Corp.)
+     renderPackage(host, slug)      → operação do pacote
+     getPlaybook / listPlaybooks / slugify / openPresentation
+     state()                        → STATE atual (somente leitura)
+     addClientOperation(payload)    → cria cliente + gera operação
+     james(cmd)                     → comandos do James (texto)
+     summary()                      → resumo p/ contexto do James
    ===================================================================== */
 (function flyOperationsBoot() {
   'use strict';
-  if (window.__flyOps) return;
+  if (window.__flyOps && window.__flyOps.__v2) return;
 
-  /* ================================================================
-     UTIL
-     ================================================================ */
+  /* ============ UTIL ============ */
+  const uid = (p) => (p || 'id') + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   function slugify(s) {
     return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
       .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -32,534 +31,637 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
       { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
+  const DOW = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  function parseISO(s) { const [y, m, d] = String(s).split('-').map(Number); return new Date(y, m - 1, d); }
+  function toISO(dt) { return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0'); }
+  function addDays(iso, n) { const d = parseISO(iso); d.setDate(d.getDate() + n); return toISO(d); }
+  function fmtBR(iso) { if (!iso) return '—'; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
+  function weekday(iso) { return DOW[parseISO(iso).getDay()]; }
+  function diffDays(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
 
-  /* ================================================================
-     PLAYBOOKS — mock rico p/ os 3 pacotes-chave + gerador p/ o resto
-     ================================================================ */
-  const GLOBAL_JOURNEY = [
-    'Venda fechada', 'Onboarding', 'Coleta de documentos', 'Confirmação passaporte',
-    'Emissão de passagem', 'Reserva de hotel', 'Reserva de passeios', 'Grupo WhatsApp',
-    'Envio do roteiro', 'Confirmação pré-embarque', 'Cliente sai de casa', 'Uber p/ aeroporto',
-    'Chegada ao aeroporto', 'Check-in', 'Embarque', 'Voo', 'Chegada em Dubai', 'Imigração',
-    'Bagagem', 'Transfer p/ hotel', 'Check-in hotel', 'Execução dos passeios',
-    'Dias livres c/ suporte', 'Check-out', 'Transfer retorno', 'Embarque volta',
-    'Chegada ao Brasil', 'Pós-venda', 'Depoimento', 'Próxima experiência',
-  ];
+  /* ============ PERSISTÊNCIA ============ */
+  const KEY = 'fly_ops_v1';
+  let STATE = null;
 
-  const GLOBAL_CONTINGENCIES = [
-    { problem: 'Cliente esqueceu passaporte', sev: 'crit', call: 'Coordenador + cliente',
-      steps: ['Manter cliente calmo', 'Confirmar tempo até casa', 'Ver limite de check-in', 'Acionar familiar/motoboy/Uber Flash', 'Acionar cia aérea se preciso', 'Registrar ocorrência', 'Escalar coordenador'] },
-    { problem: 'Cliente perdeu o voo', sev: 'crit', call: 'Coordenador + Financeiro',
-      steps: ['Abrir ocorrência crítica', 'Acionar cia aérea', 'Ver remarcação', 'Calcular custo', 'Acionar financeiro', 'Atualizar transfer/hotel Dubai'] },
-    { problem: 'Mala extraviada', sev: 'alta', call: 'Base Aeroporto Dubai',
-      steps: ['Cliente abre registro no aeroporto', 'Fotografar comprovante', 'Coletar protocolo', 'Acionar cia + seguro', 'Kit emergência', 'Atualizar hotel'] },
-    { problem: 'Cliente atrasado p/ passeio', sev: 'media', call: 'Base Passeios',
-      steps: ['Ver tolerância do fornecedor', 'Acionar motorista', 'Recalcular rota', 'Avisar fornecedor', 'Remarcar se possível'] },
-    { problem: 'Cliente passou mal', sev: 'crit', call: 'Operador emergência + seguro',
-      steps: ['Identificar gravidade', 'Acionar seguro/médico', 'Enviar funcionário disponível', 'Avisar liderança', 'Acompanhar até resolução'] },
-  ];
-
-  const GLOBAL_CHECKLISTS = [
-    { name: 'Pré-embarque', phase: 'pre', items: ['Passaporte válido', 'Passagem emitida', 'Hotel confirmado', 'Passeios confirmados', 'Transfer confirmado', 'Grupo WhatsApp criado', 'Cliente recebeu roteiro', 'Contatos de emergência enviados', 'Mala confirmada', 'Saída de casa confirmada'] },
-    { name: 'Aeroporto Brasil', phase: 'aeroporto', items: ['Cliente saiu de casa', 'Chegou ao aeroporto', 'Check-in realizado', 'Mala despachada', 'Portão confirmado', 'Embarcou'] },
-    { name: 'Chegada Dubai', phase: 'chegada', items: ['Desembarcou', 'Passou imigração', 'Pegou bagagem', 'Encontrou motorista', 'Entrou no transfer', 'Chegou ao hotel', 'Check-in realizado'] },
-    { name: 'Passeio', phase: 'passeio', items: ['Cliente avisado', 'Horário confirmado', 'Motorista confirmado', 'Voucher confirmado', 'Base responsável definida', 'Cliente chegou', 'Passeio realizado', 'Cliente retornou'] },
-  ];
-
-  function baseRoles() {
+  function defaultEmployees() {
     return [
-      { role: 'Coordenador de operação', phase: 'Todas', risk: 'Falha geral', backup: 'Liderança' },
-      { role: 'Suporte WhatsApp', phase: 'Pré-embarque → fim', risk: 'Cliente sem resposta', backup: 'Coordenador' },
-      { role: 'Suporte pré-embarque', phase: 'Dia 0–1', risk: 'Documento/voo', backup: 'Coordenador' },
-      { role: 'Base aeroporto Dubai', phase: 'Chegada', risk: 'Cliente perdido', backup: 'Concierge' },
-      { role: 'Motorista / transfer', phase: 'Transfer', risk: 'Atraso', backup: 'Motorista reserva' },
-      { role: 'Concierge cidade', phase: 'Hotel/passeios', risk: 'Suporte local', backup: 'Coordenador' },
-      { role: 'Suporte passeios', phase: 'Passeios', risk: 'Atraso/cancelamento', backup: 'Concierge' },
-      { role: 'Operador de emergência', phase: 'Sob demanda', risk: 'Crise', backup: 'Liderança' },
+      { id: uid('emp'), name: 'João', role: 'Suporte WhatsApp', base: 'Suporte Brasil', langs: 'PT/EN', status: 'Disponível', whatsapp: '', notes: '' },
+      { id: uid('emp'), name: 'Carla', role: 'Concierge cidade', base: 'Base Hotel', langs: 'PT/EN/AR', status: 'Disponível', whatsapp: '', notes: '' },
+      { id: uid('emp'), name: 'Bruno', role: 'Resp. supercarros', base: 'Base Supercarros', langs: 'PT/EN', status: 'Disponível', whatsapp: '', notes: '' },
+      { id: uid('emp'), name: 'Yara', role: 'Base aeroporto Dubai', base: 'Aeroporto Dubai', langs: 'EN/AR', status: 'Disponível', whatsapp: '', notes: '' },
+      { id: uid('emp'), name: 'Concierge VIP', role: 'Concierge dedicado', base: 'Base VIP', langs: 'PT/EN', status: 'Disponível', whatsapp: '', notes: '' },
+      { id: uid('emp'), name: 'Lucas', role: 'Motorista/transfer', base: 'Base Cidade', langs: 'EN', status: 'Disponível', whatsapp: '', notes: '' },
+      { id: uid('emp'), name: 'Sofia', role: 'Operador emergência', base: 'Base Emergência', langs: 'PT/EN', status: 'Disponível', whatsapp: '', notes: '' },
+    ];
+  }
+  function defaultBases() {
+    return ['Suporte Brasil|WhatsApp/remoto|Brasil', 'Aeroporto Brasil|Aeroporto|Brasil', 'Aeroporto Dubai|Aeroporto|Dubai',
+      'Base Hotel|Hotel|Dubai', 'Base Cidade|Cidade|Dubai', 'Base Passeios|Passeios|Dubai', 'Base WhatsApp|Suporte|Remoto',
+      'Base Emergência|Emergência|Dubai', 'Base VIP|VIP|Dubai', 'Base Supercarros|Experiências|Dubai']
+      .map(s => { const [name, type, loc] = s.split('|'); return { id: uid('base'), name, type, location: loc, status: 'ativa', capacity: '—', notes: '' }; });
+  }
+  function defaultProcesses() {
+    return [
+      { id: uid('proc'), title: 'Cliente saiu de casa p/ aeroporto', category: 'Pré-embarque', risk: 'media', global: true, product: '', steps: ['Confirmar horário de saída', 'Confirmar endereço', 'Confirmar passaporte/documentos', 'Confirmar bagagem', 'Acompanhar Uber', 'Enviar mensagem padrão', 'Monitorar chegada'] },
+      { id: uid('proc'), title: 'Cliente esqueceu passaporte em casa', category: 'Emergência', risk: 'crit', global: true, product: '', steps: ['Manter cliente calmo', 'Confirmar tempo até casa', 'Ver limite de check-in', 'Acionar familiar/motoboy/Uber Flash', 'Acionar cia aérea', 'Registrar ocorrência', 'Escalar coordenador'] },
+      { id: uid('proc'), title: 'Cliente perdeu o voo', category: 'Voo', risk: 'crit', global: true, product: '', steps: ['Abrir ocorrência crítica', 'Acionar cia aérea', 'Ver remarcação', 'Calcular custo', 'Acionar financeiro', 'Atualizar transfer/hotel Dubai'] },
+      { id: uid('proc'), title: 'Cliente chegou em Dubai', category: 'Chegada', risk: 'baixa', global: true, product: '', steps: ['Confirmar desembarque', 'Imigração', 'Bagagem', 'Conectar com motorista', 'Base aeroporto assume', 'Registrar horário real'] },
+    ];
+  }
+  function defaultContingencies() {
+    return [
+      { id: uid('cont'), title: 'Funcionário faltou', sev: 'alta', global: true, product: '', call: 'Coordenador', steps: ['Verificar backup da mesma base', 'Se não houver, acionar coordenador', 'Redistribuir cliente p/ base mais próxima', 'Atualizar operação do cliente', 'Avisar equipe', 'Registrar log', 'Mensagem de tranquilização se impactar cliente'] },
+      { id: uid('cont'), title: 'Mala extraviada', sev: 'alta', global: true, product: '', call: 'Base Aeroporto Dubai', steps: ['Cliente abre registro no aeroporto', 'Fotografar comprovante', 'Coletar protocolo', 'Acionar cia + seguro', 'Kit emergência', 'Atualizar hotel'] },
+      { id: uid('cont'), title: 'Cliente passou mal', sev: 'crit', global: true, product: '', call: 'Operador emergência + seguro', steps: ['Identificar gravidade', 'Acionar seguro/médico', 'Enviar funcionário disponível', 'Avisar liderança', 'Acompanhar até resolução'] },
+    ];
+  }
+  function defaultChecklists() {
+    return [
+      { id: uid('chk'), name: 'Pré-embarque', phase: 'pre', global: true, product: '', items: ['Passaporte válido', 'Passagem emitida', 'Hotel confirmado', 'Passeios confirmados', 'Transfer confirmado', 'Grupo WhatsApp criado', 'Roteiro enviado', 'Contatos de emergência', 'Mala confirmada', 'Saída de casa confirmada'] },
+      { id: uid('chk'), name: 'Aeroporto Brasil', phase: 'aeroporto', global: true, product: '', items: ['Cliente saiu de casa', 'Chegou ao aeroporto', 'Check-in realizado', 'Mala despachada', 'Portão confirmado', 'Embarcou'] },
+      { id: uid('chk'), name: 'Chegada Dubai', phase: 'chegada', global: true, product: '', items: ['Desembarcou', 'Passou imigração', 'Pegou bagagem', 'Encontrou motorista', 'Entrou no transfer', 'Chegou ao hotel', 'Check-in'] },
     ];
   }
 
-  function genericPlaybook(name) {
-    const slug = slugify(name);
-    return {
-      id: 'pb-' + slug, productSlug: slug, productName: name, packageType: 'Pacote',
-      title: name + ' · Operação', complexity: 'média', duration: '7-8 dias',
-      customerProfile: 'Cliente Fly premium',
-      description: 'Playbook operacional padrão Fly aplicado a ' + name + '. Documentos, aeroporto, voo, chegada, transfer, hotel, passeios e retorno seguem o padrão global; passeios e nível de atendimento variam pelo pacote.',
-      resumo: { nivel: 'Premium', clienteIdeal: 'Experiência Dubai', bases: 6, funcionarios: 6, etapas: GLOBAL_JOURNEY.length, riscos: 'Documento · Voo · Transfer' },
-      jornada: GLOBAL_JOURNEY.map((t, i) => ({ etapa: t, resp: i < 16 ? 'Suporte Brasil' : 'Base Dubai', status: 'pendente' })),
-      roteiro: [
-        { dia: 0, fase: 'Pré-embarque', titulo: 'Confirmações', desc: 'Documentos, passaporte, passagem, hotel, roteiro, WhatsApp, saída de casa' },
-        { dia: 1, fase: 'Saída do Brasil', titulo: 'Aeroporto', desc: 'Uber, check-in, despacho, embarque acompanhados' },
-        { dia: 2, fase: 'Chegada Dubai', titulo: 'Transfer + hotel', desc: 'Imigração, bagagem, motorista, check-in' },
-        { dia: 3, fase: 'Operação', titulo: 'Passeios do pacote', desc: 'Execução com base e checklist por passeio' },
-      ],
-      bases: ['Suporte Brasil', 'Aeroporto Brasil', 'Aeroporto Dubai', 'Hotel', 'Cidade', 'Passeios', 'WhatsApp', 'Emergência'].map(b => ({ name: 'Base ' + b, type: b, priority: 'normal' })),
-      roles: baseRoles(),
-      checklists: GLOBAL_CHECKLISTS,
-      processos: ['Cliente sai de casa', 'Cliente chega ao aeroporto', 'Cliente embarca', 'Cliente chega em Dubai', 'Check-in', 'Passeio', 'Retorno'].map(p => ({ nome: p, global: true })),
-      contingencias: GLOBAL_CONTINGENCIES,
-      experiencia: ['Segurança', 'Suporte próximo', 'Padrão acima de agência comum'],
-      metricas: { clientesAtivos: 0, vendas: 0, receita: 0, ocorrencias: 0, satisfacao: '—', nps: '—' },
-    };
+  // Etapas-modelo do playbook (com dia relativo à ida)
+  function defaultStepTemplates() {
+    return [
+      { phase: 'Pré-embarque', title: 'Onboarding & documentos', rel: -7, time: '10:00', baseType: 'Suporte Brasil', role: 'Suporte WhatsApp', checklist: 'Pré-embarque' },
+      { phase: 'Pré-embarque', title: 'Confirmar passaporte & passagem', rel: -5, time: '11:00', baseType: 'Suporte Brasil', role: 'Suporte pré-embarque', checklist: 'Pré-embarque' },
+      { phase: 'Pré-embarque', title: 'Confirmação pré-embarque (hotel/passeios/transfer)', rel: -2, time: '15:00', baseType: 'Suporte Brasil', role: 'Coordenador', checklist: 'Pré-embarque' },
+      { phase: 'Pré-embarque', title: 'Lembrete mala/passaporte/saída de casa', rel: -1, time: '18:00', baseType: 'Base WhatsApp', role: 'Suporte WhatsApp', checklist: 'Pré-embarque' },
+      { phase: 'Embarque', title: 'Cliente sai de casa + Uber', rel: 0, time: '06:00', baseType: 'Suporte Brasil', role: 'Suporte WhatsApp', checklist: 'Aeroporto Brasil' },
+      { phase: 'Embarque', title: 'Aeroporto: check-in + despacho + embarque', rel: 0, time: '09:00', baseType: 'Aeroporto Brasil', role: 'Suporte pré-embarque', checklist: 'Aeroporto Brasil' },
+      { phase: 'Chegada Dubai', title: 'Chegada Dubai: imigração + bagagem + transfer', rel: 1, time: '08:00', baseType: 'Aeroporto Dubai', role: 'Base aeroporto Dubai', checklist: 'Chegada Dubai' },
+      { phase: 'Chegada Dubai', title: 'Check-in no hotel', rel: 1, time: '14:00', baseType: 'Base Hotel', role: 'Concierge cidade', checklist: 'Chegada Dubai' },
+      { phase: 'Operação', title: 'Roteiro / passeios — dia 1', rel: 2, time: '09:00', baseType: 'Base Passeios', role: 'Suporte passeios', checklist: '' },
+      { phase: 'Operação', title: 'Roteiro / passeios — dia 2', rel: 3, time: '09:00', baseType: 'Base Passeios', role: 'Suporte passeios', checklist: '' },
+      { phase: 'Operação', title: 'Dia livre com suporte', rel: 4, time: '10:00', baseType: 'Base Cidade', role: 'Concierge cidade', checklist: '' },
+      { phase: 'Retorno', title: 'Check-out + transfer aeroporto', rel: 'end', time: '10:00', baseType: 'Base Hotel', role: 'Concierge cidade', checklist: '' },
+      { phase: 'Retorno', title: 'Embarque de volta', rel: 'end', time: '14:00', baseType: 'Aeroporto Dubai', role: 'Base aeroporto Dubai', checklist: '' },
+      { phase: 'Pós-venda', title: 'Pós-venda + depoimento + próxima viagem', rel: 'end+2', time: '15:00', baseType: 'Suporte Brasil', role: 'Coordenador', checklist: '' },
+    ];
   }
 
-  const PLAYBOOKS = {
-    'dubai-explorer': {
-      id: 'pb-dubai-explorer', productSlug: 'dubai-explorer', productName: 'Dubai Explorer',
-      packageType: 'Pacote de entrada premium', complexity: 'média', duration: '8 dias / 7 noites',
-      customerProfile: 'Primeira viagem a Dubai',
-      title: 'Dubai Explorer · Operação',
-      description: 'Primeira experiência Fly com padrão superior a qualquer agência tradicional. Suporte humanizado do Brasil ao retorno, encantamento sem operação excessivamente cara.',
-      resumo: { nivel: 'Entrada premium', clienteIdeal: '1ª viagem Dubai', bases: 8, funcionarios: 6, etapas: 30, riscos: 'Insegurança · Idioma · Documento' },
-      jornada: GLOBAL_JOURNEY.map((t, i) => ({ etapa: t, resp: i < 16 ? 'Suporte Brasil' : (i < 22 ? 'Base Aeroporto Dubai' : 'Concierge cidade'), base: i < 16 ? 'Brasil' : 'Dubai', status: i < 3 ? 'ok' : 'pendente', risco: (t.includes('passaporte') || t.includes('Voo')) ? 'alto' : 'baixo' })),
-      roteiro: [
-        { dia: 0, fase: 'Pré-embarque', titulo: 'Confirmações finais', desc: 'Documentos, passaporte, passagem, hotel, roteiro, grupo WhatsApp, horário de saída, mala/carregador/cartão/celular' },
-        { dia: 1, fase: 'Saída do Brasil', titulo: 'Aeroporto Brasil', desc: 'Cliente sai de casa · suporte confirma Uber · acompanha chegada · check-in · despacho · embarque' },
-        { dia: 2, fase: 'Chegada Dubai', titulo: 'Transfer + hotel', desc: 'Base Aeroporto Dubai acompanha · imigração · bagagem · motorista · hotel · base cidade assume · check-in' },
-        { dia: 3, fase: 'Operação', titulo: '1º passeio', desc: 'Bom dia · horário/motorista/voucher confirmados · base acompanha execução · orientação do dia seguinte' },
-        { dia: 4, fase: 'Operação', titulo: 'Passeios clássicos', desc: 'Burj Khalifa · deserto · Aquaventure · Museu do Futuro · confirmar transfers e vouchers' },
-        { dia: 7, fase: 'Retorno', titulo: 'Check-out', desc: 'Confirmar check-out · transfer aeroporto · bagagem · embarque · agradecimento · abrir pós-venda' },
-      ],
-      bases: [
-        { name: 'Base Suporte Brasil', type: 'WhatsApp/remoto', priority: 'alta' },
-        { name: 'Base Aeroporto Brasil', type: 'Aeroporto', priority: 'alta' },
-        { name: 'Base Aeroporto Dubai', type: 'Aeroporto', priority: 'alta' },
-        { name: 'Base Hotel', type: 'Hotel', priority: 'normal' },
-        { name: 'Base Cidade', type: 'Cidade', priority: 'normal' },
-        { name: 'Base Passeios', type: 'Passeios', priority: 'normal' },
-        { name: 'Base WhatsApp', type: 'Suporte', priority: 'alta' },
-        { name: 'Base Emergência', type: 'Emergência', priority: 'crítica' },
-      ],
-      roles: baseRoles(),
-      checklists: GLOBAL_CHECKLISTS.concat([
-        { name: 'Suporte 1ª viagem', phase: 'extra', items: ['Explicar roteiro com calma', 'Confirmar que entendeu imigração', 'Tradutor/frases prontas', 'Check-in assistido remoto'] },
-      ]),
-      processos: [
-        { nome: 'Conduzir cliente de 1ª viagem', global: false },
-        { nome: 'Explicar o roteiro', global: false },
-        { nome: 'Suporte humanizado', global: false },
-        { nome: 'Encantar sem operação cara', global: false },
-        { nome: 'Cliente sai de casa', global: true },
-        { nome: 'Cliente chega ao aeroporto', global: true },
-        { nome: 'Cliente chega em Dubai', global: true },
-      ],
-      contingencias: GLOBAL_CONTINGENCIES.concat([
-        { problem: 'Cliente inseguro (1ª viagem)', sev: 'media', call: 'Suporte WhatsApp', steps: ['Ligar/áudio acalmando', 'Passo a passo do aeroporto', 'Acompanhar em tempo real'] },
-        { problem: 'Cliente não fala inglês', sev: 'media', call: 'Concierge', steps: ['Enviar frases prontas', 'Tradutor no WhatsApp', 'Motorista bilíngue'] },
-        { problem: 'Cliente perdido no aeroporto', sev: 'alta', call: 'Base Aeroporto Dubai', steps: ['Pedir localização/foto', 'Guiar por áudio', 'Enviar staff ao ponto'] },
-      ]),
-      experiencia: ['Sensação de segurança', '1ª experiência premium', 'Encantamento', '"Não estou sozinho em Dubai"'],
-      metricas: { clientesAtivos: 3, vendas: 18, receita: 486000, ocorrencias: 1, satisfacao: '94%', nps: 81 },
-    },
+  // Playbooks-base (editáveis depois via STATE)
+  function defaultPlaybooks() {
+    const mk = (slug, name, type, dur, prof, desc, exp) => ({
+      id: 'pb-' + slug, productSlug: slug, productName: name, packageType: type, duration: dur,
+      complexity: type.includes('VIP') ? 'crítica' : (slug.includes('gta') ? 'alta' : 'média'),
+      customerProfile: prof, description: desc, version: 1,
+      stepTemplates: defaultStepTemplates(), experiencia: exp,
+      metricas: { clientesAtivos: 0, vendas: 0, receita: 0, ocorrencias: 0, satisfacao: '—', nps: '—' },
+    });
+    const list = [
+      mk('dubai-explorer', 'Dubai Explorer', 'Pacote de entrada premium', '8 dias / 7 noites', '1ª viagem a Dubai',
+        'Primeira experiência Fly com padrão superior a qualquer agência tradicional. Suporte humanizado do Brasil ao retorno.',
+        ['Segurança', '1ª experiência premium', 'Encantamento', '"Não estou sozinho em Dubai"']),
+      mk('dubai-gta', 'Dubai GTA', 'Pacote aventura/adrenalina', '7 dias / 6 noites', 'Adrenalina · status',
+        'Dia de adrenalina coordenado: supercarros, jet ski/jet car, deserto, vida noturna.',
+        ['Adrenalina', 'Liberdade', 'Status', 'Sensação de filme/game em Dubai']),
+      mk('dubai-billionaire', 'Dubai Billionaire', 'Pacote VIP / luxo', '7 dias / 6 noites', 'Alto padrão',
+        'Confirmação dupla de tudo, atendimento prioritário e invisível, plano B obrigatório, relatório diário.',
+        ['Exclusividade', 'Poder', 'Luxo', 'Atendimento invisível']),
+    ];
+    const out = {};
+    list.forEach(p => { out[p.productSlug] = p; });
+    return out;
+  }
 
-    'dubai-gta': {
-      id: 'pb-dubai-gta', productSlug: 'dubai-gta', productName: 'Dubai GTA',
-      packageType: 'Pacote aventura/adrenalina', complexity: 'alta', duration: '7 dias / 6 noites',
-      customerProfile: 'Cliente aventura · adrenalina · status',
-      title: 'Dubai GTA · Operação',
-      description: 'Dia de adrenalina coordenado: supercarros, jet ski/jet car, deserto, vida noturna. Múltiplas experiências no mesmo dia exigem coordenação fina e segurança.',
-      resumo: { nivel: 'Aventura premium', clienteIdeal: 'Adrenalina/status', bases: 11, funcionarios: 8, etapas: 30, riscos: 'Experiência cancelada · Habilitação · Horário' },
-      jornada: GLOBAL_JOURNEY.map((t, i) => ({ etapa: t, resp: i < 16 ? 'Suporte Brasil' : 'Base Experiências', base: i < 16 ? 'Brasil' : 'Dubai', status: 'pendente', risco: i > 20 ? 'alto' : 'baixo' })),
-      roteiro: [
-        { dia: 0, fase: 'Pré-embarque', titulo: 'Confirmações + habilitação', desc: 'Documentos + validar habilitação p/ supercarro + termos de risco' },
-        { dia: 1, fase: 'Saída', titulo: 'Aeroporto', desc: 'Padrão global de embarque' },
-        { dia: 2, fase: 'Chegada', titulo: 'Transfer + hotel', desc: 'Padrão global de chegada' },
-        { dia: 3, fase: 'Adrenalina', titulo: 'Supercarros + autódromo', desc: 'Confirmar carro, seguro, regras de segurança, horário crítico' },
-        { dia: 4, fase: 'Adrenalina', titulo: 'Jet ski/Jet car + deserto', desc: 'Coordenar múltiplas experiências no mesmo dia' },
-        { dia: 5, fase: 'Noite', titulo: 'Vida noturna', desc: 'Reserva, motorista dedicado, retorno seguro' },
-        { dia: 6, fase: 'Retorno', titulo: 'Check-out', desc: 'Padrão global de retorno' },
-      ],
-      bases: ['Suporte Brasil', 'Aeroporto Brasil', 'Aeroporto Dubai', 'Hotel', 'Cidade', 'Passeios', 'WhatsApp', 'Emergência', 'Supercarros', 'Autódromo', 'Jet Ski/Jet Car', 'Vida Noturna', 'Experiências Radicais']
-        .map(b => ({ name: 'Base ' + b, type: b, priority: /Supercarros|Radicais|Emerg/.test(b) ? 'crítica' : 'normal' })),
-      roles: baseRoles().concat([
-        { role: 'Responsável experiências radicais', phase: 'Dias 3-5', risk: 'Segurança/atraso', backup: 'Coordenador' },
-        { role: 'Responsável supercarros', phase: 'Dia 3', risk: 'Carro indisponível', backup: 'Concierge premium' },
-        { role: 'Responsável vida noturna', phase: 'Dia 5', risk: 'Reserva/segurança', backup: 'Concierge' },
-      ]),
-      checklists: GLOBAL_CHECKLISTS.concat([
-        { name: 'Experiências radicais', phase: 'extra', items: ['Termo de risco assinado', 'Habilitação validada', 'Seguro confirmado', 'Briefing de segurança', 'Horário crítico travado'] },
-        { name: 'Supercarro', phase: 'extra', items: ['Carro confirmado', 'Caução/seguro', 'Rota definida', 'Combustível', 'Backup de carro'] },
-      ]),
-      processos: [
-        { nome: 'Operar dia de adrenalina', global: false },
-        { nome: 'Confirmar supercarro', global: false },
-        { nome: 'Lidar com atraso em experiência', global: false },
-        { nome: 'Coordenar múltiplas experiências no dia', global: false },
-        { nome: 'Cliente sai de casa', global: true },
-        { nome: 'Cliente chega em Dubai', global: true },
-      ],
-      contingencias: GLOBAL_CONTINGENCIES.concat([
-        { problem: 'Experiência radical cancelada', sev: 'alta', call: 'Resp. experiências', steps: ['Acionar fornecedor backup', 'Reordenar o dia', 'Compensar c/ alternativa', 'Comunicar cliente'] },
-        { problem: 'Supercarro indisponível', sev: 'alta', call: 'Resp. supercarros', steps: ['Acionar carro backup', 'Renegociar horário', 'Upgrade se possível'] },
-        { problem: 'Cliente sem habilitação válida', sev: 'media', call: 'Coordenador', steps: ['Trocar p/ experiência de passageiro', 'Realocar atividade', 'Registrar'] },
-      ]),
-      experiencia: ['Adrenalina', 'Liberdade', 'Status', 'Sensação de filme/game em Dubai'],
-      metricas: { clientesAtivos: 2, vendas: 9, receita: 387000, ocorrencias: 1, satisfacao: '90%', nps: 76 },
-    },
+  function seed() {
+    return {
+      __v: 2,
+      opDate: '2026-05-18',
+      editMode: true,
+      playbooks: defaultPlaybooks(),
+      operations: [],   // client_operations (com steps embutidos)
+      processes: defaultProcesses(),
+      contingencies: defaultContingencies(),
+      checklists: defaultChecklists(),
+      bases: defaultBases(),
+      employees: defaultEmployees(),
+      logs: [],
+    };
+  }
+  function load() {
+    if (STATE) return STATE;
+    try {
+      const raw = localStorage.getItem(KEY);
+      STATE = raw ? JSON.parse(raw) : seed();
+      if (!STATE || STATE.__v !== 2) STATE = seed();
+    } catch (e) { STATE = seed(); }
+    return STATE;
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(STATE)); } catch (e) {} dispatch(); }
+  function dispatch() { try { window.dispatchEvent(new CustomEvent('fly:ops-update')); } catch (e) {} }
+  function log(action, desc, by) {
+    load().logs.unshift({ id: uid('log'), at: Date.now(), opDate: STATE.opDate, action, desc: desc || '', by: by || 'painel' });
+    if (STATE.logs.length > 200) STATE.logs.length = 200;
+  }
 
-    'dubai-billionaire': {
-      id: 'pb-dubai-billionaire', productSlug: 'dubai-billionaire', productName: 'Dubai Billionaire',
-      packageType: 'Pacote VIP / luxo', complexity: 'crítica', duration: '7 dias / 6 noites',
-      customerProfile: 'Alto padrão · exige invisibilidade operacional',
-      title: 'Dubai Billionaire · Operação',
-      description: 'Cliente de alto padrão: confirmação dupla de tudo, atendimento prioritário e invisível, plano B obrigatório executado sem o cliente perceber, relatório diário para a liderança.',
-      resumo: { nivel: 'VIP/Luxo', clienteIdeal: 'Alto padrão', bases: 12, funcionarios: 8, etapas: 30, riscos: 'Reserva premium · Upgrade · Motorista' },
-      jornada: GLOBAL_JOURNEY.map((t, i) => ({ etapa: t, resp: 'Concierge dedicado', base: i < 16 ? 'Brasil' : 'Dubai', status: 'pendente', risco: 'alto' })),
-      roteiro: [
-        { dia: 0, fase: 'Pré-embarque', titulo: 'Confirmação dupla', desc: 'Tudo confirmado e reconfirmado · plano B montado · concierge dedicado escalado' },
-        { dia: 1, fase: 'Saída', titulo: 'Aeroporto assistido', desc: 'Check-in assistido · sala VIP · acompanhamento próximo' },
-        { dia: 2, fase: 'Chegada', titulo: 'Transfer premium', desc: 'Carro premium · fast-track imigração · hotel 5★ check-in assistido' },
-        { dia: 3, fase: 'Luxo', titulo: 'Experiências premium', desc: 'Yacht · supercarros premium · reservas de luxo · tudo pré-confirmado' },
-        { dia: 6, fase: 'Retorno', titulo: 'Check-out assistido', desc: 'Relatório final · transfer premium · agradecimento personalizado' },
-      ],
-      bases: ['Suporte Brasil', 'Aeroporto Dubai', 'VIP', 'Concierge dedicado', 'Supercarros Premium', 'Yacht', 'Segurança', 'Hotel 5★', 'Atendimento prioritário', 'Emergência', 'Cidade', 'WhatsApp']
-        .map(b => ({ name: 'Base ' + b, type: b, priority: 'crítica' })),
-      roles: [
-        { role: 'Coordenador VIP', phase: 'Todas', risk: 'Qualquer falha', backup: 'Liderança' },
-        { role: 'Concierge dedicado', phase: 'Todas', risk: 'Cliente insatisfeito', backup: 'Coordenador VIP' },
-        { role: 'Motorista premium', phase: 'Transfers', risk: 'Atraso', backup: 'Motorista premium reserva' },
-        { role: 'Segurança (se necessário)', phase: 'Sob demanda', risk: 'Segurança', backup: 'Coordenador VIP' },
-        { role: 'Suporte 24h', phase: 'Todas', risk: 'Resposta lenta', backup: 'Concierge' },
-        { role: 'Responsável luxo/experiências', phase: 'Passeios', risk: 'Reserva indisponível', backup: 'Coordenador VIP' },
-        { role: 'Gerente de relacionamento', phase: 'Todas', risk: 'Relacionamento', backup: 'Liderança' },
-      ],
-      checklists: GLOBAL_CHECKLISTS.concat([
-        { name: 'VIP', phase: 'extra', items: ['Confirmação dupla de tudo', 'Concierge dedicado escalado', 'Plano B montado', 'Sala VIP', 'Relatório diário p/ liderança'] },
-        { name: 'Plano B obrigatório', phase: 'extra', items: ['Carro backup', 'Reserva backup', 'Experiência substituta', 'Contato fornecedor alternativo'] },
-      ]),
-      processos: [
-        { nome: 'Operar cliente de alto padrão', global: false },
-        { nome: 'Antecipar problemas', global: false },
-        { nome: 'Confirmação dupla de tudo', global: false },
-        { nome: 'Manter atendimento prioritário', global: false },
-        { nome: 'Relatório diário p/ liderança', global: false },
-        { nome: 'Executar plano B sem o cliente perceber', global: false },
-      ],
-      contingencias: GLOBAL_CONTINGENCIES.concat([
-        { problem: 'Cliente insatisfeito com hotel', sev: 'crit', call: 'Coordenador VIP', steps: ['Resolver sem desgaste', 'Upgrade imediato', 'Compensação', 'Relatório liderança'] },
-        { problem: 'Reserva premium indisponível', sev: 'crit', call: 'Resp. luxo', steps: ['Acionar plano B pré-montado', 'Substituir sem o cliente perceber', 'Comunicar como "novidade"'] },
-        { problem: 'Motorista premium atrasou', sev: 'alta', call: 'Coordenador VIP', steps: ['Acionar motorista reserva', 'Avisar concierge', 'Compensar tempo'] },
-      ]),
-      experiencia: ['Exclusividade', 'Poder', 'Luxo', 'Atendimento invisível', 'Tudo resolvido antes do cliente pedir'],
-      metricas: { clientesAtivos: 1, vendas: 4, receita: 612000, ocorrencias: 0, satisfacao: '98%', nps: 92 },
-    },
-  };
-  // aliases comuns
-  PLAYBOOKS['dubai-bilionario'] = PLAYBOOKS['dubai-billionaire'];
-  PLAYBOOKS['billionaire'] = PLAYBOOKS['dubai-billionaire'];
+  /* ============ ENGINE: gerar operação por data ============ */
+  function resolveRel(rel, startISO, endISO) {
+    if (rel === 'end') return endISO || startISO;
+    if (typeof rel === 'string' && rel.indexOf('end+') === 0) return addDays(endISO || startISO, parseInt(rel.slice(4), 10) || 0);
+    return addDays(startISO, Number(rel) || 0);
+  }
+  function autoStatus(op) {
+    const t = STATE.opDate, s = op.tripStart, e = op.tripEnd;
+    if (op.statusManual) return op.status;
+    if (t < s) return 'Pré-embarque';
+    if (t === s) return 'Embarque';
+    if (t === addDays(s, 1)) return 'Chegada Dubai';
+    if (t > s && t <= e) return 'Em viagem';
+    if (t > e) return 'Pós-venda';
+    return 'Confirmado';
+  }
+  function generateOperation(payload) {
+    load();
+    const pb = getPlaybook(payload.product);
+    const start = payload.tripStart, end = payload.tripEnd || addDays(start, 7);
+    const op = {
+      id: uid('op'), clientName: payload.clientName, phone: payload.phone || '', instagram: payload.instagram || '',
+      product: pb.productName, productSlug: pb.productSlug, playbookId: pb.id, playbookVersion: pb.version || 1,
+      tripType: payload.tripType || 'solo', origin: payload.origin || '', hotel: payload.hotel || '',
+      leadSource: payload.leadSource || '', tripStart: start, tripEnd: end,
+      baseId: payload.baseId || '', employeeId: payload.employeeId || '',
+      status: 'Confirmado', statusManual: false, notes: payload.notes || '',
+      createdAt: Date.now(),
+      steps: (pb.stepTemplates || defaultStepTemplates()).map((t, i) => ({
+        id: uid('st'), order: i, title: t.title, phase: t.phase,
+        scheduledDate: resolveRel(t.rel, start, end), scheduledTime: t.time || '',
+        baseType: t.baseType || '', role: t.role || '', checklistName: t.checklist || '',
+        status: 'pendente', completedAt: null, employeeId: '', baseId: '', notes: '',
+        checkDone: {},
+      })),
+    };
+    op.status = autoStatus(op);
+    STATE.operations.unshift(op);
+    log('op_create', `Operação criada: ${op.clientName} · ${op.product} · ida ${fmtBR(start)}`, payload.by);
+    save();
+    return op;
+  }
+
+  /* ============ MUTADORES (CRUD + James) ============ */
+  function setOpDate(iso) { load().opDate = iso; STATE.operations.forEach(o => { o.status = autoStatus(o); }); log('opdate', 'Data operacional: ' + fmtBR(iso)); save(); }
+  function shiftOpDate(n) { setOpDate(addDays(load().opDate, n)); }
+  function getOp(id) { return load().operations.find(o => o.id === id); }
+  function deleteOp(id) { const o = getOp(id); load().operations = STATE.operations.filter(x => x.id !== id); if (o) log('op_delete', 'Operação removida: ' + o.clientName); save(); }
+  function updateStep(opId, stepId, patch) {
+    const o = getOp(opId); if (!o) return; const s = o.steps.find(x => x.id === stepId); if (!s) return;
+    Object.assign(s, patch);
+    if (patch.status === 'concluido' && !s.completedAt) s.completedAt = Date.now();
+    log('step_update', `${o.clientName} · etapa "${s.title}" → ${patch.status || 'editada'}`, patch.by);
+    save();
+  }
+  function addStep(opId, after) {
+    const o = getOp(opId); if (!o) return;
+    const idx = after != null ? o.steps.findIndex(x => x.id === after) : o.steps.length - 1;
+    o.steps.splice(idx + 1, 0, { id: uid('st'), order: 0, title: 'Nova etapa', phase: 'Operação', scheduledDate: STATE.opDate, scheduledTime: '', baseType: '', role: '', checklistName: '', status: 'pendente', completedAt: null, employeeId: '', baseId: '', notes: '', checkDone: {} });
+    o.steps.forEach((s, i) => s.order = i);
+    log('step_add', o.clientName + ' · etapa adicionada'); save();
+  }
+  function removeStep(opId, stepId) { const o = getOp(opId); if (!o) return; o.steps = o.steps.filter(s => s.id !== stepId); log('step_del', o.clientName + ' · etapa removida'); save(); }
+
+  // CRUD genérico p/ bibliotecas
+  const COLL = { processes: 'processes', contingencies: 'contingencies', checklists: 'checklists', bases: 'bases', employees: 'employees' };
+  function upsert(kind, obj) {
+    load(); const arr = STATE[COLL[kind]]; if (!arr) return;
+    if (obj.id) { const i = arr.findIndex(x => x.id === obj.id); if (i >= 0) arr[i] = obj; else arr.push(obj); }
+    else { obj.id = uid(kind); arr.unshift(obj); }
+    log(kind + '_save', (obj.title || obj.name) + ' salvo'); save(); return obj;
+  }
+  function removeEntity(kind, id) { load(); STATE[COLL[kind]] = (STATE[COLL[kind]] || []).filter(x => x.id !== id); log(kind + '_del', 'item removido'); save(); }
 
   function getPlaybook(nameOrSlug) {
-    const slug = slugify(nameOrSlug);
-    if (PLAYBOOKS[slug]) return PLAYBOOKS[slug];
-    // match parcial (ex: "dubai explorer 2026")
-    const hit = Object.keys(PLAYBOOKS).find(k => slug.indexOf(k) === 0 || k.indexOf(slug) === 0);
-    if (hit) return PLAYBOOKS[hit];
-    return genericPlaybook(nameOrSlug || 'Pacote');
+    load(); const slug = slugify(nameOrSlug);
+    if (STATE.playbooks[slug]) return STATE.playbooks[slug];
+    const hit = Object.keys(STATE.playbooks).find(k => slug.indexOf(k) === 0 || k.indexOf(slug) === 0);
+    if (hit) return STATE.playbooks[hit];
+    // gera e persiste um playbook genérico p/ qualquer produto novo
+    const name = nameOrSlug || 'Pacote';
+    const pb = { id: 'pb-' + slug, productSlug: slug, productName: name, packageType: 'Pacote', duration: '7-8 dias', complexity: 'média', customerProfile: 'Cliente Fly premium', description: 'Playbook padrão Fly aplicado a ' + name + '.', version: 1, stepTemplates: defaultStepTemplates(), experiencia: ['Segurança', 'Suporte próximo', 'Padrão acima de agência comum'], metricas: { clientesAtivos: 0, vendas: 0, receita: 0, ocorrencias: 0, satisfacao: '—', nps: '—' } };
+    STATE.playbooks[slug] = pb; save(); return pb;
   }
-  function listPlaybooks() {
-    const seen = {};
-    return Object.values(PLAYBOOKS).filter(p => (seen[p.id] ? false : (seen[p.id] = true)));
-  }
+  function listPlaybooks() { load(); return Object.values(STATE.playbooks); }
+  function savePlaybook(pb) { load(); pb.version = (pb.version || 1) + 1; STATE.playbooks[pb.productSlug] = pb; log('pb_save', pb.productName + ' · playbook v' + pb.version); save(); }
 
-  /* ================================================================
-     DADOS AO VIVO (mock — pronto p/ trocar por Supabase)
-     ================================================================ */
-  const STATUS_CLI = ['Pré-embarque', 'Indo p/ aeroporto', 'Embarcado', 'Chegou em Dubai', 'Em transfer', 'Check-in hotel', 'Em passeio', 'Livre', 'Em suporte', 'Retornando'];
-  function liveData() {
+  /* ============ JAMES ============ */
+  function summary() {
+    load(); const t = STATE.opDate;
+    const viajando = STATE.operations.filter(o => o.tripStart <= t && o.tripEnd >= t);
+    const embarcando = STATE.operations.filter(o => o.tripStart === t);
     return {
-      clientes: [
-        { nome: 'Adrian Matheus', pacote: 'Dubai Explorer', ida: '18/05', volta: '25/05', status: 'Indo p/ aeroporto', local: 'Galeão · RJ', proximo: 'Confirmar chegada ao aeroporto', resp: 'João', base: 'Suporte Brasil' },
-        { nome: 'Marina Costa', pacote: 'Dubai Billionaire', ida: '17/05', volta: '24/05', status: 'Em passeio', local: 'Palm Jumeirah', proximo: 'Yacht 16h', resp: 'Concierge VIP', base: 'Base VIP' },
-        { nome: 'Rafael Lima', pacote: 'Dubai GTA', ida: '16/05', volta: '23/05', status: 'Livre', local: 'Downtown', proximo: 'Supercarro amanhã 09h', resp: 'Bruno', base: 'Base Supercarros' },
-        { nome: 'Juliana Reis', pacote: 'Dubai Explorer', ida: '15/05', volta: '22/05', status: 'Check-in hotel', local: 'Novotel Al Barsha', proximo: 'Briefing roteiro', resp: 'Carla', base: 'Base Hotel' },
-        { nome: 'Pedro Alves', pacote: 'Dubai Family', ida: '19/05', volta: '27/05', status: 'Pré-embarque', local: 'São Paulo · BR', proximo: 'Confirmar documentos', resp: 'João', base: 'Suporte Brasil' },
-      ],
-      escala: [
-        { nome: 'João', funcao: 'Suporte WhatsApp', base: 'Suporte Brasil', idiomas: 'PT/EN', status: 'Em atendimento', cliente: 'Adrian' },
-        { nome: 'Carla', funcao: 'Concierge cidade', base: 'Base Hotel', idiomas: 'PT/EN/AR', status: 'Disponível', cliente: '—' },
-        { nome: 'Bruno', funcao: 'Resp. supercarros', base: 'Base Supercarros', idiomas: 'PT/EN', status: 'Aguardando cliente', cliente: 'Rafael' },
-        { nome: 'Yara', funcao: 'Base aeroporto Dubai', base: 'Aeroporto Dubai', idiomas: 'EN/AR', status: 'Disponível', cliente: '—' },
-        { nome: 'Concierge VIP', funcao: 'Concierge dedicado', base: 'Base VIP', idiomas: 'PT/EN', status: 'Em atendimento', cliente: 'Marina' },
-        { nome: 'Lucas', funcao: 'Motorista/transfer', base: 'Base Cidade', idiomas: 'EN', status: 'Em deslocamento', cliente: 'Marina' },
-        { nome: 'Sofia', funcao: 'Operador emergência', base: 'Base Emergência', idiomas: 'PT/EN', status: 'Disponível', cliente: '—' },
-        { nome: 'Tariq', funcao: 'Suporte passeios', base: 'Base Passeios', idiomas: 'EN/AR', status: 'Disponível', cliente: '—' },
-      ],
-      ocorrencias: [
-        { cliente: 'Rafael Lima', pacote: 'Dubai GTA', tipo: 'Passeio', sev: 'media', status: 'Em andamento', desc: 'Supercarro remarcado p/ amanhã 09h', resp: 'Bruno' },
-        { cliente: 'Adrian Matheus', pacote: 'Dubai Explorer', tipo: 'Documento', sev: 'baixa', status: 'Resolvida', desc: 'Dúvida sobre visto on-arrival — esclarecida', resp: 'João' },
-      ],
-      logs: [
-        { h: '08:42', user: 'João', cli: 'Adrian', acao: 'Cliente saiu de casa', st: 'ok' },
-        { h: '08:55', user: 'Sistema', cli: 'Adrian', acao: 'Uber confirmado p/ Galeão', st: 'ok' },
-        { h: '09:10', user: 'Concierge VIP', cli: 'Marina', acao: 'Yacht reconfirmado 16h', st: 'ok' },
-        { h: '09:25', user: 'Bruno', cli: 'Rafael', acao: 'Ocorrência: supercarro remarcado', st: 'warn' },
-        { h: '09:40', user: 'James', cli: '—', acao: 'Resumo operacional gerado', st: 'ok' },
-      ],
+      dataOperacional: t, diaSemana: weekday(t),
+      clientesEmViagem: viajando.length, embarcandoHoje: embarcando.length,
+      operacoes: STATE.operations.length, funcionarios: STATE.employees.length,
+      bases: STATE.bases.length, processos: STATE.processes.length,
+      contingencias: STATE.contingencies.length,
+      clientes: STATE.operations.slice(0, 12).map(o => ({ nome: o.clientName, pacote: o.product, ida: o.tripStart, status: autoStatus(o) })),
     };
   }
+  function james(cmd) {
+    const t = String(cmd || '').toLowerCase();
+    // adiciona cliente X no PACOTE viajando dia D
+    let m = t.match(/(adiciona|cria|gera).*(cliente|opera[çc][aã]o).*?\b([a-zà-ú][\wà-ú\s]{1,40}?)\b.*?(no|para|pra)\s+([\wà-ú\s]{3,40}?)\s+(viajando|via?gem|dia)\s+(?:dia\s+)?(\d{1,2})\s*(?:de\s+)?([\wç]+)?/i);
+    if (m) {
+      const nome = m[3].trim().replace(/\b\w/g, c => c.toUpperCase());
+      const pacote = m[5].trim();
+      const dia = parseInt(m[7], 10);
+      const meses = { janeiro: 1, fevereiro: 2, marco: 3, 'março': 3, abril: 4, maio: 5, junho: 6, julho: 7, agosto: 8, setembro: 9, outubro: 10, novembro: 11, dezembro: 12 };
+      const mes = meses[(m[8] || '').toLowerCase()] || parseInt((STATE.opDate).split('-')[1], 10);
+      const ano = parseInt(STATE.opDate.split('-')[0], 10);
+      const startISO = `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+      const op = generateOperation({ clientName: nome, product: pacote, tripStart: startISO, tripEnd: addDays(startISO, 7), by: 'James' });
+      return { ok: true, msg: `Operação criada: ${nome} · ${op.product} · ida ${fmtBR(startISO)}. ${op.steps.length} etapas geradas.` };
+    }
+    if (/(o que (temos|tem) hoje|opera[çc][aã]o de hoje|clientes? (de )?hoje)/.test(t)) {
+      const s = summary();
+      return { ok: true, msg: `Hoje (${fmtBR(s.dataOperacional)}, ${s.diaSemana}): ${s.clientesEmViagem} em viagem, ${s.embarcandoHoje} embarcando, ${s.operacoes} operações no total.` };
+    }
+    if (/clientes? (que )?viaj(a|am).*(semana|essa semana)/.test(t)) {
+      const ini = STATE.opDate, fim = addDays(ini, 7);
+      const list = STATE.operations.filter(o => o.tripStart >= ini && o.tripStart <= fim);
+      return { ok: true, msg: list.length ? ('Viajando essa semana: ' + list.map(o => `${o.clientName} (${o.product}, ${fmtBR(o.tripStart)})`).join('; ')) : 'Ninguém viajando nos próximos 7 dias.' };
+    }
+    return { ok: false, msg: 'Comando de operação não reconhecido. Ex: "James, adiciona o cliente Adrian no Dubai Explorer viajando dia 25 de maio".' };
+  }
 
-  /* ================================================================
-     CSS (injeta uma vez · preto/dourado centro de comando)
-     ================================================================ */
+  /* ============ CSS ============ */
   function injectCSS() {
     if (document.getElementById('flyops-css')) return;
-    const s = document.createElement('style');
-    s.id = 'flyops-css';
+    const s = document.createElement('style'); s.id = 'flyops-css';
     s.textContent = `
-      .flyops{--g:#c6a85a;--gb:#f5b842;color:#e8dfc8;font-family:inherit;padding:4px 2px 60px}
-      .flyops-hero{background:linear-gradient(135deg,rgba(198,168,90,.14),rgba(0,0,0,.5));border:1px solid rgba(198,168,90,.3);border-radius:16px;padding:22px 24px;margin-bottom:18px;position:relative;overflow:hidden}
-      .flyops-hero h1{font-size:26px;letter-spacing:3px;color:#fff;margin:0 0 6px;font-weight:800}
-      .flyops-hero .sub{color:var(--g);font-size:12px;letter-spacing:2px;text-transform:uppercase}
-      .flyops-hero .desc{color:rgba(232,223,200,.7);font-size:13px;margin-top:10px;max-width:880px;line-height:1.6}
-      .flyops-pitch{background:rgba(198,168,90,.08);border-left:3px solid var(--gb);padding:12px 16px;border-radius:8px;margin:14px 0;font-size:13px;color:#f0e6cc;font-style:italic}
-      .flyops-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0}
-      .flyops-card{background:rgba(0,0,0,.45);border:1px solid rgba(198,168,90,.22);border-radius:12px;padding:14px}
-      .flyops-card .ic{font-size:18px}.flyops-card .n{font-size:24px;font-weight:800;color:#fff;margin:6px 0 2px}
-      .flyops-card .l{font-size:10.5px;letter-spacing:1px;color:rgba(232,223,200,.55);text-transform:uppercase}
-      .flyops-sec{margin:26px 0 10px;display:flex;align-items:center;gap:10px}
-      .flyops-sec h2{font-size:15px;letter-spacing:2px;color:var(--gb);margin:0;text-transform:uppercase;font-weight:700}
+      .flyops{--g:#c6a85a;--gb:#f5b842;color:#e8dfc8;font-family:inherit;padding:4px 2px 70px}
+      .flyops-hero{background:linear-gradient(135deg,rgba(198,168,90,.14),rgba(0,0,0,.5));border:1px solid rgba(198,168,90,.3);border-radius:16px;padding:20px 22px;margin-bottom:14px}
+      .flyops-hero h1{font-size:24px;letter-spacing:3px;color:#fff;margin:0 0 4px;font-weight:800}
+      .flyops-hero .sub{color:var(--g);font-size:11px;letter-spacing:2px;text-transform:uppercase}
+      .flyops-hero .desc{color:rgba(232,223,200,.7);font-size:12.5px;margin-top:8px;max-width:880px;line-height:1.55}
+      .flyops-datebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(0,0,0,.5);border:1px solid rgba(198,168,90,.3);border-radius:12px;padding:12px 16px;margin-bottom:14px}
+      .flyops-datebar .dt{font-size:18px;font-weight:800;color:#fff}
+      .flyops-datebar .dw{color:var(--g);font-size:12px;letter-spacing:1px}
+      .flyops-pitch{background:rgba(198,168,90,.08);border-left:3px solid var(--gb);padding:11px 15px;border-radius:8px;margin:12px 0;font-size:12.5px;color:#f0e6cc;font-style:italic}
+      .flyops-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:12px 0}
+      .flyops-card{background:rgba(0,0,0,.45);border:1px solid rgba(198,168,90,.22);border-radius:12px;padding:13px}
+      .flyops-card .ic{font-size:17px}.flyops-card .n{font-size:22px;font-weight:800;color:#fff;margin:5px 0 2px}
+      .flyops-card .l{font-size:10px;letter-spacing:1px;color:rgba(232,223,200,.55);text-transform:uppercase}
+      .flyops-sec{margin:24px 0 8px;display:flex;align-items:center;gap:10px}
+      .flyops-sec h2{font-size:14px;letter-spacing:2px;color:var(--gb);margin:0;text-transform:uppercase;font-weight:700}
       .flyops-sec .line{flex:1;height:1px;background:rgba(198,168,90,.18)}
-      .flyops-tbl{width:100%;border-collapse:collapse;font-size:12.5px;background:rgba(0,0,0,.35);border-radius:10px;overflow:hidden}
-      .flyops-tbl th{background:rgba(198,168,90,.1);color:var(--g);text-align:left;padding:9px 12px;font-size:10.5px;letter-spacing:1px;text-transform:uppercase}
-      .flyops-tbl td{padding:9px 12px;border-top:1px solid rgba(255,255,255,.05);color:#ddd2b4}
+      .flyops-tbl{width:100%;border-collapse:collapse;font-size:12px;background:rgba(0,0,0,.35);border-radius:10px;overflow:hidden}
+      .flyops-tbl th{background:rgba(198,168,90,.1);color:var(--g);text-align:left;padding:8px 11px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
+      .flyops-tbl td{padding:8px 11px;border-top:1px solid rgba(255,255,255,.05);color:#ddd2b4}
       .flyops-tbl tr:hover td{background:rgba(198,168,90,.05)}
-      .flyops-pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px}
-      .fp-ok{background:rgba(109,255,176,.15);color:#6dffb0}
-      .fp-warn{background:rgba(255,193,71,.16);color:#ffcf6b}
-      .fp-crit{background:rgba(255,118,118,.16);color:#ff8c8c}
-      .fp-info{background:rgba(126,207,255,.14);color:#8fd0ff}
-      .flyops-tl{position:relative;padding-left:26px;margin:12px 0}
-      .flyops-tl::before{content:'';position:absolute;left:8px;top:4px;bottom:4px;width:2px;background:rgba(198,168,90,.3)}
-      .flyops-tl-i{position:relative;margin-bottom:12px;padding:10px 14px;background:rgba(0,0,0,.4);border:1px solid rgba(198,168,90,.16);border-radius:10px}
-      .flyops-tl-i::before{content:'';position:absolute;left:-22px;top:16px;width:10px;height:10px;border-radius:50%;background:var(--gb);box-shadow:0 0 8px rgba(245,184,66,.5)}
-      .flyops-tl-i .t{font-weight:700;color:#fff;font-size:13px}
+      .flyops-pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
+      .fp-ok{background:rgba(109,255,176,.15);color:#6dffb0}.fp-warn{background:rgba(255,193,71,.16);color:#ffcf6b}
+      .fp-crit{background:rgba(255,118,118,.16);color:#ff8c8c}.fp-info{background:rgba(126,207,255,.14);color:#8fd0ff}
+      .flyops-tl{position:relative;padding-left:24px;margin:10px 0}
+      .flyops-tl::before{content:'';position:absolute;left:7px;top:4px;bottom:4px;width:2px;background:rgba(198,168,90,.3)}
+      .flyops-tl-i{position:relative;margin-bottom:10px;padding:10px 13px;background:rgba(0,0,0,.4);border:1px solid rgba(198,168,90,.16);border-radius:10px}
+      .flyops-tl-i::before{content:'';position:absolute;left:-20px;top:15px;width:9px;height:9px;border-radius:50%;background:var(--gb)}
+      .flyops-tl-i.done::before{background:#6dffb0}.flyops-tl-i.late::before{background:#ff8c8c}
+      .flyops-tl-i .t{font-weight:700;color:#fff;font-size:12.5px}
       .flyops-tl-i .m{font-size:11px;color:rgba(232,223,200,.6);margin-top:3px}
       .flyops-grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
-      .flyops-box{background:rgba(0,0,0,.4);border:1px solid rgba(198,168,90,.18);border-radius:12px;padding:14px}
-      .flyops-box h3{margin:0 0 8px;font-size:13px;color:var(--gb);letter-spacing:1px}
-      .flyops-box ul{margin:6px 0 0;padding-left:18px;font-size:12px;color:#ddd2b4;line-height:1.7}
+      .flyops-box{background:rgba(0,0,0,.4);border:1px solid rgba(198,168,90,.18);border-radius:12px;padding:13px}
+      .flyops-box h3{margin:0 0 7px;font-size:12.5px;color:var(--gb);letter-spacing:1px}
+      .flyops-box ul{margin:5px 0 0;padding-left:17px;font-size:11.5px;color:#ddd2b4;line-height:1.65}
+      .flyops-btn{background:rgba(198,168,90,.12);border:1px solid rgba(198,168,90,.35);color:var(--gb);border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:700;letter-spacing:.5px}
+      .flyops-btn:hover{background:rgba(198,168,90,.22)}.flyops-btn.primary{background:var(--gb);color:#1a1407}
+      .flyops-btn.sm{padding:4px 9px;font-size:10px}
+      .flyops-btn.danger{border-color:rgba(255,118,118,.4);color:#ff9b9b}
       .flyops-acc{border:1px solid rgba(198,168,90,.18);border-radius:10px;margin-bottom:8px;overflow:hidden}
-      .flyops-acc-h{padding:12px 14px;background:rgba(198,168,90,.07);cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:700;color:#fff;font-size:13px}
-      .flyops-acc-b{padding:12px 14px;display:none;border-top:1px solid rgba(198,168,90,.12)}
+      .flyops-acc-h{padding:11px 13px;background:rgba(198,168,90,.07);cursor:pointer;display:flex;justify-content:space-between;gap:8px;align-items:center;font-weight:700;color:#fff;font-size:12.5px}
+      .flyops-acc-b{padding:12px 13px;display:none;border-top:1px solid rgba(198,168,90,.12)}
       .flyops-acc.open .flyops-acc-b{display:block}
-      .flyops-btn{background:rgba(198,168,90,.12);border:1px solid rgba(198,168,90,.35);color:var(--gb);border-radius:8px;padding:8px 16px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:700;letter-spacing:1px}
-      .flyops-btn:hover{background:rgba(198,168,90,.22)}
-      .flyops-btn.primary{background:var(--gb);color:#1a1407}
-      .flyops-present{position:fixed;inset:0;background:#070707;z-index:2147483000;overflow:auto;padding:48px 6vw}
-      .flyops-present .close{position:fixed;top:20px;right:24px}
+      .flyops-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:2147483200;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:40px 16px}
+      .flyops-modal{background:#0c0d12;border:1px solid rgba(198,168,90,.35);border-radius:16px;max-width:560px;width:100%;padding:22px}
+      .flyops-modal h3{margin:0 0 14px;color:var(--gb);font-size:15px;letter-spacing:1px}
+      .flyops-modal label{display:block;font-size:10.5px;color:var(--g);letter-spacing:1px;text-transform:uppercase;margin:10px 0 4px}
+      .flyops-modal input,.flyops-modal select,.flyops-modal textarea{width:100%;background:rgba(0,0,0,.5);border:1px solid rgba(198,168,90,.25);color:#fff;border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;box-sizing:border-box}
+      .flyops-modal textarea{min-height:64px;resize:vertical}
+      .flyops-modal .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      .flyops-modal .acts{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+      .flyops-present{position:fixed;inset:0;background:#070707;z-index:2147483000;overflow:auto;padding:44px 6vw}
+      .flyops-present .close{position:fixed;top:18px;right:22px}
+      .flyops-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
     `;
     document.head.appendChild(s);
   }
 
-  /* ================================================================
-     RENDER HELPERS
-     ================================================================ */
-  function sevPill(s) {
-    const m = { baixa: 'fp-info', media: 'fp-warn', alta: 'fp-warn', crit: 'fp-crit', crítica: 'fp-crit' };
-    const lbl = { baixa: 'BAIXA', media: 'MÉDIA', alta: 'ALTA', crit: 'CRÍTICA', 'crítica': 'CRÍTICA' };
-    return `<span class="flyops-pill ${m[s] || 'fp-info'}">${lbl[s] || String(s).toUpperCase()}</span>`;
+  /* ============ MODAIS ============ */
+  function modal(title, bodyHTML, onSave) {
+    const bg = document.createElement('div'); bg.className = 'flyops-modal-bg flyops';
+    bg.innerHTML = `<div class="flyops-modal"><h3>${esc(title)}</h3><div class="flyops-mbody">${bodyHTML}</div>
+      <div class="acts"><button class="flyops-btn" data-cancel>Cancelar</button><button class="flyops-btn primary" data-ok>Salvar</button></div></div>`;
+    document.body.appendChild(bg);
+    const close = () => bg.remove();
+    bg.querySelector('[data-cancel]').onclick = close;
+    bg.addEventListener('click', e => { if (e.target === bg) close(); });
+    bg.querySelector('[data-ok]').onclick = () => { if (onSave(bg) !== false) close(); };
+    return bg;
   }
-  function sec(title) { return `<div class="flyops-sec"><h2>${esc(title)}</h2><div class="line"></div></div>`; }
-
-  function pkgResumoCards(p) {
-    const r = p.resumo;
-    const items = [
-      ['📦', p.productName, 'Pacote'], ['⭐', r.nivel, 'Nível'],
-      ['🎯', p.customerProfile, 'Cliente ideal'], ['⏱', p.duration, 'Duração'],
-      ['🧩', p.complexity, 'Complexidade'], ['📍', r.bases, 'Bases'],
-      ['👥', r.funcionarios, 'Funcionários'], ['🗺️', r.etapas, 'Etapas'],
-      ['⚠️', r.riscos, 'Riscos principais'], ['✅', 'Ativo', 'Playbook'],
-    ];
-    return `<div class="flyops-cards">${items.map(([ic, n, l]) =>
-      `<div class="flyops-card"><div class="ic">${ic}</div><div class="n" style="font-size:${String(n).length > 10 ? '14px' : '24px'}">${esc(n)}</div><div class="l">${esc(l)}</div></div>`).join('')}</div>`;
+  function field(label, name, val, type) {
+    if (type === 'textarea') return `<label>${esc(label)}</label><textarea name="${name}">${esc(val || '')}</textarea>`;
+    if (type === 'date') return `<label>${esc(label)}</label><input type="date" name="${name}" value="${esc(val || '')}">`;
+    return `<label>${esc(label)}</label><input name="${name}" value="${esc(val || '')}" type="${type || 'text'}">`;
   }
-
-  function pkgBody(p, opts) {
-    opts = opts || {};
-    const journeyHTML = p.jornada.map(j =>
-      `<div class="flyops-tl-i"><div class="t">${esc(j.etapa)} ${j.risco === 'alto' ? sevPill('alta') : ''}</div>
-       <div class="m">Responsável: <b>${esc(j.resp)}</b> · Base: ${esc(j.base || '—')} · ${j.status === 'ok' ? '<span class="flyops-pill fp-ok">OK</span>' : '<span class="flyops-pill fp-info">PENDENTE</span>'}</div></div>`).join('');
-    const roteiroHTML = p.roteiro.map(r =>
-      `<div class="flyops-tl-i"><div class="t">DIA ${esc(r.dia)} · ${esc(r.fase)} — ${esc(r.titulo)}</div><div class="m">${esc(r.desc)}</div></div>`).join('');
-    const basesHTML = `<table class="flyops-tbl"><tr><th>Base</th><th>Tipo</th><th>Prioridade</th></tr>${p.bases.map(b =>
-      `<tr><td>${esc(b.name)}</td><td>${esc(b.type)}</td><td>${sevPill(b.priority === 'normal' ? 'baixa' : b.priority)}</td></tr>`).join('')}</table>`;
-    const rolesHTML = `<table class="flyops-tbl"><tr><th>Função</th><th>Atua em</th><th>Risco que cobre</th><th>Plano B</th></tr>${p.roles.map(r =>
-      `<tr><td>${esc(r.role)}</td><td>${esc(r.phase)}</td><td>${esc(r.risk)}</td><td>${esc(r.backup)}</td></tr>`).join('')}</table>`;
-    const checksHTML = `<div class="flyops-grid2">${p.checklists.map(c =>
-      `<div class="flyops-box"><h3>${esc(c.name)}</h3><ul>${c.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`).join('')}</div>`;
-    const procHTML = `<div class="flyops-grid2">${p.processos.map(pr =>
-      `<div class="flyops-box"><h3>${esc(pr.nome)}</h3><span class="flyops-pill ${pr.global ? 'fp-info' : 'fp-ok'}">${pr.global ? 'GLOBAL' : 'ESPECÍFICO'}</span></div>`).join('')}</div>`;
-    const contHTML = p.contingencias.map(c =>
-      `<div class="flyops-acc"><div class="flyops-acc-h" data-acc>${esc(c.problem)} ${sevPill(c.sev)}</div>
-       <div class="flyops-acc-b"><div class="m" style="color:var(--g);font-size:11px;margin-bottom:6px">Acionar: ${esc(c.call)}</div><ol style="margin:0;padding-left:18px;font-size:12px;line-height:1.8;color:#ddd2b4">${c.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol></div></div>`).join('');
-    const expHTML = `<div class="flyops-cards">${p.experiencia.map(e =>
-      `<div class="flyops-card"><div class="ic">✨</div><div class="n" style="font-size:14px">${esc(e)}</div></div>`).join('')}</div>`;
-    const m = p.metricas;
-    const metHTML = `<div class="flyops-cards">${[
-      ['👥', m.clientesAtivos, 'Clientes ativos'], ['🛒', m.vendas, 'Vendas'],
-      ['💰', 'R$ ' + (m.receita || 0).toLocaleString('pt-BR'), 'Receita'],
-      ['⚠️', m.ocorrencias, 'Ocorrências'], ['😊', m.satisfacao, 'Satisfação'], ['📈', m.nps, 'NPS'],
-    ].map(([ic, n, l]) => `<div class="flyops-card"><div class="ic">${ic}</div><div class="n" style="font-size:${String(n).length > 9 ? '15px' : '24px'}">${esc(n)}</div><div class="l">${esc(l)}</div></div>`).join('')}</div>`;
-
-    return `
-      ${opts.presentation ? `<div class="flyops-pitch">A Fly não vende apenas pacotes. A Fly opera experiências ponta a ponta, com processos, bases, pessoas, tecnologia e suporte em cada etapa da jornada.</div>` : ''}
-      ${sec('1 · Resumo Operacional')}${pkgResumoCards(p)}
-      <p class="flyops-hero-desc" style="color:rgba(232,223,200,.7);font-size:13px;line-height:1.6">${esc(p.description)}</p>
-      ${sec('2 · Jornada do Cliente')}<div class="flyops-tl">${journeyHTML}</div>
-      ${sec('3 · Roteiro Dia a Dia')}<div class="flyops-tl">${roteiroHTML}</div>
-      ${sec('4 · Bases Fly Envolvidas')}${basesHTML}
-      ${sec('5 · Funções & Responsáveis')}${rolesHTML}
-      ${sec('6 · Checklists Operacionais')}${checksHTML}
-      ${sec('7 · Processos Padrão')}${procHTML}
-      ${sec('8 · Contingências')}${contHTML}
-      ${sec('9 · Experiência do Cliente')}${expHTML}
-      ${sec('10 · Métricas Operacionais')}${metHTML}
-      ${sec('11 · Integração com James')}<div class="flyops-box"><ul>
-        <li>"James, abre a operação do ${esc(p.productName)}"</li>
-        <li>"James, mostra o roteiro operacional do ${esc(p.productName)}"</li>
-        <li>"James, quais bases atendem o ${esc(p.productName)}?"</li>
-        <li>"James, prepara apresentação operacional do ${esc(p.productName)} para investidor"</li>
-      </ul></div>`;
+  function selField(label, name, val, opts) {
+    return `<label>${esc(label)}</label><select name="${name}">${opts.map(o => `<option ${String(o) === String(val) ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
   }
+  const V = (bg, n) => { const el = bg.querySelector(`[name="${n}"]`); return el ? el.value.trim() : ''; };
 
-  function wireAcc(host) {
-    host.querySelectorAll('[data-acc]').forEach(h => h.addEventListener('click', () => h.parentElement.classList.toggle('open')));
-  }
-
-  /* ================================================================
-     RENDER · OPERAÇÃO DE 1 PACOTE (usado na aba "Operação" do PACOTES)
-     ================================================================ */
-  function renderPackage(host, nameOrSlug, opts) {
-    if (!host) return;
-    opts = opts || {};
-    injectCSS();
-    const p = getPlaybook(nameOrSlug);
-    host.classList.add('flyops');
-    host.innerHTML = `
-      <div class="flyops-hero">
-        <div class="sub">Operação do Pacote · Playbook vinculado</div>
-        <h1>🗺️ ${esc(p.productName)}</h1>
-        <div class="sub" style="color:rgba(232,223,200,.5)">${esc(p.packageType)} · ${esc(p.duration)} · complexidade ${esc(p.complexity)}</div>
-        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-          <button class="flyops-btn primary" data-present>🎬 Modo Apresentação</button>
-          <button class="flyops-btn" data-open-geral>🛰️ Ver Operação Geral</button>
-        </div>
-      </div>
-      ${pkgBody(p, opts)}`;
-    wireAcc(host);
-    const pres = host.querySelector('[data-present]');
-    if (pres) pres.addEventListener('click', () => openPresentation(p));
-    const og = host.querySelector('[data-open-geral]');
-    if (og) og.addEventListener('click', () => {
-      try { window.__jamesContext && window.__jamesContext.trackAction && window.__jamesContext.trackAction('open_ops_geral', { from: p.productSlug }); } catch (e) {}
-      alert('A Operação Geral fica em Estrutura Corporativa → item com formato de painel "Operações".');
+  function openAddClient(slug, after) {
+    load();
+    const pbs = listPlaybooks().map(p => p.productName);
+    const start = STATE.opDate;
+    modal('+ Adicionar Cliente em Viagem', `
+      ${field('Nome do cliente', 'clientName', '')}
+      <div class="row">${field('Telefone', 'phone', '')}${field('Instagram', 'instagram', '')}</div>
+      ${selField('Pacote comprado', 'product', slug ? getPlaybook(slug).productName : pbs[0], pbs)}
+      <div class="row">${selField('Tipo', 'tripType', 'grupo', ['solo', 'duo', 'grupo', 'personalizado'])}${field('Origem do lead', 'leadSource', 'Instagram')}</div>
+      <div class="row">${field('Data de ida', 'tripStart', addDays(start, 7), 'date')}${field('Data de volta', 'tripEnd', addDays(start, 14), 'date')}</div>
+      <div class="row">${field('Aeroporto origem', 'origin', 'GRU')}${field('Hotel', 'hotel', '')}</div>
+      ${field('Observações', 'notes', '', 'textarea')}
+    `, (bg) => {
+      const name = V(bg, 'clientName'); if (!name) { alert('Informe o nome do cliente.'); return false; }
+      const op = generateOperation({
+        clientName: name, phone: V(bg, 'phone'), instagram: V(bg, 'instagram'),
+        product: V(bg, 'product'), tripType: V(bg, 'tripType'), leadSource: V(bg, 'leadSource'),
+        tripStart: V(bg, 'tripStart'), tripEnd: V(bg, 'tripEnd'), origin: V(bg, 'origin'),
+        hotel: V(bg, 'hotel'), notes: V(bg, 'notes'),
+      });
+      if (typeof after === 'function') after(op);
     });
   }
 
-  function openPresentation(p) {
-    injectCSS();
-    const ov = document.createElement('div');
-    ov.className = 'flyops flyops-present';
-    ov.innerHTML = `
-      <button class="flyops-btn close" data-close>✕ Fechar</button>
-      <div class="flyops-hero">
-        <div class="sub">FLY COMPANY · OPERAÇÃO PONTA A PONTA</div>
-        <h1>${esc(p.productName)}</h1>
-        <div class="flyops-pitch">A Fly não vende apenas pacotes. A Fly opera experiências ponta a ponta, com processos, bases, pessoas, tecnologia e suporte em cada etapa da jornada.</div>
-      </div>
-      ${pkgBody(p, { presentation: true })}`;
-    document.body.appendChild(ov);
-    wireAcc(ov);
-    ov.querySelector('[data-close]').addEventListener('click', () => ov.remove());
+  function openStepEditor(opId, stepId) {
+    const o = getOp(opId); const s = o.steps.find(x => x.id === stepId); if (!s) return;
+    const emps = ['—'].concat(STATE.employees.map(e => e.name));
+    const bs = ['—'].concat(STATE.bases.map(b => b.name));
+    modal('Editar etapa', `
+      ${field('Título', 'title', s.title)}
+      <div class="row">${field('Data', 'scheduledDate', s.scheduledDate, 'date')}${field('Horário', 'scheduledTime', s.scheduledTime)}</div>
+      <div class="row">${selField('Status', 'status', s.status, ['pendente', 'em_andamento', 'concluido', 'pulado', 'problema'])}${field('Fase', 'phase', s.phase)}</div>
+      <div class="row">${selField('Base responsável', 'baseName', (STATE.bases.find(b => b.id === s.baseId) || {}).name || s.baseType || '—', bs)}${selField('Funcionário', 'empName', (STATE.employees.find(e => e.id === s.employeeId) || {}).name || '—', emps)}</div>
+      ${field('Observações', 'notes', s.notes, 'textarea')}
+    `, (bg) => {
+      const bn = V(bg, 'baseName'), en = V(bg, 'empName');
+      updateStep(opId, stepId, {
+        title: V(bg, 'title'), scheduledDate: V(bg, 'scheduledDate'), scheduledTime: V(bg, 'scheduledTime'),
+        status: V(bg, 'status'), phase: V(bg, 'phase'), notes: V(bg, 'notes'),
+        baseId: (STATE.bases.find(b => b.name === bn) || {}).id || '',
+        employeeId: (STATE.employees.find(e => e.name === en) || {}).id || '',
+      });
+    });
   }
 
-  /* ================================================================
-     RENDER · CENTRAL MACRO (formato "Operações" · Estrutura Corp.)
-     ================================================================ */
-  function renderGeneral(host) {
-    if (!host) return;
-    injectCSS();
-    const L = liveData();
-    const playbooks = listPlaybooks();
-    const disp = L.escala.filter(e => e.status === 'Disponível').length;
-    const atend = L.escala.filter(e => e.status === 'Em atendimento').length;
-    const ocAbertas = L.ocorrencias.filter(o => o.status !== 'Resolvida').length;
-    host.classList.add('flyops');
+  // Editor genérico de biblioteca
+  function openEntityEditor(kind, id) {
+    load(); const arr = STATE[COLL[kind]] || [];
+    const cur = id ? Object.assign({}, arr.find(x => x.id === id)) : {};
+    let body = '';
+    if (kind === 'employees') body = `${field('Nome', 'name', cur.name)}<div class="row">${field('Função', 'role', cur.role)}${field('Base', 'base', cur.base)}</div><div class="row">${field('WhatsApp', 'whatsapp', cur.whatsapp)}${field('Idiomas', 'langs', cur.langs)}</div>${selField('Status', 'status', cur.status || 'Disponível', ['Disponível', 'Em atendimento', 'Em deslocamento', 'De folga', 'Indisponível'])}${field('Observações', 'notes', cur.notes, 'textarea')}`;
+    else if (kind === 'bases') body = `${field('Nome', 'name', cur.name)}<div class="row">${field('Tipo', 'type', cur.type)}${field('Localização', 'location', cur.location)}</div><div class="row">${selField('Status', 'status', cur.status || 'ativa', ['ativa', 'inativa', 'sobrecarregada'])}${field('Capacidade', 'capacity', cur.capacity)}</div>${field('Observações', 'notes', cur.notes, 'textarea')}`;
+    else if (kind === 'checklists') body = `${field('Nome', 'name', cur.name)}<div class="row">${field('Fase', 'phase', cur.phase)}${field('Produto (vazio = global)', 'product', cur.product)}</div>${field('Itens (1 por linha)', 'items', (cur.items || []).join('\n'), 'textarea')}`;
+    else if (kind === 'processes') body = `${field('Nome', 'title', cur.title)}<div class="row">${field('Categoria', 'category', cur.category)}${selField('Risco', 'risk', cur.risk || 'media', ['baixa', 'media', 'alta', 'crit'])}</div>${field('Produto (vazio = global)', 'product', cur.product)}${field('Passo a passo (1 por linha)', 'steps', (cur.steps || []).join('\n'), 'textarea')}`;
+    else body = `${field('Título', 'title', cur.title)}<div class="row">${selField('Gravidade', 'sev', cur.sev || 'media', ['baixa', 'media', 'alta', 'crit'])}${field('Acionar', 'call', cur.call)}</div>${field('Produto (vazio = global)', 'product', cur.product)}${field('Solução passo a passo (1 por linha)', 'steps', (cur.steps || []).join('\n'), 'textarea')}`;
+    modal((id ? 'Editar' : 'Novo') + ' · ' + kind, body, (bg) => {
+      const obj = Object.assign({}, cur);
+      if (kind === 'employees') Object.assign(obj, { name: V(bg, 'name'), role: V(bg, 'role'), base: V(bg, 'base'), whatsapp: V(bg, 'whatsapp'), langs: V(bg, 'langs'), status: V(bg, 'status'), notes: V(bg, 'notes') });
+      else if (kind === 'bases') Object.assign(obj, { name: V(bg, 'name'), type: V(bg, 'type'), location: V(bg, 'location'), status: V(bg, 'status'), capacity: V(bg, 'capacity'), notes: V(bg, 'notes') });
+      else if (kind === 'checklists') Object.assign(obj, { name: V(bg, 'name'), phase: V(bg, 'phase'), product: V(bg, 'product'), global: !V(bg, 'product'), items: V(bg, 'items').split('\n').map(x => x.trim()).filter(Boolean) });
+      else if (kind === 'processes') Object.assign(obj, { title: V(bg, 'title'), category: V(bg, 'category'), risk: V(bg, 'risk'), product: V(bg, 'product'), global: !V(bg, 'product'), steps: V(bg, 'steps').split('\n').map(x => x.trim()).filter(Boolean) });
+      else Object.assign(obj, { title: V(bg, 'title'), sev: V(bg, 'sev'), call: V(bg, 'call'), product: V(bg, 'product'), global: !V(bg, 'product'), steps: V(bg, 'steps').split('\n').map(x => x.trim()).filter(Boolean) });
+      upsert(kind, obj);
+    });
+  }
 
-    const cards = [
-      ['🧳', L.clientes.length, 'Clientes em viagem'],
-      ['🛫', L.clientes.filter(c => /aeroporto|Pré/.test(c.status)).length, 'Embarcando hoje'],
-      ['🛬', L.clientes.filter(c => /Chegou|transfer|Check-in/.test(c.status)).length, 'Chegando em Dubai'],
-      ['🗺️', L.clientes.filter(c => c.status === 'Em passeio').length, 'Em passeio agora'],
-      ['🟢', disp, 'Funcionários disponíveis'],
-      ['🎧', atend, 'Em atendimento'],
-      ['📍', new Set(L.escala.map(e => e.base)).size, 'Bases ativas'],
-      ['⚠️', ocAbertas, 'Ocorrências abertas'],
-    ];
+  /* ============ RENDER HELPERS ============ */
+  function sevPill(s) {
+    const m = { baixa: 'fp-info', media: 'fp-warn', alta: 'fp-warn', crit: 'fp-crit' };
+    return `<span class="flyops-pill ${m[s] || 'fp-info'}">${String(s || '').toUpperCase()}</span>`;
+  }
+  function sec(t) { return `<div class="flyops-sec"><h2>${esc(t)}</h2><div class="line"></div></div>`; }
+  function dateBar(host, rerender) {
+    const t = STATE.opDate;
+    return `<div class="flyops-datebar">
+      <div><div class="dt">📅 ${fmtBR(t)}</div><div class="dw">Data Operacional · ${weekday(t)}</div></div>
+      <div style="flex:1"></div>
+      <button class="flyops-btn sm" data-d="-1">◀ Dia</button>
+      <button class="flyops-btn sm" data-d="today">Hoje</button>
+      <button class="flyops-btn sm" data-d="1">Dia ▶</button>
+      <button class="flyops-btn sm" data-d="set">Alterar data</button>
+    </div>`;
+  }
+  function wireDateBar(host, rerender) {
+    host.querySelectorAll('[data-d]').forEach(b => b.addEventListener('click', () => {
+      const v = b.dataset.d;
+      if (v === 'today') setOpDate('2026-05-18');
+      else if (v === 'set') { const x = prompt('Data operacional (AAAA-MM-DD):', STATE.opDate); if (x && /^\d{4}-\d{2}-\d{2}$/.test(x)) setOpDate(x); }
+      else shiftOpDate(parseInt(v, 10));
+      rerender();
+    }));
+  }
+  function wireAcc(host) { host.querySelectorAll('[data-acc]').forEach(h => h.addEventListener('click', e => { if (e.target.closest('.flyops-btn')) return; h.parentElement.classList.toggle('open'); })); }
 
-    const cliRows = L.clientes.map((c, i) => `<tr>
-      <td><b>${esc(c.nome)}</b></td><td>${esc(c.pacote)}</td><td>${esc(c.ida)}→${esc(c.volta)}</td>
-      <td><span class="flyops-pill fp-info">${esc(c.status)}</span></td><td>${esc(c.local)}</td>
-      <td>${esc(c.proximo)}</td><td>${esc(c.resp)}</td><td>${esc(c.base)}</td>
-      <td><button class="flyops-btn" data-cli="${i}" style="padding:4px 10px;font-size:10px">Ver operação</button></td></tr>`).join('');
-
-    const escRows = L.escala.map(e => {
-      const st = e.status === 'Disponível' ? 'fp-ok' : (e.status === 'Em atendimento' ? 'fp-warn' : 'fp-info');
-      return `<tr><td><b>${esc(e.nome)}</b></td><td>${esc(e.funcao)}</td><td>${esc(e.base)}</td><td>${esc(e.idiomas)}</td><td><span class="flyops-pill ${st}">${esc(e.status)}</span></td><td>${esc(e.cliente)}</td></tr>`;
+  /* ============ RENDER · OPERAÇÃO DO CLIENTE ============ */
+  function renderClientOp(host, opId, backFn) {
+    const o = getOp(opId); if (!o) { host.innerHTML = '<p style="color:#c6a85a;padding:30px">Operação não encontrada.</p>'; return; }
+    o.status = autoStatus(o);
+    const t = STATE.opDate;
+    const stepsHTML = o.steps.slice().sort((a, b) => (a.scheduledDate + a.scheduledTime).localeCompare(b.scheduledDate + b.scheduledTime)).map(s => {
+      const late = s.status !== 'concluido' && s.status !== 'pulado' && s.scheduledDate < t;
+      const cls = s.status === 'concluido' ? 'done' : (late ? 'late' : '');
+      const emp = (STATE.employees.find(e => e.id === s.employeeId) || {}).name;
+      const base = (STATE.bases.find(b => b.id === s.baseId) || {}).name || s.baseType;
+      return `<div class="flyops-tl-i ${cls}">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+          <div class="t">${esc(s.title)} <span class="flyops-pill ${s.status === 'concluido' ? 'fp-ok' : (late ? 'fp-crit' : 'fp-info')}">${esc(s.status)}</span></div>
+          <div style="display:flex;gap:5px;flex-shrink:0">
+            <button class="flyops-btn sm" data-edit="${s.id}">✎</button>
+            <button class="flyops-btn sm" data-done="${s.id}">✓</button>
+            <button class="flyops-btn sm danger" data-rm="${s.id}">✕</button>
+          </div>
+        </div>
+        <div class="m">📅 ${fmtBR(s.scheduledDate)} ${esc(s.scheduledTime)} · ${esc(s.phase)} · base: ${esc(base || '—')} · resp: ${esc(emp || s.role || '—')}${s.notes ? ' · 📝 ' + esc(s.notes) : ''}</div>
+      </div>`;
     }).join('');
+    host.innerHTML = `
+      <div class="flyops-hero">
+        <div class="sub">Operação do Cliente</div>
+        <h1>🧳 ${esc(o.clientName)}</h1>
+        <div class="sub" style="color:rgba(232,223,200,.6)">${esc(o.product)} · ${fmtBR(o.tripStart)} → ${fmtBR(o.tripEnd)} · <span class="flyops-pill fp-info">${esc(o.status)}</span></div>
+        <div class="flyops-toolbar">
+          <button class="flyops-btn" data-back>← Voltar</button>
+          <button class="flyops-btn" data-addstep>+ Adicionar etapa</button>
+          <button class="flyops-btn danger" data-delop>Excluir operação</button>
+        </div>
+      </div>
+      ${sec('Timeline da operação · datas reais')}
+      <div class="flyops-tl">${stepsHTML || '<p style="color:#c6a85a">Sem etapas.</p>'}</div>`;
+    host.querySelector('[data-back]').onclick = backFn;
+    host.querySelector('[data-addstep]').onclick = () => { addStep(o.id); renderClientOp(host, opId, backFn); };
+    host.querySelector('[data-delop]').onclick = () => { if (confirm('Excluir a operação de ' + o.clientName + '?')) { deleteOp(o.id); backFn(); } };
+    host.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { openStepEditor(o.id, b.dataset.edit); setTimeout(() => renderClientOp(host, opId, backFn), 50); });
+    host.querySelectorAll('[data-done]').forEach(b => b.onclick = () => { updateStep(o.id, b.dataset.done, { status: 'concluido' }); renderClientOp(host, opId, backFn); });
+    host.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { if (confirm('Remover etapa?')) { removeStep(o.id, b.dataset.rm); renderClientOp(host, opId, backFn); } });
+    window.addEventListener('fly:ops-update', function _u() { if (!document.body.contains(host)) { window.removeEventListener('fly:ops-update', _u); return; } }, { once: true });
+  }
 
-    const ocRows = L.ocorrencias.map(o => `<tr><td><b>${esc(o.cliente)}</b></td><td>${esc(o.pacote)}</td><td>${esc(o.tipo)}</td><td>${sevPill(o.sev)}</td><td><span class="flyops-pill ${o.status === 'Resolvida' ? 'fp-ok' : 'fp-warn'}">${esc(o.status)}</span></td><td>${esc(o.desc)}</td><td>${esc(o.resp)}</td></tr>`).join('');
+  /* ============ RENDER · CENTRAL MACRO ============ */
+  function renderGeneral(host) {
+    if (!host) return; injectCSS(); load(); host.classList.add('flyops');
+    const rerender = () => renderGeneral(host);
+    const t = STATE.opDate;
+    const ops = STATE.operations;
+    const viajando = ops.filter(o => o.tripStart <= t && o.tripEnd >= t);
+    const embarcando = ops.filter(o => o.tripStart === t);
+    const chegando = ops.filter(o => o.tripStart === addDays(t, -1));
+    const disp = STATE.employees.filter(e => e.status === 'Disponível').length;
+    const ed = STATE.editMode;
 
-    const logRows = L.logs.map(l => `<tr><td>${esc(l.h)}</td><td>${esc(l.user)}</td><td>${esc(l.cli)}</td><td>${esc(l.acao)}</td><td><span class="flyops-pill ${l.st === 'ok' ? 'fp-ok' : 'fp-warn'}">${l.st.toUpperCase()}</span></td></tr>`).join('');
+    const cards = [['🧳', viajando.length, 'Em viagem hoje'], ['🛫', embarcando.length, 'Embarcando hoje'],
+      ['🛬', chegando.length, 'Chegando Dubai'], ['📋', ops.length, 'Operações totais'],
+      ['🟢', disp, 'Func. disponíveis'], ['📍', STATE.bases.length, 'Bases'],
+      ['📑', STATE.processes.length, 'Processos'], ['⚠️', STATE.contingencies.length, 'Contingências']];
 
-    const pbAcc = playbooks.map(p => `<div class="flyops-acc"><div class="flyops-acc-h" data-acc>📦 ${esc(p.productName)} <span class="flyops-pill fp-info">${esc(p.complexity)} · ${p.bases.length} bases</span></div><div class="flyops-acc-b">
-      <div class="m" style="color:rgba(232,223,200,.7);font-size:12px;margin-bottom:8px">${esc(p.description)}</div>
-      <button class="flyops-btn" data-pb="${esc(p.productSlug)}">Abrir playbook completo</button></div></div>`).join('');
+    const cliRows = ops.length ? ops.map(o => `<tr>
+      <td><b>${esc(o.clientName)}</b></td><td>${esc(o.product)}</td><td>${fmtBR(o.tripStart)}→${fmtBR(o.tripEnd)}</td>
+      <td><span class="flyops-pill fp-info">${esc(autoStatus(o))}</span></td>
+      <td>${esc((o.steps.find(s => s.status !== 'concluido') || {}).title || 'Concluída')}</td>
+      <td><button class="flyops-btn sm" data-op="${o.id}">Abrir operação</button></td></tr>`).join('')
+      : '<tr><td colspan="6" style="text-align:center;color:rgba(232,223,200,.5);padding:18px">Nenhum cliente. Clique em "+ Adicionar Cliente em Viagem".</td></tr>';
+
+    // Calendário: hoje + 7 dias
+    let cal = '';
+    for (let i = 0; i < 8; i++) {
+      const d = addDays(t, i);
+      const evs = [];
+      ops.forEach(o => o.steps.forEach(s => { if (s.scheduledDate === d) evs.push(`${esc(o.clientName)}: ${esc(s.title)} ${esc(s.scheduledTime)}`); }));
+      cal += `<div class="flyops-box"><h3>${i === 0 ? 'HOJE · ' : ''}${fmtBR(d)} · ${weekday(d)}</h3>${evs.length ? '<ul>' + evs.map(e => `<li>${e}</li>`).join('') + '</ul>' : '<div style="color:rgba(232,223,200,.4);font-size:11px">Sem eventos</div>'}</div>`;
+    }
+
+    const lib = (title, kind, rows) => `${sec(title)}${ed ? `<div class="flyops-toolbar"><button class="flyops-btn sm" data-new="${kind}">+ Novo</button></div>` : ''}<table class="flyops-tbl">${rows}</table>`;
+    const procRows = `<tr><th>Processo</th><th>Categoria</th><th>Risco</th><th>Escopo</th>${ed ? '<th></th>' : ''}</tr>` + STATE.processes.map(p => `<tr><td>${esc(p.title)}</td><td>${esc(p.category)}</td><td>${sevPill(p.risk)}</td><td>${p.global ? 'Global' : esc(p.product)}</td>${ed ? `<td><button class="flyops-btn sm" data-ed="processes:${p.id}">✎</button> <button class="flyops-btn sm danger" data-del="processes:${p.id}">✕</button></td>` : ''}</tr>`).join('');
+    const contRows = `<tr><th>Contingência</th><th>Gravidade</th><th>Acionar</th><th>Escopo</th>${ed ? '<th></th>' : ''}</tr>` + STATE.contingencies.map(c => `<tr><td>${esc(c.title)}</td><td>${sevPill(c.sev)}</td><td>${esc(c.call)}</td><td>${c.global ? 'Global' : esc(c.product)}</td>${ed ? `<td><button class="flyops-btn sm" data-ed="contingencies:${c.id}">✎</button> <button class="flyops-btn sm danger" data-del="contingencies:${c.id}">✕</button></td>` : ''}</tr>`).join('');
+    const chkRows = `<tr><th>Checklist</th><th>Fase</th><th>Itens</th><th>Escopo</th>${ed ? '<th></th>' : ''}</tr>` + STATE.checklists.map(c => `<tr><td>${esc(c.name)}</td><td>${esc(c.phase)}</td><td>${(c.items || []).length}</td><td>${c.global ? 'Global' : esc(c.product)}</td>${ed ? `<td><button class="flyops-btn sm" data-ed="checklists:${c.id}">✎</button> <button class="flyops-btn sm danger" data-del="checklists:${c.id}">✕</button></td>` : ''}</tr>`).join('');
+    const baseRows = `<tr><th>Base</th><th>Tipo</th><th>Local</th><th>Status</th>${ed ? '<th></th>' : ''}</tr>` + STATE.bases.map(b => `<tr><td>${esc(b.name)}</td><td>${esc(b.type)}</td><td>${esc(b.location)}</td><td><span class="flyops-pill ${b.status === 'ativa' ? 'fp-ok' : 'fp-warn'}">${esc(b.status)}</span></td>${ed ? `<td><button class="flyops-btn sm" data-ed="bases:${b.id}">✎</button> <button class="flyops-btn sm danger" data-del="bases:${b.id}">✕</button></td>` : ''}</tr>`).join('');
+    const empRows = `<tr><th>Nome</th><th>Função</th><th>Base</th><th>Status</th>${ed ? '<th></th>' : ''}</tr>` + STATE.employees.map(e => `<tr><td>${esc(e.name)}</td><td>${esc(e.role)}</td><td>${esc(e.base)}</td><td><span class="flyops-pill ${e.status === 'Disponível' ? 'fp-ok' : 'fp-warn'}">${esc(e.status)}</span></td>${ed ? `<td><button class="flyops-btn sm" data-ed="employees:${e.id}">✎</button> <button class="flyops-btn sm danger" data-del="employees:${e.id}">✕</button></td>` : ''}</tr>`).join('');
+    const logRows = `<tr><th>Quando</th><th>Por</th><th>Ação</th><th>Detalhe</th></tr>` + STATE.logs.slice(0, 20).map(l => `<tr><td>${new Date(l.at).toLocaleString('pt-BR')}</td><td>${esc(l.by)}</td><td>${esc(l.action)}</td><td>${esc(l.desc)}</td></tr>`).join('');
 
     host.innerHTML = `
       <div class="flyops-hero">
         <div class="sub">Estrutura Corporativa · Centro de Comando</div>
         <h1>🛰️ OPERAÇÕES FLY</h1>
-        <div class="desc">O cérebro operacional da Fly. Quem atende, onde, quando, como, o que fazer se der errado e qual o próximo passo do cliente — do Brasil ao retorno. Cada pacote tem seu playbook; aqui é a visão macro de todos.</div>
+        <div class="desc">Sistema operacional vivo: data programável, clientes geram operação automática por data, tudo editável pelo painel e pelo James.</div>
+        <div class="flyops-toolbar">
+          <button class="flyops-btn primary" data-addcli>+ Adicionar Cliente em Viagem</button>
+          <button class="flyops-btn" data-toggle>${ed ? '👁 Modo Apresentação' : '✎ Modo Edição'}</button>
+        </div>
       </div>
-      ${sec('1 · Visão Geral da Operação')}
-      <div class="flyops-cards">${cards.map(([ic, n, l]) => `<div class="flyops-card"><div class="ic">${ic}</div><div class="n">${n}</div><div class="l">${l}</div></div>`).join('')}</div>
-      ${sec('2 · Clientes em Viagem')}
-      <table class="flyops-tbl"><tr><th>Cliente</th><th>Pacote</th><th>Datas</th><th>Status</th><th>Local</th><th>Próximo passo</th><th>Resp.</th><th>Base</th><th></th></tr>${cliRows}</table>
-      ${sec('3 · Roteiros por Pacote (Playbooks)')}
-      ${pbAcc}
-      ${sec('4 · Escala de Funcionários')}
-      <table class="flyops-tbl"><tr><th>Nome</th><th>Função</th><th>Base</th><th>Idiomas</th><th>Status</th><th>Cliente</th></tr>${escRows}</table>
-      ${sec('5 · Contingências & Ocorrências')}
-      <table class="flyops-tbl"><tr><th>Cliente</th><th>Pacote</th><th>Tipo</th><th>Gravidade</th><th>Status</th><th>Descrição</th><th>Resp.</th></tr>${ocRows}</table>
-      ${sec('6 · Logs Operacionais')}
-      <table class="flyops-tbl"><tr><th>Hora</th><th>Usuário</th><th>Cliente</th><th>Ação</th><th>Status</th></tr>${logRows}</table>
-      ${sec('7 · Integração com James')}
-      <div class="flyops-box"><ul>
-        <li>"James, me mostra clientes embarcando hoje"</li>
-        <li>"James, quem atende o Adrian hoje?"</li>
-        <li>"James, qual base cobre o Dubai Explorer amanhã?"</li>
-        <li>"James, abre uma ocorrência: cliente esqueceu passaporte"</li>
-        <li>"James, qual o processo se o cliente perder o voo?"</li>
-      </ul></div>`;
-    wireAcc(host);
-    host.querySelectorAll('[data-pb]').forEach(b => b.addEventListener('click', () => {
-      const p = getPlaybook(b.dataset.pb);
-      openPresentation(p);
-    }));
-    host.querySelectorAll('[data-cli]').forEach(b => b.addEventListener('click', () => {
-      const c = L.clientes[+b.dataset.cli];
-      openPresentation(getPlaybook(c.pacote));
-    }));
+      ${dateBar(host, rerender)}
+      ${sec('Visão Geral · pela data operacional')}
+      <div class="flyops-cards">${cards.map(([i, n, l]) => `<div class="flyops-card"><div class="ic">${i}</div><div class="n">${n}</div><div class="l">${l}</div></div>`).join('')}</div>
+      ${sec('Clientes em Viagem')}
+      <table class="flyops-tbl"><tr><th>Cliente</th><th>Pacote</th><th>Datas</th><th>Status</th><th>Próximo passo</th><th></th></tr>${cliRows}</table>
+      ${sec('Calendário Operacional · hoje + 7 dias')}
+      <div class="flyops-grid2">${cal}</div>
+      ${lib('Biblioteca de Processos', 'processes', procRows)}
+      ${lib('Contingências', 'contingencies', contRows)}
+      ${lib('Checklists', 'checklists', chkRows)}
+      ${lib('Bases Fly', 'bases', baseRows)}
+      ${lib('Funcionários', 'employees', empRows)}
+      ${sec('Logs Operacionais')}<table class="flyops-tbl">${logRows}</table>
+      ${sec('Integração com James')}<div class="flyops-box"><ul>
+        <li>"James, adiciona o cliente Adrian no Dubai Explorer viajando dia 25 de maio"</li>
+        <li>"James, mostra o que temos hoje na operação"</li>
+        <li>"James, quais clientes viajam essa semana?"</li></ul></div>`;
+
+    wireDateBar(host, rerender);
+    host.querySelector('[data-addcli]').onclick = () => openAddClient(null, rerender);
+    host.querySelector('[data-toggle]').onclick = () => { STATE.editMode = !STATE.editMode; save(); rerender(); };
+    host.querySelectorAll('[data-op]').forEach(b => b.onclick = () => renderClientOp(host, b.dataset.op, rerender));
+    host.querySelectorAll('[data-new]').forEach(b => b.onclick = () => { openEntityEditor(b.dataset.new); setTimeout(rerender, 60); });
+    host.querySelectorAll('[data-ed]').forEach(b => b.onclick = () => { const [k, id] = b.dataset.ed.split(':'); openEntityEditor(k, id); setTimeout(rerender, 60); });
+    host.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { const [k, id] = b.dataset.del.split(':'); if (confirm('Remover item?')) { removeEntity(k, id); rerender(); } });
   }
 
-  /* ================================================================
-     API
-     ================================================================ */
+  /* ============ RENDER · OPERAÇÃO DO PACOTE ============ */
+  function pkgBody(pb, presentation) {
+    load();
+    const ops = STATE.operations.filter(o => o.productSlug === pb.productSlug);
+    const stepsHTML = (pb.stepTemplates || []).map(s => `<div class="flyops-tl-i"><div class="t">${esc(s.title)} <span class="flyops-pill fp-info">dia ${esc(String(s.rel))}</span></div><div class="m">${esc(s.phase)} · ${esc(s.time)} · base: ${esc(s.baseType)} · resp: ${esc(s.role)}${s.checklist ? ' · checklist: ' + esc(s.checklist) : ''}</div></div>`).join('');
+    const expHTML = `<div class="flyops-cards">${(pb.experiencia || []).map(e => `<div class="flyops-card"><div class="ic">✨</div><div class="n" style="font-size:13px">${esc(e)}</div></div>`).join('')}</div>`;
+    const m = pb.metricas || {};
+    const liveOps = ops.length ? `<table class="flyops-tbl"><tr><th>Cliente</th><th>Ida</th><th>Status</th></tr>${ops.map(o => `<tr><td>${esc(o.clientName)}</td><td>${fmtBR(o.tripStart)}</td><td><span class="flyops-pill fp-info">${esc(autoStatus(o))}</span></td></tr>`).join('')}</table>` : '<p style="color:rgba(232,223,200,.5);font-size:12px">Nenhuma operação ativa deste pacote ainda.</p>';
+    return `
+      ${presentation ? `<div class="flyops-pitch">A Fly não vende apenas pacotes. A Fly opera experiências ponta a ponta, com processos, bases, pessoas, tecnologia e suporte em cada etapa da jornada.</div>` : ''}
+      ${sec('Resumo Operacional')}
+      <div class="flyops-cards">
+        <div class="flyops-card"><div class="ic">📦</div><div class="n" style="font-size:14px">${esc(pb.productName)}</div><div class="l">Pacote</div></div>
+        <div class="flyops-card"><div class="ic">⭐</div><div class="n" style="font-size:13px">${esc(pb.packageType)}</div><div class="l">Nível</div></div>
+        <div class="flyops-card"><div class="ic">⏱</div><div class="n" style="font-size:14px">${esc(pb.duration)}</div><div class="l">Duração</div></div>
+        <div class="flyops-card"><div class="ic">🧩</div><div class="n" style="font-size:14px">${esc(pb.complexity)}</div><div class="l">Complexidade</div></div>
+        <div class="flyops-card"><div class="ic">🗺️</div><div class="n">${(pb.stepTemplates || []).length}</div><div class="l">Etapas</div></div>
+        <div class="flyops-card"><div class="ic">📌</div><div class="n">v${pb.version || 1}</div><div class="l">Versão playbook</div></div>
+      </div>
+      <p style="color:rgba(232,223,200,.7);font-size:12.5px;line-height:1.55">${esc(pb.description)}</p>
+      ${sec('Operações ativas deste pacote')}${liveOps}
+      ${sec('Playbook · etapas modelo (dia relativo à ida)')}<div class="flyops-tl">${stepsHTML}</div>
+      ${sec('Experiência do Cliente')}${expHTML}
+      ${sec('Métricas Operacionais')}
+      <div class="flyops-cards">
+        <div class="flyops-card"><div class="ic">👥</div><div class="n">${ops.length}</div><div class="l">Operações</div></div>
+        <div class="flyops-card"><div class="ic">😊</div><div class="n" style="font-size:16px">${esc(m.satisfacao || '—')}</div><div class="l">Satisfação</div></div>
+        <div class="flyops-card"><div class="ic">📈</div><div class="n" style="font-size:16px">${esc(m.nps || '—')}</div><div class="l">NPS</div></div>
+      </div>`;
+  }
+  function renderPackage(host, nameOrSlug) {
+    if (!host) return; injectCSS(); load(); host.classList.add('flyops');
+    const pb = getPlaybook(nameOrSlug);
+    const rerender = () => renderPackage(host, nameOrSlug);
+    host.innerHTML = `
+      <div class="flyops-hero">
+        <div class="sub">Operação do Pacote · playbook vinculado</div>
+        <h1>🗺️ ${esc(pb.productName)}</h1>
+        <div class="flyops-toolbar">
+          <button class="flyops-btn primary" data-present>🎬 Modo Apresentação</button>
+          <button class="flyops-btn" data-addcli>+ Cliente neste pacote</button>
+          <button class="flyops-btn" data-editpb>✎ Editar Playbook</button>
+        </div>
+      </div>
+      ${pkgBody(pb, false)}`;
+    wireAcc(host);
+    host.querySelector('[data-present]').onclick = () => openPresentation(pb);
+    host.querySelector('[data-addcli]').onclick = () => openAddClient(pb.productSlug, rerender);
+    host.querySelector('[data-editpb]').onclick = () => {
+      modal('Editar Playbook · ' + pb.productName, `${field('Nome', 'productName', pb.productName)}${field('Tipo/Nível', 'packageType', pb.packageType)}<div class="row">${field('Duração', 'duration', pb.duration)}${field('Complexidade', 'complexity', pb.complexity)}</div>${field('Perfil do cliente', 'customerProfile', pb.customerProfile)}${field('Descrição', 'description', pb.description, 'textarea')}<p style="font-size:11px;color:rgba(232,223,200,.5)">Edições afetam novas operações. Operações já criadas não mudam.</p>`, (bg) => {
+        pb.productName = V(bg, 'productName'); pb.packageType = V(bg, 'packageType'); pb.duration = V(bg, 'duration');
+        pb.complexity = V(bg, 'complexity'); pb.customerProfile = V(bg, 'customerProfile'); pb.description = V(bg, 'description');
+        savePlaybook(pb); rerender();
+      });
+    };
+  }
+  function openPresentation(pb) {
+    injectCSS(); load();
+    const ov = document.createElement('div'); ov.className = 'flyops flyops-present';
+    ov.innerHTML = `<button class="flyops-btn close" data-close>✕ Fechar</button>
+      <div class="flyops-hero"><div class="sub">FLY COMPANY · OPERAÇÃO PONTA A PONTA</div><h1>${esc(pb.productName)}</h1></div>
+      ${pkgBody(pb, true)}`;
+    document.body.appendChild(ov);
+    ov.querySelector('[data-close]').onclick = () => ov.remove();
+  }
+
+  /* ============ API ============ */
   window.__flyOps = {
-    slugify, getPlaybook, listPlaybooks, liveData,
-    renderGeneral, renderPackage, openPresentation,
+    __v2: true, slugify, getPlaybook, listPlaybooks, openPresentation,
+    renderGeneral, renderPackage,
+    state: () => load(), summary, james,
+    addClientOperation: (p) => generateOperation(p),
+    setOpDate, shiftOpDate, upsert, removeEntity, savePlaybook,
+    liveData: () => ({ clientes: load().operations }), // compat
   };
-  console.log('[FlyOps] ✅ playbooks operacionais prontos:', Object.keys(PLAYBOOKS).join(', '));
+  load();
+  console.log('[FlyOps v2] ✅ sistema operacional vivo · data', STATE.opDate, '·', STATE.operations.length, 'operações');
 })();

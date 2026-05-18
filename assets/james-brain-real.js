@@ -91,6 +91,13 @@
       }
     } catch (e) {}
 
+    // OPERAÇÕES — estado do sistema operacional vivo (FlyOps)
+    try {
+      if (window.__flyOps && window.__flyOps.summary) {
+        ctx.operacoes = window.__flyOps.summary();
+      }
+    } catch (e) {}
+
     return ctx;
   }
 
@@ -327,6 +334,16 @@ Modo de dados: ${context.mode}${navPrompt}${docsPrompt}`;
      6 · API PÚBLICA
      ---------------------------------------------------------- */
   async function generateRealResponse(userText, opts) {
+    // Curto-circuito de OPERAÇÕES — só dispara em padrões claros
+    // (criar operação de cliente / consultas de hoje/semana). Qualquer
+    // outra coisa cai no fluxo normal da IA.
+    try {
+      if (window.__flyOps && window.__flyOps.james) {
+        const r = window.__flyOps.james(userText);
+        if (r && r.ok) return { text: r.msg, actions: ['ops'], results: [{ name: 'ops', result: r }] };
+      }
+    } catch (e) {}
+
     const keys = getKeys();
     if (!keys.anthropic && !keys.openai) {
       return null; // sem IA, usa mock
