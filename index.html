@@ -10240,6 +10240,13 @@
       return m === 'demo' ? baseKey : (baseKey + '_' + m);
     }
     let supaClient = null;
+    // Client DEDICADO só-anon pro sync de fly_kv. O supaClient carrega a
+    // sessão de LOGIN do usuário; quando esse JWT expira, todo request
+    // fly_kv vira 401 e o sync congela em silêncio (era ESSE o bug:
+    // trabalho parava de subir sem aviso). Este client não tem sessão,
+    // então sempre autentica como anon — e a RLS de fly_kv é 'to public'.
+    let __kvClient = null;
+    function kvFrom() { return (__kvClient || supaClient).from('fly_kv'); }
     const __supaPending = new Map(); // key -> timeout id
     let __supaInitialPullDone = false;
 
@@ -10430,11 +10437,21 @@
         setSyncStatus('error', 'Erro de conexão');
         return false;
       }
+      // Client só-anon pro fly_kv (não herda o JWT de login que pode
+      // expirar). Se falhar criar, cai no supaClient como antes.
+      try {
+        __kvClient = window.supabase.createClient(FLY_SUPA_URL, FLY_SUPA_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+        });
+      } catch (e) {
+        console.warn('[FLY] KV client anon falhou, usando supaClient:', e);
+        __kvClient = null;
+      }
       // Pull inicial — tenta puxar todos os SYNCED_KEYS do banco
       setSyncStatus('syncing', 'Buscando dados…');
       try {
-        const { data: rows, error } = await supaClient
-          .from('fly_kv').select('key, value, updated_at').in('key', SYNCED_KEYS);
+        const { data: rows, error } = await kvFrom()
+          .select('key, value, updated_at').in('key', SYNCED_KEYS);
 
         // Se a tabela fly_kv não existe, marca como online mesmo assim (sync opcional)
         if (error) {
@@ -10475,7 +10492,7 @@
             // LOCAL é mais novo → sobe pro Supabase (preserva trabalho)
             const v = safeJSONParse(localJSON);
             if (v !== null) {
-              try { await supaClient.from('fly_kv').upsert({ key: row.key, value: v }); } catch (e) {}
+              try { await kvFrom().upsert({ key: row.key, value: v }); } catch (e) {}
             }
           } else {
             // REMOTO é mais novo (veio de outro aparelho) → adota
@@ -10492,7 +10509,7 @@
           if (local && !remoteKeys.has(k)) {
             const v = safeJSONParse(local);
             if (v !== null) {
-              try { await supaClient.from('fly_kv').upsert({ key: k, value: v }); } catch (e) {}
+              try { await kvFrom().upsert({ key: k, value: v }); } catch (e) {}
             }
           }
         }
@@ -10542,11 +10559,11 @@
           const raw = localStorage.getItem(key);
           if (raw === null) {
             // Foi removido do cache — apaga do banco também
-            await supaClient.from('fly_kv').delete().eq('key', key);
+            await kvFrom().delete().eq('key', key);
           } else {
             const value = safeJSONParse(raw);
             if (value === null) return;
-            const { error } = await supaClient.from('fly_kv').upsert({ key, value });
+            const { error } = await kvFrom().upsert({ key, value });
             if (error) throw error;
           }
           if (__supaPending.size === 0) setSyncStatus('online', 'Sincronizado');
