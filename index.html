@@ -10440,9 +10440,16 @@
         if (error) {
           const msg = (error.message || error.code || '').toString().toLowerCase();
           if (msg.includes('relation') || msg.includes('does not exist') || msg.includes('not found') || msg.includes('table')) {
-            console.warn('[FLY] Tabela fly_kv não existe — Supabase conectado, sync KV desativado:', error.message);
-            __supaInitialPullDone = true;
-            setSyncStatus('online', 'Sincronizado');
+            console.error(
+              '%c[FLY] ⚠️ TABELA fly_kv NÃO EXISTE no Supabase\n' +
+              'Seu trabalho NÃO está sincronizando entre PCs/celulares — fica só no cache deste aparelho.\n' +
+              '→ Solução: abra Supabase → SQL Editor e rode o bloco "8 · KV SYNC" de db/schema.sql.',
+              'color:#ff5252;font-weight:bold'
+            );
+            // NÃO mente dizendo "Sincronizado": deixa o status honesto e
+            // bloqueia tentativas de push (evita erro a cada tecla).
+            __supaInitialPullDone = false;
+            setSyncStatus('error', '⚠ Sync OFF · falta tabela fly_kv');
             return true;
           }
           throw error;

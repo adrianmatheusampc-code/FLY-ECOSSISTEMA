@@ -335,3 +335,44 @@ begin
       for delete to public using ( bucket_id = 'fly-media' );
   end if;
 end $$;
+
+
+-- =============================================================
+-- 8 · KV SYNC · tabela fly_kv
+-- ESTA TABELA SINCRONIZA TODO O TRABALHO DO APP (pacotes, textos,
+-- operações, design, etc.) ENTRE PCs E CELULARES.
+-- SEM ELA, cada aparelho fica isolado no localStorage e as
+-- alterações nunca aparecem em outro dispositivo.
+-- Rode no Supabase → SQL Editor. Idempotente (pode rodar de novo).
+-- =============================================================
+create table if not exists fly_kv (
+  key        text primary key,
+  value      jsonb       not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table fly_kv enable row level security;
+
+do $$
+begin
+  -- app é client-only com a anon key → libera leitura/escrita pra
+  -- public (cobre anon + authenticated). É um doc compartilhado da
+  -- empresa, não dado sensível por-usuário.
+  if not exists (select 1 from pg_policies where policyname = 'fly_kv_read' and tablename = 'fly_kv') then
+    create policy "fly_kv_read"  on fly_kv for select to public using ( true );
+  end if;
+  if not exists (select 1 from pg_policies where policyname = 'fly_kv_write' and tablename = 'fly_kv') then
+    create policy "fly_kv_write" on fly_kv for all    to public using ( true ) with check ( true );
+  end if;
+end $$;
+
+-- mantém updated_at fresco a cada upsert (conflito = último a salvar vence)
+create or replace function fly_kv_touch() returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end $$ language plpgsql;
+
+drop trigger if exists fly_kv_touch_trg on fly_kv;
+create trigger fly_kv_touch_trg before update on fly_kv
+  for each row execute function fly_kv_touch();
