@@ -10224,12 +10224,14 @@
       'fly_changelog_v1',
       'fly_turmas_v1',
       'fly_war_territories_v1',
-      'fly_war_connections_v1'
+      'fly_war_connections_v1',
+      'fly_james_keys_v1'
     ];
     // Cada chave tem 3 variantes (demo / _operational / _goal) sincronizadas separadamente
+    // (fly_james_keys_v1 é config GLOBAL — não tem variante por modo)
     const SYNCED_KEYS = [
       ..._BASE_SYNCED_KEYS,
-      ..._BASE_SYNCED_KEYS.filter(k => k !== 'fly_7anos_data_v1' && k !== 'fly_changelog_v1' && k !== 'fly_design_overrides_v1' && k !== 'fly_basesfly_custom_cities_v1')
+      ..._BASE_SYNCED_KEYS.filter(k => k !== 'fly_7anos_data_v1' && k !== 'fly_changelog_v1' && k !== 'fly_design_overrides_v1' && k !== 'fly_basesfly_custom_cities_v1' && k !== 'fly_james_keys_v1')
         .flatMap(k => [k + '_operational', k + '_goal'])
     ];
 

@@ -7,8 +7,51 @@
 
   /* ----------------------------------------------------------
      1 · STORAGE de chaves de API
+     A chave CRUA fica só em localStorage local (fly_james_*_key),
+     NUNCA sincronizada. O que sincroniza entre aparelhos é um
+     pacote EMBARALHADO (fly_james_keys_v1) — não é cripto militar,
+     mas impede que alguém com a anon key leia a chave crua direto
+     da tabela pública. O site ainda está atrás de senha (Basic
+     Auth), então o JS com o desembaralhador não é público.
      ---------------------------------------------------------- */
+  var J_SYNC_KEY = 'fly_james_keys_v1';
+  var J_PASS = 'fly7anos::james::v1::shuffle::Nf83@x';
+  function _xor(str, pass) {
+    var o = '';
+    for (var i = 0; i < str.length; i++) o += String.fromCharCode(str.charCodeAt(i) ^ pass.charCodeAt(i % pass.length));
+    return o;
+  }
+  function _obf(s) { if (!s) return ''; try { return btoa(unescape(encodeURIComponent(_xor(s, J_PASS)))); } catch (e) { return ''; } }
+  function _deobf(s) { if (!s) return ''; try { return _xor(decodeURIComponent(escape(atob(s))), J_PASS); } catch (e) { return ''; } }
+
+  // Reconcilia chave crua local <-> pacote sincronizado.
+  // Roda barato a cada getKeys (robusto a ordem de load/pull).
+  function reconcileKeys() {
+    try {
+      var a = localStorage.getItem('fly_james_anthropic_key') || '';
+      var o = localStorage.getItem('fly_james_openai_key') || '';
+      var bundleRaw = localStorage.getItem(J_SYNC_KEY);
+      var bundle = null;
+      if (bundleRaw) { try { bundle = JSON.parse(bundleRaw); } catch (e) {} }
+      // Caso 1: não tenho chave local mas chegou o pacote (de outro
+      // aparelho via sync) -> desembaralha e popula a chave local.
+      if (!a && !o && bundle) {
+        var ba = _deobf(bundle.a || ''), bo = _deobf(bundle.o || '');
+        if (ba) localStorage.setItem('fly_james_anthropic_key', ba);
+        if (bo) localStorage.setItem('fly_james_openai_key', bo);
+        return;
+      }
+      // Caso 2: tenho chave local -> garante que o pacote sincronizado
+      // reflete ela (auto-migra deste PC pra todos os aparelhos).
+      if (a || o) {
+        var want = JSON.stringify({ a: _obf(a), o: _obf(o) });
+        if (bundleRaw !== want) localStorage.setItem(J_SYNC_KEY, want);
+      }
+    } catch (e) {}
+  }
+
   function getKeys() {
+    reconcileKeys();
     return {
       openai:    localStorage.getItem('fly_james_openai_key')    || '',
       anthropic: localStorage.getItem('fly_james_anthropic_key') || '',
@@ -17,6 +60,12 @@
   function setKey(provider, value) {
     const k = provider === 'anthropic' ? 'fly_james_anthropic_key' : 'fly_james_openai_key';
     localStorage.setItem(k, value || '');
+    // Atualiza o pacote sincronizado na hora (propaga pros sócios).
+    try {
+      var a = localStorage.getItem('fly_james_anthropic_key') || '';
+      var o = localStorage.getItem('fly_james_openai_key') || '';
+      localStorage.setItem(J_SYNC_KEY, JSON.stringify({ a: _obf(a), o: _obf(o) }));
+    } catch (e) {}
   }
 
   /* ----------------------------------------------------------
