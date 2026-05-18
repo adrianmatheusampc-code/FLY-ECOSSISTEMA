@@ -19519,7 +19519,13 @@
 
     /* ===== PAINEL: OPERAÇÃO ===== */
     function dbxRenderOperacao(D) {
+      // Blindagem: pacotes criados sem a estrutura completa não podem
+      // quebrar a aba (senão o playbook nem monta).
+      if (!D.operacao || typeof D.operacao !== 'object') D.operacao = {};
       const op = D.operacao;
+      if (!op.base || typeof op.base !== 'object') op.base = { hotel: '', localizacao: '', transporteBase: '' };
+      if (!Array.isArray(op.roteiro)) op.roteiro = [];
+      if (!Array.isArray(op.checklist)) op.checklist = [];
       const checked = op.checklist.filter(c => c.done).length;
       const pct = op.checklist.length ? Math.round((checked / op.checklist.length) * 100) : 0;
       return `
