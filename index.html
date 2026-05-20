@@ -16195,6 +16195,14 @@
         .atr-detail-block dd{margin:0;color:#fff;}
         .atr-detail-pacs{display:flex;flex-wrap:wrap;gap:5px;}
         .atr-detail-video{padding:10px 14px;background:rgba(126,207,255,.08);border:1px solid rgba(126,207,255,.25);border-radius:8px;color:#7ecfff;font-size:11px;word-break:break-all;margin-bottom:14px;}
+        /* Pares AED + R$ (Financeiro) */
+        .atr-price-pair{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;}
+        .atr-price-pair input{flex:1;min-width:90px;padding:9px 11px;background:#000;border:1px solid rgba(245,184,66,.22);color:#fff;border-radius:6px;font-size:13px;text-transform:none;letter-spacing:0;}
+        .atr-price-pair > span{font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.6px;font-weight:600;min-width:24px;}
+        .atr-price-conv{padding:8px 12px;background:rgba(126,207,255,.12);border:1px solid rgba(126,207,255,.3);color:#7ecfff;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;flex-shrink:0;}
+        .atr-price-conv:hover{background:rgba(126,207,255,.22);border-color:rgba(126,207,255,.5);}
+        .atr-card-prices em,.atr-detail-kpis em{display:block;font-style:normal;font-size:9px;color:rgba(255,255,255,.5);margin-top:1px;letter-spacing:.4px;}
+        .atr-detail-kpis em{font-size:10px;}
         /* Foto widget (upload PC + paste + URL) */
         .atr-photo-widget{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:flex-start;margin-top:4px;}
         .atr-photo-preview{width:120px;height:120px;border-radius:10px;background:#000 center/cover no-repeat;border:1px dashed rgba(245,184,66,.35);display:flex;align-items:center;justify-content:center;font-size:36px;opacity:.85;flex-shrink:0;}
@@ -16284,8 +16292,8 @@
                 ${a.cidade ? `<span class="atr-chip muted">${escapeHtml(a.cidade)}</span>` : ''}
               </div>
               <div class="atr-card-prices">
-                <div><span class="lbl">Venda</span><strong>${fmtBRL(a.precoVenda)}</strong></div>
-                <div><span class="lbl">Custo</span><strong>${fmtBRL(a.custoB2B)}</strong></div>
+                <div><span class="lbl">Venda</span><strong>${fmtBRL(a.precoVenda)}</strong>${a.precoVendaAed?`<em>${a.precoVendaAed} AED</em>`:''}</div>
+                <div><span class="lbl">Custo</span><strong>${fmtBRL(a.custoB2B)}</strong>${a.custoB2BAed?`<em>${a.custoB2BAed} AED</em>`:''}</div>
                 <div class="${mClass}"><span class="lbl">Margem</span><strong>${m.pct.toFixed(0)}%</strong></div>
               </div>
               ${pacs.length ? `<div class="atr-card-pacs">${pacs.slice(0,4).map(p=>`<span class="atr-chip mini">${escapeHtml(p)}</span>`).join('')}${pacs.length>4?`<span class="atr-chip mini muted">+${pacs.length-4}</span>`:''}</div>` : ''}
@@ -16422,12 +16430,32 @@
                 </div>
               </div>
               <div class="atr-form-section">
-                <h4>💰 Financeiro</h4>
+                <h4>💰 Financeiro · AED + R$</h4>
                 <div class="atr-form-grid">
-                  <label>Custo Fly/B2B (R$)<input id="f_custoB2B" type="number" step="0.01" value="${a.custoB2B||0}"></label>
-                  <label>Preço de mercado (R$)<input id="f_precoMercado" type="number" step="0.01" value="${a.precoMercado||0}"></label>
-                  <label>Preço venda Fly (R$)<input id="f_precoVenda" type="number" step="0.01" value="${a.precoVenda||0}"></label>
-                  <label>Moeda original<input id="f_moeda" type="text" value="${escapeHtml(a.moedaOriginal||'AED')}"></label>
+                  <label class="full">💱 Taxa de câmbio (R$ por 1 AED)
+                    <input id="f_taxa" type="number" step="0.0001" value="${a.taxaCambio || 1.47}" placeholder="ex: 1.47">
+                  </label>
+                  <label class="full">Custo Fly/B2B <small style="color:rgba(255,255,255,.5);text-transform:none;letter-spacing:0;">(o que VOCÊ paga ao fornecedor)</small>
+                    <div class="atr-price-pair">
+                      <input id="f_custoB2BAed" type="number" step="0.01" placeholder="0" value="${a.custoB2BAed || ''}"><span>AED</span>
+                      <button type="button" class="atr-price-conv" data-conv="custoB2B" title="Converter usando a taxa">↔</button>
+                      <input id="f_custoB2B" type="number" step="0.01" placeholder="0" value="${a.custoB2B || ''}"><span>R$</span>
+                    </div>
+                  </label>
+                  <label class="full">Preço de mercado (B2C) <small style="color:rgba(255,255,255,.5);text-transform:none;letter-spacing:0;">(o que o fornecedor cobra DIRETO do cliente)</small>
+                    <div class="atr-price-pair">
+                      <input id="f_precoMercadoAed" type="number" step="0.01" placeholder="0" value="${a.precoMercadoAed || ''}"><span>AED</span>
+                      <button type="button" class="atr-price-conv" data-conv="precoMercado" title="Converter usando a taxa">↔</button>
+                      <input id="f_precoMercado" type="number" step="0.01" placeholder="0" value="${a.precoMercado || ''}"><span>R$</span>
+                    </div>
+                  </label>
+                  <label class="full">Preço venda Fly <small style="color:rgba(255,255,255,.5);text-transform:none;letter-spacing:0;">(o que a FLY cobra do cliente Fly)</small>
+                    <div class="atr-price-pair">
+                      <input id="f_precoVendaAed" type="number" step="0.01" placeholder="0" value="${a.precoVendaAed || ''}"><span>AED</span>
+                      <button type="button" class="atr-price-conv" data-conv="precoVenda" title="Converter usando a taxa">↔</button>
+                      <input id="f_precoVenda" type="number" step="0.01" placeholder="0" value="${a.precoVenda || ''}"><span>R$</span>
+                    </div>
+                  </label>
                 </div>
               </div>
               <div class="atr-form-section">
@@ -16524,6 +16552,38 @@
           if (file) await _atrUploadFile(file);
         });
 
+        // ↔ converte AED ↔ R$ usando a taxa de câmbio
+        ov.querySelectorAll('.atr-price-conv').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const k = btn.dataset.conv; // custoB2B | precoMercado | precoVenda
+            const taxa = Number(ov.querySelector('#f_taxa')?.value) || 0;
+            if (!taxa) { alert('Defina a taxa de câmbio (R$ por 1 AED) primeiro.'); return; }
+            const aedInp = ov.querySelector('#f_' + k + 'Aed');
+            const brlInp = ov.querySelector('#f_' + k);
+            if (!aedInp || !brlInp) return;
+            const aed = Number(aedInp.value);
+            const brl = Number(brlInp.value);
+            if (aed && !brl)      brlInp.value = (aed * taxa).toFixed(2);
+            else if (brl && !aed) aedInp.value = (brl / taxa).toFixed(2);
+            else if (aed && brl) {
+              if (confirm(`Recalcular o R$ a partir do AED (${aed} × ${taxa} = ${(aed*taxa).toFixed(2)})?`)) brlInp.value = (aed * taxa).toFixed(2);
+            } else {
+              alert('Preencha o valor em AED ou em R$ primeiro.');
+            }
+          });
+        });
+        // Auto-converte na hora de digitar no AED se o R$ estiver vazio (UX simples)
+        ['custoB2B','precoMercado','precoVenda'].forEach(k => {
+          const aedInp = ov.querySelector('#f_' + k + 'Aed');
+          const brlInp = ov.querySelector('#f_' + k);
+          if (!aedInp || !brlInp) return;
+          aedInp.addEventListener('blur', () => {
+            const taxa = Number(ov.querySelector('#f_taxa')?.value) || 0;
+            const aed  = Number(aedInp.value);
+            if (taxa && aed && !Number(brlInp.value)) brlInp.value = (aed * taxa).toFixed(2);
+          });
+        });
+
         ov.querySelector('[data-act="save"]').addEventListener('click', () => {
           const get = (id) => ov.querySelector('#'+id)?.value;
           const nome = (get('f_nome')||'').trim();
@@ -16541,10 +16601,14 @@
             descricaoCompleta: (get('f_descCompleta')||'').trim(),
             fotoUrl: (get('f_fotoUrl')||'').trim(),
             videoUrl: (get('f_videoUrl')||'').trim(),
-            custoB2B: Number(get('f_custoB2B'))||0,
-            precoMercado: Number(get('f_precoMercado'))||0,
-            precoVenda: Number(get('f_precoVenda'))||0,
-            moedaOriginal: (get('f_moeda')||'').trim(),
+            taxaCambio: Number(get('f_taxa')) || 0,
+            custoB2BAed: Number(get('f_custoB2BAed')) || 0,
+            custoB2B: Number(get('f_custoB2B')) || 0,
+            precoMercadoAed: Number(get('f_precoMercadoAed')) || 0,
+            precoMercado: Number(get('f_precoMercado')) || 0,
+            precoVendaAed: Number(get('f_precoVendaAed')) || 0,
+            precoVenda: Number(get('f_precoVenda')) || 0,
+            moedaOriginal: 'AED',
             fornecedor: (get('f_fornecedor')||'').trim(),
             contatoFornecedor: (get('f_contato')||'').trim(),
             emailFornecedor: (get('f_email')||'').trim(),
@@ -16591,9 +16655,9 @@
             <div class="atr-detail-body">
               ${(a.videoUrl||'').trim() ? `<div class="atr-detail-video">🎬 ${escapeHtml(a.videoUrl)}</div>` : ''}
               <div class="atr-detail-kpis">
-                <div><span class="lbl">Venda</span><strong>${fmtBRL(a.precoVenda)}</strong></div>
-                <div><span class="lbl">Custo</span><strong>${fmtBRL(a.custoB2B)}</strong></div>
-                <div><span class="lbl">Mercado</span><strong>${fmtBRL(a.precoMercado)}</strong></div>
+                <div><span class="lbl">Venda Fly</span><strong>${fmtBRL(a.precoVenda)}</strong>${a.precoVendaAed?`<em>${a.precoVendaAed} AED</em>`:''}</div>
+                <div><span class="lbl">Custo B2B</span><strong>${fmtBRL(a.custoB2B)}</strong>${a.custoB2BAed?`<em>${a.custoB2BAed} AED</em>`:''}</div>
+                <div><span class="lbl">Mercado B2C</span><strong>${fmtBRL(a.precoMercado)}</strong>${a.precoMercadoAed?`<em>${a.precoMercadoAed} AED</em>`:''}</div>
                 <div><span class="lbl">Margem R$</span><strong>${fmtBRL(m.abs)}</strong></div>
                 <div><span class="lbl">Margem %</span><strong>${m.pct.toFixed(1)}%</strong></div>
               </div>
