@@ -147,6 +147,45 @@
       }
     } catch (e) {}
 
+    // ATRAÇÕES — Central de Atrações Fly (read-only API)
+    // Resumo + top 10 atrações + alertas + sugestões. Permite ao James
+    // responder perguntas como "qual atração tem mais margem?", "quais
+    // estão sem fornecedor?", "sugira um pacote pra família".
+    try {
+      if (window.__flyAtracoes && window.__flyAtracoes.summary) {
+        const sum = window.__flyAtracoes.summary();
+        const all = window.__flyAtracoes.allAtracoes ? window.__flyAtracoes.allAtracoes() : [];
+        const top = all
+          .filter(a => Number(a.precoVenda) > 0)
+          .map(a => {
+            const c = Number(a.custoB2B)||0, v = Number(a.precoVenda)||0;
+            return {
+              nome: a.nome, categoria: a.categoria, cidade: a.cidade,
+              custo: c, venda: v,
+              custoAed: a.custoB2BAed||0, vendaAed: a.precoVendaAed||0,
+              mercado: Number(a.precoMercado)||0,
+              margemAbs: v - c,
+              margemPct: v > 0 ? ((v-c)/v*100) : 0,
+              fornecedor: a.fornecedor || '',
+              pacotes: Array.isArray(a.pacotes) ? a.pacotes : [],
+              status: a.status || 'ativa',
+              temFoto: !!(a.fotoUrl||'').trim(),
+              temVideo: !!(a.videoUrl||'').trim(),
+            };
+          })
+          .sort((a,b) => b.margemAbs - a.margemAbs)
+          .slice(0, 10);
+        const alerts = window.__flyAtracoes.alerts ? window.__flyAtracoes.alerts().slice(0, 12) : [];
+        const sugs   = window.__flyAtracoes.suggestions ? window.__flyAtracoes.suggestions().slice(0, 8) : [];
+        ctx.atracoes = {
+          resumo: sum,
+          top10PorMargem: top,
+          alertas: alerts.map(a => ({ nome:a.nome, sev:a.sev, msg:a.msg })),
+          sugestoes: sugs.map(s => ({ cat:s.cat, nome:s.nome, msg:s.msg, priority:s.priority })),
+        };
+      }
+    } catch (e) {}
+
     return ctx;
   }
 

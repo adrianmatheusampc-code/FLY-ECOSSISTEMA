@@ -16209,6 +16209,18 @@
         .atr-detail-block dd{margin:0;color:#fff;}
         .atr-detail-pacs{display:flex;flex-wrap:wrap;gap:5px;}
         .atr-detail-video{padding:10px 14px;background:rgba(126,207,255,.08);border:1px solid rgba(126,207,255,.25);border-radius:8px;color:#7ecfff;font-size:11px;word-break:break-all;margin-bottom:14px;}
+        /* Sugestões James (Phase 3) */
+        .atr-sug-group{margin-top:18px;}
+        .atr-sug-group:first-of-type{margin-top:8px;}
+        .atr-sug-group h4{margin:0 0 10px;font-size:12px;letter-spacing:.5px;text-transform:uppercase;}
+        .atr-sug-list{display:flex;flex-direction:column;gap:7px;}
+        .atr-sug{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:8px;background:rgba(245,184,66,.05);border:1px solid rgba(245,184,66,.18);}
+        .atr-sug.p-high{background:rgba(255,90,80,.08);border-color:rgba(255,90,80,.3);}
+        .atr-sug.p-med{background:rgba(245,182,66,.07);border-color:rgba(245,182,66,.28);}
+        .atr-sug.p-low{background:rgba(126,207,255,.06);border-color:rgba(126,207,255,.22);}
+        .atr-sug-ico{font-size:22px;flex-shrink:0;}
+        .atr-sug-body{flex:1;min-width:0;}
+        .atr-sug-msg{font-size:12px;color:rgba(255,255,255,.88);line-height:1.45;}
         /* Pares AED + R$ (Financeiro) */
         .atr-price-pair{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;}
         .atr-price-pair input{flex:1;min-width:90px;padding:9px 11px;background:#000;border:1px solid rgba(245,184,66,.22);color:#fff;border-radius:6px;font-size:13px;text-transform:none;letter-spacing:0;}
@@ -16345,13 +16357,15 @@
       function render() {
         const list = getList();
         const s = computeSummary();
+        const sugCount = (window.__flyAtracoes && window.__flyAtracoes.suggestions) ? window.__flyAtracoes.suggestions().length : 0;
         const TABS = [
-          { id: 'biblioteca',   label: '📚 Biblioteca',     n: list.length },
+          { id: 'biblioteca',   label: '📚 Biblioteca',         n: list.length },
           { id: 'por-pacote',   label: '📦 Por Pacote' },
           { id: 'vendas',       label: '💰 Vendas & Margem' },
           { id: 'marketing',    label: '📱 Marketing' },
           { id: 'fornecedores', label: '🏢 Fornecedores' },
-          { id: 'alertas',      label: '🚨 Alertas',        n: s.pendentes },
+          { id: 'alertas',      label: '🚨 Alertas',            n: s.pendentes },
+          { id: 'sugestoes',    label: '💡 Sugestões · James',  n: sugCount },
         ];
         wrap.innerHTML = `
           <div class="atr-hero">
@@ -16394,6 +16408,7 @@
           case 'marketing':    renderMarketing(cont); break;
           case 'fornecedores': renderFornecedores(cont); break;
           case 'alertas':      renderAlertas(cont); break;
+          case 'sugestoes':    renderSugestoes(cont); break;
           default:             renderBiblioteca(cont);
         }
       }
@@ -16652,6 +16667,45 @@
           </div>
         `;
         cont.querySelectorAll('[data-act="alert-edit"]').forEach(b => b.addEventListener('click', () => openEditor(b.dataset.id)));
+      }
+
+      function renderSugestoes(cont) {
+        const sugs = (window.__flyAtracoes && window.__flyAtracoes.suggestions) ? window.__flyAtracoes.suggestions() : [];
+        const list = getList();
+        if (!sugs.length) {
+          cont.innerHTML = `<div class="atr-empty" style="padding:50px"><div class="atr-empty-ico">✨</div><h3>Sem sugestões agora</h3><p>${list.length ? 'Seu portfólio está bem ajustado — margens, mídia e pacotes estão alinhados. Continue alimentando o sistema 🎯' : 'Adicione atrações pra eu começar a sugerir oportunidades de margem, marketing e pacotes.'}</p></div>`;
+          return;
+        }
+        // Agrupa por categoria
+        const groups = { mkt: [], pkg: [], price: [], other: [] };
+        sugs.forEach(s => (groups[s.cat] || groups.other).push(s));
+        const renderGroup = (title, ico, color, arr) => arr.length ? `
+          <div class="atr-sug-group">
+            <h4 style="color:${color}">${ico} ${title} <span style="color:rgba(255,255,255,.4);font-weight:400;">· ${arr.length}</span></h4>
+            <div class="atr-sug-list">
+              ${arr.map(s => `
+                <div class="atr-sug ${s.priority===1?'p-high':(s.priority===2?'p-med':'p-low')}">
+                  <span class="atr-sug-ico">${s.icon}</span>
+                  <div class="atr-sug-body">
+                    <div class="atr-sug-msg">${escapeHtml(s.msg)}</div>
+                  </div>
+                  <button class="apple-btn small" data-act="sug-open" data-id="${escapeHtml(s.id||'')}">Abrir →</button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : '';
+        cont.innerHTML = `
+          <div class="atr-callout">💡 ${sugs.length} sugestão(ões) inteligente(s) baseadas em margem, mídia, pacotes e benchmark de mercado. Prioridades: 🔴 alta · 🟡 média · 🔵 baixa.</div>
+          ${renderGroup('Marketing & Conteúdo', '🎬', '#ff8cb0', groups.mkt)}
+          ${renderGroup('Pacotes & Upsell',     '📦', '#FFE099', groups.pkg)}
+          ${renderGroup('Preço & Margem',       '💰', '#7ecfff', groups.price)}
+          ${renderGroup('Outras oportunidades', '✨', '#fff',    groups.other)}
+        `;
+        cont.querySelectorAll('[data-act="sug-open"]').forEach(b => b.addEventListener('click', () => {
+          const id = b.dataset.id;
+          if (id) openDetail(id);
+        }));
       }
 
       function openEditor(id) {
@@ -16974,6 +17028,145 @@
       render();
       try { window.__jamesContext && window.__jamesContext.trackNavigation && window.__jamesContext.trackNavigation('atracoes', 'central'); } catch (e) {}
     }
+
+    /* ============================================================
+       ATRAÇÕES · API global window.__flyAtracoes (Phase 3)
+       Read-only API + sugestões/alertas heurísticos. Usada por:
+         • Aba "💡 Sugestões" do painel.
+         • James brain (buildFlyContext injeta resumo).
+       Write commands (criar/editar via James) ficam pra Phase 4.
+       ============================================================ */
+    (function _atrPublicAPI() {
+      function _root() { try { return (typeof data !== 'undefined' && (data['ECOSSISTEMA FLY'] || data)) || {}; } catch (e) { return {}; } }
+      function findAtracoesItems() {
+        const out = [];
+        const r = _root();
+        Object.keys(r).forEach(k => {
+          const topic = r[k];
+          if (topic && Array.isArray(topic.items)) {
+            topic.items.forEach((it, idx) => {
+              if (it && it.format === 'atracoes' && Array.isArray(it.atracoes)) out.push({ topic: k, item: it, idx });
+            });
+          }
+        });
+        return out;
+      }
+      function allAtracoes() {
+        const out = [];
+        findAtracoesItems().forEach(({ item }) => (item.atracoes || []).forEach(a => out.push(a)));
+        return out;
+      }
+      function _margin(pv, cb) { const p = Number(pv)||0, c = Number(cb)||0; return { abs: p - c, pct: p > 0 ? ((p - c) / p * 100) : 0 }; }
+      function _daysTo(dateStr) {
+        if (!dateStr) return null;
+        try { const dt = new Date(dateStr); dt.setHours(0,0,0,0); const today = new Date(); today.setHours(0,0,0,0); return Math.floor((dt - today)/(1000*60*60*24)); } catch (e) { return null; }
+      }
+
+      function summary() {
+        const list = allAtracoes();
+        const ativas    = list.filter(a => (a.status||'ativa') === 'ativa').length;
+        const emPacotes = list.filter(a => Array.isArray(a.pacotes) && a.pacotes.length > 0).length;
+        const conteudos = list.filter(a => (a.fotoUrl||'').trim() || (a.videoUrl||'').trim()).length;
+        const pendentes = list.filter(a => !Number(a.precoVenda) || !(a.fornecedor||'').trim() || (!(a.fotoUrl||'').trim() && !(a.videoUrl||'').trim())).length;
+        const byAbs = [...list].filter(a => Number(a.precoVenda) > 0).sort((a,b) => _margin(b.precoVenda,b.custoB2B).abs - _margin(a.precoVenda,a.custoB2B).abs);
+        const byPct = [...list].filter(a => Number(a.precoVenda) > 0).sort((a,b) => _margin(b.precoVenda,b.custoB2B).pct - _margin(a.precoVenda,a.custoB2B).pct);
+        return {
+          total: list.length, ativas, emPacotes, conteudos, pendentes,
+          topLucro: byAbs[0] ? { nome: byAbs[0].nome, margem: _margin(byAbs[0].precoVenda, byAbs[0].custoB2B).abs } : null,
+          topMargem: byPct[0] ? { nome: byPct[0].nome, pct: _margin(byPct[0].precoVenda, byPct[0].custoB2B).pct } : null,
+          categorias: [...new Set(list.map(a => a.categoria).filter(Boolean))],
+          cidades:    [...new Set(list.map(a => a.cidade).filter(Boolean))],
+          pacotes:    [...new Set(list.flatMap(a => Array.isArray(a.pacotes) ? a.pacotes : []))],
+        };
+      }
+
+      function alerts() {
+        const list = allAtracoes();
+        const out = [];
+        list.forEach(a => {
+          if (!Number(a.precoVenda))                                       out.push({ icon:'💰', sev:'high',   msg:'Sem preço de venda', nome:a.nome, id:a.id });
+          if (!(a.fornecedor||'').trim())                                   out.push({ icon:'🏢', sev:'high',   msg:'Sem fornecedor', nome:a.nome, id:a.id });
+          if (!(a.fotoUrl||'').trim() && !(a.videoUrl||'').trim())          out.push({ icon:'📸', sev:'medium', msg:'Sem foto/vídeo', nome:a.nome, id:a.id });
+          const m = _margin(a.precoVenda, a.custoB2B);
+          if (Number(a.precoVenda) > 0 && m.pct < 25)                       out.push({ icon:'📉', sev:'medium', msg:`Margem baixa (${m.pct.toFixed(0)}%)`, nome:a.nome, id:a.id });
+          const d = _daysTo(a.validadePreco);
+          if (d != null && d < 0)                                           out.push({ icon:'⏰', sev:'high',   msg:`Preço VENCIDO há ${-d}d`, nome:a.nome, id:a.id });
+          else if (d != null && d < 15)                                     out.push({ icon:'⏰', sev:'medium', msg:`Preço vence em ${d}d`, nome:a.nome, id:a.id });
+          if ((a.status||'') === 'problema')                                out.push({ icon:'🚨', sev:'high',   msg:'Problema operacional', nome:a.nome, id:a.id });
+          if (Array.isArray(a.pacotes) && a.pacotes.length === 0 && (a.status||'ativa') === 'ativa') out.push({ icon:'📦', sev:'low', msg:'Ativa sem pacote vinculado', nome:a.nome, id:a.id });
+        });
+        const rank = { high: 0, medium: 1, low: 2 };
+        out.sort((a,b) => rank[a.sev] - rank[b.sev]);
+        return out;
+      }
+
+      function suggestions() {
+        const list = allAtracoes();
+        const out = [];
+        list.forEach(a => {
+          const m = _margin(a.precoVenda, a.custoB2B);
+          const noMidia = !(a.fotoUrl||'').trim() && !(a.videoUrl||'').trim();
+          const noPkg   = !Array.isArray(a.pacotes) || a.pacotes.length === 0;
+          const hasPrecoOk = Number(a.precoVenda) > 0;
+
+          // 1. Margem alta + sem mídia = oportunidade de marketing
+          if (hasPrecoOk && m.pct > 50 && noMidia) {
+            out.push({ icon:'🎬', cat:'mkt', priority:1, nome:a.nome, id:a.id,
+              msg:`${a.nome} tem margem ${m.pct.toFixed(0)}% mas SEM mídia — priorize gravar com influencer pra escalar venda.` });
+          }
+          // 2. Boa margem + sem pacote = upsell oportunidade
+          if (hasPrecoOk && m.pct > 40 && noPkg) {
+            out.push({ icon:'📦', cat:'pkg', priority:2, nome:a.nome, id:a.id,
+              msg:`${a.nome} tem margem ${m.pct.toFixed(0)}% mas não está em nenhum pacote — considere incluir como upsell.` });
+          }
+          // 3. Preço perto de vencer = renegociar
+          const d = _daysTo(a.validadePreco);
+          if (d != null && d >= 0 && d < 30) {
+            out.push({ icon:'⏰', cat:'price', priority: d < 15 ? 1 : 2, nome:a.nome, id:a.id,
+              msg:`${a.nome} — preço vence em ${d}d. Renegocie com ${a.fornecedor||'fornecedor'} pra travar o custo.` });
+          }
+          // 4. Preço Fly vs mercado
+          if (hasPrecoOk && Number(a.precoMercado) > 0) {
+            const vs = (Number(a.precoMercado) - Number(a.precoVenda)) / Number(a.precoMercado) * 100;
+            if (vs > 20) out.push({ icon:'💎', cat:'price', priority:2, nome:a.nome, id:a.id,
+              msg:`${a.nome} está ${vs.toFixed(0)}% abaixo do mercado — tem espaço pra subir o preço sem perder venda.` });
+            else if (vs < -10) out.push({ icon:'⚠️', cat:'price', priority:1, nome:a.nome, id:a.id,
+              msg:`${a.nome} está ${(-vs).toFixed(0)}% ACIMA do mercado — justifique valor ou reveja preço.` });
+          }
+          // 5. Conteúdo bom mas sem ativação em pacote
+          if (!noMidia && noPkg && hasPrecoOk) {
+            out.push({ icon:'🚀', cat:'pkg', priority:3, nome:a.nome, id:a.id,
+              msg:`${a.nome} já tem mídia pronta mas não está em pacote — fácil ativar agora.` });
+          }
+        });
+        out.sort((a,b) => a.priority - b.priority);
+        return out;
+      }
+
+      function list() { return allAtracoes(); }
+      function findByName(name) {
+        if (!name) return null;
+        const q = String(name).toLowerCase().trim();
+        return allAtracoes().find(a => (a.nome||'').toLowerCase() === q)
+            || allAtracoes().find(a => (a.nome||'').toLowerCase().includes(q))
+            || null;
+      }
+      function byCategoria(cat) {
+        if (!cat) return [];
+        const q = String(cat).toLowerCase().trim();
+        return allAtracoes().filter(a => (a.categoria||'').toLowerCase() === q);
+      }
+      function byPacote(pkg) {
+        if (!pkg) return [];
+        const q = String(pkg).toLowerCase().trim();
+        return allAtracoes().filter(a => Array.isArray(a.pacotes) && a.pacotes.some(p => (p||'').toLowerCase().includes(q)));
+      }
+
+      window.__flyAtracoes = {
+        list, summary, alerts, suggestions, findByName, byCategoria, byPacote,
+        findAtracoesItems, allAtracoes,
+      };
+    })();
 
     function renderMetasItemView(item, topicData, idx) {
       itemView.innerHTML = '';
