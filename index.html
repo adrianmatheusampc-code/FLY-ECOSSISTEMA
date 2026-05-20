@@ -18017,6 +18017,14 @@
         if (!item[key].produto.precos) {
           item[key].produto.precos = { solo: 0, duo: 0, grupo: 0 };
         }
+        // Tiers customizáveis (nome + pax) — backward compat com pacotes antigos
+        if (!item[key].produto.precos.labels) {
+          item[key].produto.precos.labels = { solo: 'Solo', duo: 'Duo', grupo: 'Grupo' };
+        }
+        if (!item[key].produto.precos.pax) {
+          const _tg = (item[key].produto.custosPacote && item[key].produto.custosPacote.turmaGrupo) || 6;
+          item[key].produto.precos.pax = { solo: 1, duo: 2, grupo: _tg };
+        }
         if (!item[key].produto.video) {
           item[key].produto.video = { url: '', name: '', provider: '', type: '' };
         } else if (typeof item[key].produto.video === 'string') {
@@ -19698,10 +19706,17 @@
       const cpItems = cp.items || [];
       const turmaGrupo = Number(cp.turmaGrupo) || 6;
       const precos = D.produto.precos || { solo: 0, duo: 0, grupo: 0 };
+      // Tiers customizáveis: nome + pax por tier (defaults: Solo/1, Duo/2, Grupo/turmaGrupo)
+      const _pl = precos.labels || {}, _pp = precos.pax || {};
+      const tier = {
+        solo:  { label: _pl.solo  || 'Solo',  pax: Math.max(1, Number(_pp.solo)  || 1) },
+        duo:   { label: _pl.duo   || 'Duo',   pax: Math.max(1, Number(_pp.duo)   || 2) },
+        grupo: { label: _pl.grupo || 'Grupo', pax: Math.max(1, Number(_pp.grupo) || turmaGrupo) },
+      };
       // Custo por cliente em cada cenário (BASE — usando item.valor padrão)
-      const custoSolo  = dbxComputeCustoPacotePorCliente(D, 1);
-      const custoDuo   = dbxComputeCustoPacotePorCliente(D, 2);
-      const custoGrupo = dbxComputeCustoPacotePorCliente(D, turmaGrupo);
+      const custoSolo  = dbxComputeCustoPacotePorCliente(D, tier.solo.pax);
+      const custoDuo   = dbxComputeCustoPacotePorCliente(D, tier.duo.pax);
+      const custoGrupo = dbxComputeCustoPacotePorCliente(D, tier.grupo.pax);
       const margemPct = (preco, custo) => preco > 0 ? ((preco - custo) / preco * 100) : 0;
       const margemBadge = (preco, custo) => {
         if (!preco) return '<span class="dbx-margin-badge neutral">— defina o preço</span>';
@@ -19713,9 +19728,9 @@
       // Variação mensal — calcula custo + lucro por mês × cenário
       const temVariacao = dbxHasVariacaoMensal(D);
       const mensalData = DBX_MESES.map(m => {
-        const cSolo  = dbxComputeCustoPacotePorCliente(D, 1, m.k);
-        const cDuo   = dbxComputeCustoPacotePorCliente(D, 2, m.k);
-        const cGrupo = dbxComputeCustoPacotePorCliente(D, turmaGrupo, m.k);
+        const cSolo  = dbxComputeCustoPacotePorCliente(D, tier.solo.pax, m.k);
+        const cDuo   = dbxComputeCustoPacotePorCliente(D, tier.duo.pax, m.k);
+        const cGrupo = dbxComputeCustoPacotePorCliente(D, tier.grupo.pax, m.k);
         return {
           ...m,
           custos: { solo: cSolo, duo: cDuo, grupo: cGrupo },
@@ -19859,15 +19874,15 @@
             </div>
           </div>
           <div class="dbx-stats-grid" style="margin-top:14px;">
-            <div class="dbx-stat"><div class="lbl">Custo / cliente (Solo)${temVariacao ? ' · base' : ''}</div><div class="val">${dbxFmtMoney(custoSolo)}</div></div>
-            <div class="dbx-stat"><div class="lbl">Custo / cliente (Duo)${temVariacao ? ' · base' : ''}</div><div class="val">${dbxFmtMoney(custoDuo)}</div></div>
-            <div class="dbx-stat"><div class="lbl">Custo / cliente (Grupo de ${turmaGrupo})${temVariacao ? ' · base' : ''}</div><div class="val">${dbxFmtMoney(custoGrupo)}</div></div>
+            <div class="dbx-stat"><div class="lbl">Custo / cliente (${escapeHtml(tier.solo.label)})${temVariacao ? ' · base' : ''}</div><div class="val">${dbxFmtMoney(custoSolo)}</div></div>
+            <div class="dbx-stat"><div class="lbl">Custo / cliente (${escapeHtml(tier.duo.label)})${temVariacao ? ' · base' : ''}</div><div class="val">${dbxFmtMoney(custoDuo)}</div></div>
+            <div class="dbx-stat"><div class="lbl">Custo / cliente (${escapeHtml(tier.grupo.label)} · ${tier.grupo.pax}p)${temVariacao ? ' · base' : ''}</div><div class="val">${dbxFmtMoney(custoGrupo)}</div></div>
           </div>
           ${temVariacao ? `
             <div class="dbx-stats-grid" style="margin-top:8px;">
-              <div class="dbx-stat"><div class="lbl">Custo MÉDIO/ano (Solo)</div><div class="val">${dbxFmtMoney(mediaCusto.solo)}</div></div>
-              <div class="dbx-stat"><div class="lbl">Custo MÉDIO/ano (Duo)</div><div class="val">${dbxFmtMoney(mediaCusto.duo)}</div></div>
-              <div class="dbx-stat"><div class="lbl">Custo MÉDIO/ano (Grupo de ${turmaGrupo})</div><div class="val">${dbxFmtMoney(mediaCusto.grupo)}</div></div>
+              <div class="dbx-stat"><div class="lbl">Custo MÉDIO/ano (${escapeHtml(tier.solo.label)})</div><div class="val">${dbxFmtMoney(mediaCusto.solo)}</div></div>
+              <div class="dbx-stat"><div class="lbl">Custo MÉDIO/ano (${escapeHtml(tier.duo.label)})</div><div class="val">${dbxFmtMoney(mediaCusto.duo)}</div></div>
+              <div class="dbx-stat"><div class="lbl">Custo MÉDIO/ano (${escapeHtml(tier.grupo.label)} · ${tier.grupo.pax}p)</div><div class="val">${dbxFmtMoney(mediaCusto.grupo)}</div></div>
             </div>
           ` : ''}
         </div>
@@ -19882,19 +19897,19 @@
           </div>
           <div class="dbx-precos-grid">
             <div class="dbx-preco-card">
-              <div class="dbx-preco-titulo">SOLO <small>(1 pessoa)</small></div>
+              <div class="dbx-preco-titulo">${escapeHtml((tier.solo.label || '').toUpperCase())} <small>(${tier.solo.pax} ${tier.solo.pax === 1 ? 'pessoa' : 'pessoas'})</small></div>
               <div class="dbx-preco-valor">${dbxFmtMoney(precos.solo)}</div>
               <div class="dbx-preco-margin">${margemBadge(precos.solo, custoSolo)}</div>
               <div class="dbx-preco-custo">custo: ${dbxFmtMoney(custoSolo)}</div>
             </div>
             <div class="dbx-preco-card">
-              <div class="dbx-preco-titulo">DUO <small>(2 pessoas)</small></div>
+              <div class="dbx-preco-titulo">${escapeHtml((tier.duo.label || '').toUpperCase())} <small>(${tier.duo.pax} ${tier.duo.pax === 1 ? 'pessoa' : 'pessoas'})</small></div>
               <div class="dbx-preco-valor">${dbxFmtMoney(precos.duo)}</div>
               <div class="dbx-preco-margin">${margemBadge(precos.duo, custoDuo)}</div>
               <div class="dbx-preco-custo">custo: ${dbxFmtMoney(custoDuo)}</div>
             </div>
             <div class="dbx-preco-card">
-              <div class="dbx-preco-titulo">GRUPO <small>(${turmaGrupo} pessoas)</small></div>
+              <div class="dbx-preco-titulo">${escapeHtml((tier.grupo.label || '').toUpperCase())} <small>(${tier.grupo.pax} ${tier.grupo.pax === 1 ? 'pessoa' : 'pessoas'})</small></div>
               <div class="dbx-preco-valor">${dbxFmtMoney(precos.grupo)}</div>
               <div class="dbx-preco-margin">${margemBadge(precos.grupo, custoGrupo)}</div>
               <div class="dbx-preco-custo">custo: ${dbxFmtMoney(custoGrupo)}</div>
@@ -19920,12 +19935,12 @@
           <div class="dbx-timeline-table">
             <div class="dbx-timeline-row dbx-timeline-head">
               <span class="dbx-tl-mes">Mês</span>
-              <span class="dbx-tl-c">Custo Solo</span>
-              <span class="dbx-tl-c">Custo Duo</span>
-              <span class="dbx-tl-c">Custo Grupo</span>
-              <span class="dbx-tl-l">Lucro Solo</span>
-              <span class="dbx-tl-l">Lucro Duo</span>
-              <span class="dbx-tl-l">Lucro Grupo</span>
+              <span class="dbx-tl-c">Custo ${escapeHtml(tier.solo.label)}</span>
+              <span class="dbx-tl-c">Custo ${escapeHtml(tier.duo.label)}</span>
+              <span class="dbx-tl-c">Custo ${escapeHtml(tier.grupo.label)}</span>
+              <span class="dbx-tl-l">Lucro ${escapeHtml(tier.solo.label)}</span>
+              <span class="dbx-tl-l">Lucro ${escapeHtml(tier.duo.label)}</span>
+              <span class="dbx-tl-l">Lucro ${escapeHtml(tier.grupo.label)}</span>
             </div>
             ${mensalData.map(m => `
               <div class="dbx-timeline-row">
@@ -20189,23 +20204,57 @@
         });
       }));
 
-      // Editar preços de venda
+      // Editar preços de venda · 3 tiers customizáveis (nome + pax + valor)
       if (!D.produto.precos) D.produto.precos = { solo: 0, duo: 0, grupo: 0 };
       panelEl.querySelectorAll('[data-edit="precos"]').forEach(b => b.addEventListener('click', () => {
+        const pr = D.produto.precos || {};
+        const pl = pr.labels || {};
+        const pp = pr.pax    || {};
+        const tg = (D.produto.custosPacote && D.produto.custosPacote.turmaGrupo) || 6;
         dbxOpenModal({
-          title: 'Preços de venda',
+          title: 'Preços de venda · 3 tiers customizáveis',
           fields: [
-            { key: 'solo',  label: 'Solo (1 pessoa) — R$',    type: 'number', step: '0.01' },
-            { key: 'duo',   label: 'Duo (2 pessoas) — R$',    type: 'number', step: '0.01' },
-            { key: 'grupo', label: `Grupo (${D.produto.custosPacote.turmaGrupo || 6} pessoas) — R$`, type: 'number', step: '0.01' },
+            { key: '__i0', label: '🏷 Defina nome, pax (pessoas) e valor de CADA tier. Ex.: Solo/1, Trio/3, Grupo de 8/8.', type: 'info' },
+            { key: 'labelSolo', label: 'Tier 1 · nome (ex: Solo, Casal)',           type: 'text' },
+            { key: 'paxSolo',   label: 'Tier 1 · pax (pessoas)',                    type: 'number', step: '1' },
+            { key: 'valSolo',   label: 'Tier 1 · valor de venda (R$)',              type: 'number', step: '0.01' },
+            { key: '__s1', label: '─────────────────────────────', type: 'info' },
+            { key: 'labelDuo',  label: 'Tier 2 · nome (ex: Duo, Trio, Quarteto)',   type: 'text' },
+            { key: 'paxDuo',    label: 'Tier 2 · pax (pessoas)',                    type: 'number', step: '1' },
+            { key: 'valDuo',    label: 'Tier 2 · valor de venda (R$)',              type: 'number', step: '0.01' },
+            { key: '__s2', label: '─────────────────────────────', type: 'info' },
+            { key: 'labelGrupo',label: 'Tier 3 · nome (ex: Grupo, Família, Turma)', type: 'text' },
+            { key: 'paxGrupo',  label: 'Tier 3 · pax (pessoas) — também é a turma usada pra dividir custos compartilhados', type: 'number', step: '1' },
+            { key: 'valGrupo',  label: 'Tier 3 · valor de venda (R$)',              type: 'number', step: '0.01' },
           ],
-          values: D.produto.precos,
+          values: {
+            labelSolo:  pl.solo  || 'Solo',
+            paxSolo:    pp.solo  || 1,
+            valSolo:    pr.solo  || 0,
+            labelDuo:   pl.duo   || 'Duo',
+            paxDuo:     pp.duo   || 2,
+            valDuo:     pr.duo   || 0,
+            labelGrupo: pl.grupo || 'Grupo',
+            paxGrupo:   pp.grupo || tg,
+            valGrupo:   pr.grupo || 0,
+          },
           onSave: (vals) => {
+            const paxSolo  = Math.max(1, parseInt(vals.paxSolo, 10)  || 1);
+            const paxDuo   = Math.max(1, parseInt(vals.paxDuo, 10)   || 2);
+            const paxGrupo = Math.max(1, parseInt(vals.paxGrupo, 10) || 6);
+            const lblSolo  = (String(vals.labelSolo  || '').trim() || 'Solo');
+            const lblDuo   = (String(vals.labelDuo   || '').trim() || 'Duo');
+            const lblGrupo = (String(vals.labelGrupo || '').trim() || 'Grupo');
             D.produto.precos = {
-              solo:  Number(vals.solo)  || 0,
-              duo:   Number(vals.duo)   || 0,
-              grupo: Number(vals.grupo) || 0,
+              solo:  Number(vals.valSolo)  || 0,
+              duo:   Number(vals.valDuo)   || 0,
+              grupo: Number(vals.valGrupo) || 0,
+              labels: { solo: lblSolo,  duo: lblDuo,  grupo: lblGrupo },
+              pax:    { solo: paxSolo,  duo: paxDuo,  grupo: paxGrupo },
             };
+            // Sincroniza turmaGrupo (usado pra dividir custos compartilhados de itens com divPor>1)
+            if (!D.produto.custosPacote) D.produto.custosPacote = { items: [], turmaGrupo: paxGrupo };
+            D.produto.custosPacote.turmaGrupo = paxGrupo;
             dbxRefresh(D, item);
           }
         });
