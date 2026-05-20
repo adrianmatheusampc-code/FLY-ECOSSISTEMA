@@ -16091,6 +16091,480 @@
       try { window.__jamesContext && window.__jamesContext.trackNavigation && window.__jamesContext.trackNavigation('operacoes', 'central'); } catch (e) {}
     }
 
+    /* ============================================================
+       CENTRAL DE ATRAÇÕES FLY · formato de painel "atracoes"
+       Phase 1: biblioteca de atrações + add/edit/delete + detail.
+       Phase 2 (futuro): tabs internas (por pacote, vendas, mkt,
+       fornecedores, alertas), filtros avançados, ranking.
+       Phase 3 (futuro): comandos James, alertas auto, sugestões.
+       ============================================================ */
+    function _atrInjectStyles() {
+      if (document.getElementById('atr-fly-styles')) return;
+      const s = document.createElement('style');
+      s.id = 'atr-fly-styles';
+      s.textContent = `
+        .atr-module{max-width:1280px;margin:0 auto;padding:0 16px 60px;color:#fff;}
+        .atr-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;padding:18px 0 22px;border-bottom:1px solid rgba(245,184,66,.18);margin-bottom:20px;}
+        .atr-hero h1{margin:0;font-size:30px;font-weight:700;letter-spacing:.3px;color:#fff;}
+        .atr-hero p{margin:6px 0 0;color:rgba(255,255,255,.6);font-size:13px;}
+        .atr-hero-actions{display:flex;gap:8px;flex-wrap:wrap;}
+        .atr-summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:18px;}
+        .atr-stat{padding:13px 14px;border-radius:10px;background:linear-gradient(180deg,rgba(245,184,66,.06),rgba(0,0,0,.4));border:1px solid rgba(245,184,66,.18);}
+        .atr-stat.warn{background:linear-gradient(180deg,rgba(255,120,80,.10),rgba(0,0,0,.4));border-color:rgba(255,120,80,.35);}
+        .atr-stat .lbl{font-size:10px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.6px;}
+        .atr-stat .val{font-size:22px;font-weight:700;color:#FFE099;margin-top:4px;}
+        .atr-stat .val.small{font-size:14px;line-height:1.2;}
+        .atr-stat.warn .val{color:#ff9b6e;}
+        .atr-stat .sub{font-size:10px;color:rgba(255,255,255,.45);margin-top:2px;}
+        .atr-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+        .atr-filters .atr-search{flex:1;min-width:200px;padding:10px 12px;background:#000;border:1px solid rgba(245,184,66,.25);color:#fff;border-radius:8px;}
+        .atr-filters select{padding:10px 12px;background:#000;border:1px solid rgba(245,184,66,.25);color:#fff;border-radius:8px;}
+        .atr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+        .atr-empty{grid-column:1/-1;text-align:center;padding:60px 20px;background:rgba(0,0,0,.3);border:1px dashed rgba(245,184,66,.25);border-radius:12px;}
+        .atr-empty-ico{font-size:48px;margin-bottom:10px;}
+        .atr-empty h3{margin:0 0 6px;color:#fff;}
+        .atr-empty p{margin:0;color:rgba(255,255,255,.55);font-size:13px;}
+        .atr-card{background:linear-gradient(180deg,rgba(245,184,66,.04),rgba(0,0,0,.5));border:1px solid rgba(245,184,66,.18);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .15s,border-color .15s,box-shadow .15s;display:flex;flex-direction:column;}
+        .atr-card:hover{transform:translateY(-2px);border-color:rgba(245,184,66,.45);box-shadow:0 8px 24px rgba(0,0,0,.5);}
+        .atr-card-media{position:relative;aspect-ratio:16/10;background:#111;overflow:hidden;}
+        .atr-card-media img{width:100%;height:100%;object-fit:cover;display:block;}
+        .atr-card-media-empty{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:46px;opacity:.4;}
+        .atr-badge-video{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.7);color:#FFE099;padding:3px 7px;font-size:10px;border-radius:5px;backdrop-filter:blur(4px);}
+        .atr-card-status{position:absolute;top:8px;right:8px;font-size:10px;padding:3px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.5px;font-weight:600;backdrop-filter:blur(4px);}
+        .status-ativa{background:rgba(70,200,120,.85);color:#000;}
+        .status-pausada{background:rgba(160,160,160,.85);color:#000;}
+        .status-negociacao{background:rgba(126,207,255,.85);color:#000;}
+        .status-preco-pendente,.status-fornecedor-pendente,.status-midia-pendente,.status-contrato-pendente{background:rgba(245,182,66,.9);color:#000;}
+        .status-alta-demanda{background:rgba(255,90,160,.9);color:#000;}
+        .status-margem-baixa,.status-problema{background:rgba(255,90,80,.9);color:#fff;}
+        .status-premium{background:linear-gradient(90deg,#f5b642,#FFE099);color:#000;}
+        .status-arquivada{background:rgba(80,80,80,.85);color:rgba(255,255,255,.6);}
+        .atr-card-body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px;flex:1;}
+        .atr-card-title{font-size:15px;font-weight:700;color:#fff;line-height:1.25;}
+        .atr-card-meta{display:flex;gap:6px;flex-wrap:wrap;}
+        .atr-chip{display:inline-block;padding:3px 8px;background:rgba(245,184,66,.12);color:#FFE099;border:1px solid rgba(245,184,66,.25);border-radius:5px;font-size:10px;}
+        .atr-chip.muted{background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);border-color:rgba(255,255,255,.12);}
+        .atr-chip.mini{font-size:9px;padding:2px 6px;}
+        .atr-card-prices{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:auto;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);}
+        .atr-card-prices > div{display:flex;flex-direction:column;}
+        .atr-card-prices .lbl{font-size:9px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;}
+        .atr-card-prices strong{font-size:12px;color:#fff;margin-top:2px;}
+        .atr-card-prices .pos strong{color:#6dffb0;}
+        .atr-card-prices .warn strong{color:#ffd070;}
+        .atr-card-prices .neg strong{color:#ff8c8c;}
+        .atr-card-pacs{display:flex;flex-wrap:wrap;gap:4px;}
+        .atr-card-actions{display:flex;gap:6px;margin-top:6px;}
+        .atr-card-actions .apple-btn.small{padding:5px 10px;font-size:11px;flex:1;}
+        .apple-btn.small.danger{background:rgba(255,90,80,.12);color:#ff8c8c;border-color:rgba(255,90,80,.35);flex:0 0 auto;}
+        .apple-btn.small.danger:hover{background:rgba(255,90,80,.22);}
+        /* Modal */
+        .atr-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
+        .atr-modal{width:min(960px,100%);max-height:90vh;background:#0a0a0a;border:1px solid rgba(245,184,66,.28);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;}
+        .atr-modal-head{padding:16px 20px;border-bottom:1px solid rgba(245,184,66,.18);display:flex;justify-content:space-between;align-items:center;}
+        .atr-modal-head h3{margin:0;color:#FFE099;}
+        .atr-modal-close{background:transparent;border:1px solid rgba(255,255,255,.18);color:#fff;width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:16px;}
+        .atr-modal-body{padding:18px 20px;overflow-y:auto;flex:1;}
+        .atr-modal-actions{padding:14px 20px;border-top:1px solid rgba(245,184,66,.18);display:flex;justify-content:flex-end;gap:8px;}
+        .atr-form-section{margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.06);}
+        .atr-form-section:last-child{border-bottom:none;}
+        .atr-form-section h4{margin:0 0 12px;color:#FFE099;font-size:13px;text-transform:uppercase;letter-spacing:.6px;}
+        .atr-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;}
+        .atr-form-grid label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.5px;}
+        .atr-form-grid label.full{grid-column:1/-1;}
+        .atr-form-grid input,.atr-form-grid select,.atr-form-grid textarea{padding:9px 11px;background:#000;border:1px solid rgba(245,184,66,.22);color:#fff;border-radius:6px;font-size:13px;font-family:inherit;}
+        .atr-form-grid textarea{resize:vertical;}
+        /* Detail */
+        .atr-modal-detail{width:min(1024px,100%);}
+        .atr-detail-hero{position:relative;aspect-ratio:21/9;background:#111 center/cover no-repeat;display:flex;align-items:flex-end;}
+        .atr-detail-hero .atr-modal-close{position:absolute;top:14px;right:14px;background:rgba(0,0,0,.6);}
+        .atr-detail-hero-grad{width:100%;padding:24px;background:linear-gradient(0deg,rgba(0,0,0,.85),transparent);}
+        .atr-detail-hero-grad h2{margin:6px 0 4px;font-size:28px;color:#fff;}
+        .atr-detail-meta{font-size:12px;color:rgba(255,255,255,.7);}
+        .atr-detail-body{padding:18px 22px;overflow-y:auto;}
+        .atr-detail-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;}
+        .atr-detail-kpis > div{padding:10px;background:rgba(245,184,66,.06);border:1px solid rgba(245,184,66,.18);border-radius:8px;}
+        .atr-detail-kpis .lbl{font-size:10px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.6px;}
+        .atr-detail-kpis strong{display:block;font-size:16px;color:#FFE099;margin-top:4px;}
+        .atr-detail-short{font-size:14px;color:rgba(255,255,255,.85);font-style:italic;border-left:2px solid #f5b642;padding-left:10px;margin:10px 0;}
+        .atr-detail-long{font-size:13px;color:rgba(255,255,255,.75);line-height:1.6;margin:10px 0 16px;}
+        .atr-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+        .atr-detail-block{padding:12px 14px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:10px;}
+        .atr-detail-block h4{margin:0 0 8px;color:#FFE099;font-size:11px;text-transform:uppercase;letter-spacing:.6px;}
+        .atr-detail-block dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:12px;}
+        .atr-detail-block dt{color:rgba(255,255,255,.5);}
+        .atr-detail-block dd{margin:0;color:#fff;}
+        .atr-detail-pacs{display:flex;flex-wrap:wrap;gap:5px;}
+        .atr-detail-video{padding:10px 14px;background:rgba(126,207,255,.08);border:1px solid rgba(126,207,255,.25);border-radius:8px;color:#7ecfff;font-size:11px;word-break:break-all;margin-bottom:14px;}
+        /* format card theme */
+        .format-card.atracoes{background:linear-gradient(135deg,rgba(245,182,66,.10),rgba(70,200,120,.06));border-color:rgba(245,182,66,.30);}
+        .format-opt.active .format-card.atracoes,
+        .format-opt input:checked ~ .format-card.atracoes,
+        .format-opt:has(input:checked) .format-card.atracoes{border-color:rgba(245,182,66,.65);background:linear-gradient(135deg,rgba(245,182,66,.18),rgba(70,200,120,.10));}
+        @media (max-width: 720px){
+          .atr-hero h1{font-size:22px;}
+          .atr-summary{grid-template-columns:repeat(2,1fr);}
+          .atr-grid{grid-template-columns:1fr;}
+          .atr-form-grid{grid-template-columns:1fr;}
+          .atr-detail-kpis{grid-template-columns:repeat(2,1fr);}
+          .atr-detail-grid{grid-template-columns:1fr;}
+        }
+      `;
+      document.head.appendChild(s);
+    }
+
+    function renderAtracoesFlyItemView(item, topicData, idx) {
+      _atrInjectStyles();
+      itemView.innerHTML = '';
+      const topicName = (currentTopic && currentTopic.name) || 'tópico';
+      const back = document.createElement('div');
+      back.className = 'hier-back-bar';
+      back.innerHTML = `<button class="apple-btn" id="atr-back"><span class="apple-icon">←</span><span>Voltar para ${escapeHtml(topicName)}</span></button>`;
+      itemView.appendChild(back);
+      back.querySelector('#atr-back').addEventListener('click', () => { switchTo('topic'); showTopic(currentTopic); });
+
+      if (!Array.isArray(item.atracoes)) item.atracoes = [];
+
+      const wrap = document.createElement('div');
+      wrap.className = 'atr-module';
+      itemView.appendChild(wrap);
+
+      const getList = () => Array.isArray(item.atracoes) ? item.atracoes : (item.atracoes = []);
+      const getById = (id) => getList().find(a => a.id === id);
+      const persist = () => { try { saveData(); } catch (e) {} };
+      const newId = () => 'atr-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
+      const fmtBRL = (v) => 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+      const margin = (pv, cb) => { const p = Number(pv)||0, c = Number(cb)||0; return { abs: p - c, pct: p > 0 ? ((p - c) / p * 100) : 0 }; };
+
+      function computeSummary() {
+        const list = getList();
+        const ativas = list.filter(a => (a.status || 'ativa') === 'ativa').length;
+        const emPacotes = list.filter(a => Array.isArray(a.pacotes) && a.pacotes.length > 0).length;
+        const conteudos = list.filter(a => ((a.fotoUrl||'').trim() || (a.videoUrl||'').trim())).length;
+        const pendentes = list.filter(a => {
+          const st = (a.status || 'ativa');
+          if (st.includes('pendente') || st === 'problema' || st === 'margem-baixa') return true;
+          if (!Number(a.precoVenda)) return true;
+          if (!(a.fornecedor||'').trim()) return true;
+          if (!((a.fotoUrl||'').trim() || (a.videoUrl||'').trim())) return true;
+          return false;
+        }).length;
+        const ranked = [...list].sort((a,b)=> margin(b.precoVenda,b.custoB2B).abs - margin(a.precoVenda,a.custoB2B).abs);
+        const rankedPct = [...list].sort((a,b)=> margin(b.precoVenda,b.custoB2B).pct - margin(a.precoVenda,a.custoB2B).pct);
+        const topLucro = ranked[0]; const topMargem = rankedPct[0];
+        return { total: list.length, ativas, emPacotes, conteudos, pendentes,
+          topLucro: topLucro?.nome || '—', topMargem: topMargem?.nome || '—',
+          topMargemPct: topMargem ? margin(topMargem.precoVenda, topMargem.custoB2B).pct : 0 };
+      }
+
+      function renderCard(a) {
+        const m = margin(a.precoVenda, a.custoB2B);
+        const mediaSrc = (a.fotoUrl || '').trim();
+        const hasVideo = !!(a.videoUrl || '').trim();
+        const pacs = Array.isArray(a.pacotes) ? a.pacotes : [];
+        const status = a.status || 'ativa';
+        const mClass = m.abs < 0 ? 'neg' : (m.pct < 30 ? 'warn' : 'pos');
+        return `
+          <div class="atr-card" data-id="${escapeHtml(a.id)}">
+            <div class="atr-card-media">
+              ${mediaSrc ? `<img src="${escapeHtml(mediaSrc)}" alt="" loading="lazy">` : `<div class="atr-card-media-empty">${hasVideo ? '🎬' : '🎯'}</div>`}
+              ${hasVideo ? '<span class="atr-badge-video">▶ vídeo</span>' : ''}
+              <span class="atr-card-status status-${escapeHtml(status)}">${escapeHtml(status)}</span>
+            </div>
+            <div class="atr-card-body">
+              <div class="atr-card-title">${escapeHtml(a.nome || 'Sem nome')}</div>
+              <div class="atr-card-meta">
+                ${a.categoria ? `<span class="atr-chip">${escapeHtml(a.categoria)}</span>` : ''}
+                ${a.cidade ? `<span class="atr-chip muted">${escapeHtml(a.cidade)}</span>` : ''}
+              </div>
+              <div class="atr-card-prices">
+                <div><span class="lbl">Venda</span><strong>${fmtBRL(a.precoVenda)}</strong></div>
+                <div><span class="lbl">Custo</span><strong>${fmtBRL(a.custoB2B)}</strong></div>
+                <div class="${mClass}"><span class="lbl">Margem</span><strong>${m.pct.toFixed(0)}%</strong></div>
+              </div>
+              ${pacs.length ? `<div class="atr-card-pacs">${pacs.slice(0,4).map(p=>`<span class="atr-chip mini">${escapeHtml(p)}</span>`).join('')}${pacs.length>4?`<span class="atr-chip mini muted">+${pacs.length-4}</span>`:''}</div>` : ''}
+              <div class="atr-card-actions">
+                <button class="apple-btn small" data-act="edit">✎ Editar</button>
+                <button class="apple-btn small danger" data-act="delete" title="Excluir">🗑</button>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      function applyFilters() {
+        const q = (wrap.querySelector('.atr-search')?.value || '').toLowerCase().trim();
+        const cat = (wrap.querySelector('.atr-fcat')?.value || '').toLowerCase();
+        const stt = (wrap.querySelector('.atr-fstatus')?.value || '').toLowerCase();
+        wrap.querySelectorAll('.atr-card').forEach(card => {
+          const a = getById(card.getAttribute('data-id')) || {};
+          const hay = ((a.nome||'')+' '+(a.categoria||'')+' '+(a.cidade||'')+' '+(a.localizacao||'')).toLowerCase();
+          const okQ = !q || hay.includes(q);
+          const okCat = !cat || (a.categoria||'').toLowerCase() === cat;
+          const okStt = !stt || (a.status||'ativa').toLowerCase() === stt;
+          card.style.display = (okQ && okCat && okStt) ? '' : 'none';
+        });
+      }
+
+      function render() {
+        const list = getList();
+        const s = computeSummary();
+        wrap.innerHTML = `
+          <div class="atr-hero">
+            <div class="atr-hero-text">
+              <h1>🎯 Central de Atrações Fly</h1>
+              <p>Gerencie experiências, custos, pacotes, vendas, mídia e fornecedores.</p>
+            </div>
+            <div class="atr-hero-actions">
+              <button class="apple-btn" data-act="add">＋ Adicionar Atração</button>
+            </div>
+          </div>
+          <div class="atr-summary">
+            <div class="atr-stat"><div class="lbl">Ativas</div><div class="val">${s.ativas}</div><div class="sub">${s.total} no total</div></div>
+            <div class="atr-stat"><div class="lbl">Em Pacotes</div><div class="val">${s.emPacotes}</div><div class="sub">vinculadas</div></div>
+            <div class="atr-stat"><div class="lbl">Vendas do Mês</div><div class="val">—</div><div class="sub">em breve</div></div>
+            <div class="atr-stat"><div class="lbl">Lucro do Mês</div><div class="val">—</div><div class="sub">em breve</div></div>
+            <div class="atr-stat"><div class="lbl">Top Lucro/un</div><div class="val small">${escapeHtml(s.topLucro)}</div><div class="sub">por venda</div></div>
+            <div class="atr-stat"><div class="lbl">Maior Margem</div><div class="val small">${escapeHtml(s.topMargem)}</div><div class="sub">${s.topMargemPct.toFixed(1)}%</div></div>
+            <div class="atr-stat ${s.pendentes ? 'warn' : ''}"><div class="lbl">Pendências</div><div class="val">${s.pendentes}</div><div class="sub">críticas</div></div>
+            <div class="atr-stat"><div class="lbl">Conteúdos</div><div class="val">${s.conteudos}</div><div class="sub">com mídia</div></div>
+          </div>
+          <div class="atr-filters">
+            <input class="atr-search" type="search" placeholder="🔎 Buscar por nome, categoria, local…">
+            <select class="atr-fcat">
+              <option value="">Categoria · todas</option>
+              ${['Aquático','Deserto','Aventura','Esporte','Parque','Luxo','Família','Casal','Noturno','Gratuito'].map(o=>`<option value="${o.toLowerCase()}">${o}</option>`).join('')}
+            </select>
+            <select class="atr-fstatus">
+              <option value="">Status · todos</option>
+              ${['ativa','pausada','negociacao','preco-pendente','fornecedor-pendente','midia-pendente','contrato-pendente','alta-demanda','margem-baixa','premium','problema','arquivada'].map(s=>`<option>${s}</option>`).join('')}
+            </select>
+          </div>
+          <div class="atr-grid">
+            ${list.length === 0 ? `
+              <div class="atr-empty">
+                <div class="atr-empty-ico">🎯</div>
+                <h3>Nenhuma atração cadastrada ainda</h3>
+                <p>Clique em <strong>＋ Adicionar Atração</strong> pra montar a biblioteca de experiências da Fly. Cada atração tem mídia, preço, fornecedor, margem e pode ser vinculada a pacotes.</p>
+              </div>
+            ` : list.map(a => renderCard(a)).join('')}
+          </div>
+        `;
+
+        wrap.querySelector('[data-act="add"]').addEventListener('click', () => openEditor(null));
+        const search = wrap.querySelector('.atr-search');
+        const fcat = wrap.querySelector('.atr-fcat');
+        const fstatus = wrap.querySelector('.atr-fstatus');
+        [search, fcat, fstatus].forEach(el => el && el.addEventListener('input', applyFilters));
+        wrap.querySelectorAll('.atr-card').forEach(card => {
+          const id = card.getAttribute('data-id');
+          card.querySelector('[data-act="edit"]')?.addEventListener('click', (e) => { e.stopPropagation(); openEditor(id); });
+          card.querySelector('[data-act="delete"]')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const atr = getById(id); if (!atr) return;
+            if (!confirm(`Excluir a atração "${atr.nome}"? Vai sair de qualquer pacote vinculado também.`)) return;
+            item.atracoes = getList().filter(a => a.id !== id);
+            persist(); render();
+          });
+          card.addEventListener('click', () => openDetail(id));
+        });
+      }
+
+      function openEditor(id) {
+        const a = id ? (getById(id) || {}) : {};
+        const isNew = !id;
+        const ov = document.createElement('div');
+        ov.className = 'atr-modal-overlay';
+        const cats = ['','Aquático','Deserto','Aventura','Esporte','Parque','Luxo','Família','Casal','Noturno','Gratuito'];
+        const cids = ['','Dubai','Abu Dhabi','Sharjah','Outras'];
+        const stats = ['ativa','pausada','negociacao','preco-pendente','fornecedor-pendente','midia-pendente','contrato-pendente','alta-demanda','margem-baixa','premium','problema','arquivada'];
+        ov.innerHTML = `
+          <div class="atr-modal">
+            <div class="atr-modal-head">
+              <h3>${isNew ? '＋ Nova Atração' : '✎ Editar Atração'}</h3>
+              <button class="atr-modal-close" type="button">✕</button>
+            </div>
+            <div class="atr-modal-body">
+              <div class="atr-form-section">
+                <h4>📍 Identificação</h4>
+                <div class="atr-form-grid">
+                  <label class="full">Nome da atração*<input id="f_nome" type="text" value="${escapeHtml(a.nome||'')}" placeholder="Ex: Jet Ski"></label>
+                  <label>Categoria<select id="f_categoria">${cats.map(o=>`<option value="${o}" ${(a.categoria||'')===o?'selected':''}>${o||'—'}</option>`).join('')}</select></label>
+                  <label>Cidade<select id="f_cidade">${cids.map(o=>`<option value="${o}" ${(a.cidade||'')===o?'selected':''}>${o||'—'}</option>`).join('')}</select></label>
+                  <label class="full">Localização / bairro<input id="f_localizacao" type="text" value="${escapeHtml(a.localizacao||'')}" placeholder="Ex: Marina, Downtown, Yas Island"></label>
+                  <label class="full">Link Google Maps<input id="f_maps" type="url" value="${escapeHtml(a.mapsUrl||'')}" placeholder="https://maps.google.com/..."></label>
+                  <label class="full">Descrição curta (uma linha)<input id="f_descCurta" type="text" value="${escapeHtml(a.descricaoCurta||'')}"></label>
+                  <label class="full">Descrição completa<textarea id="f_descCompleta" rows="3">${escapeHtml(a.descricaoCompleta||'')}</textarea></label>
+                </div>
+              </div>
+              <div class="atr-form-section">
+                <h4>🎬 Mídia</h4>
+                <div class="atr-form-grid">
+                  <label class="full">URL da foto principal<input id="f_fotoUrl" type="url" value="${escapeHtml(a.fotoUrl||'')}" placeholder="https://res.cloudinary.com/..."></label>
+                  <label class="full">URL do vídeo (YouTube, Vimeo, MP4)<input id="f_videoUrl" type="url" value="${escapeHtml(a.videoUrl||'')}" placeholder="https://youtube.com/watch?..."></label>
+                </div>
+              </div>
+              <div class="atr-form-section">
+                <h4>💰 Financeiro</h4>
+                <div class="atr-form-grid">
+                  <label>Custo Fly/B2B (R$)<input id="f_custoB2B" type="number" step="0.01" value="${a.custoB2B||0}"></label>
+                  <label>Preço de mercado (R$)<input id="f_precoMercado" type="number" step="0.01" value="${a.precoMercado||0}"></label>
+                  <label>Preço venda Fly (R$)<input id="f_precoVenda" type="number" step="0.01" value="${a.precoVenda||0}"></label>
+                  <label>Moeda original<input id="f_moeda" type="text" value="${escapeHtml(a.moedaOriginal||'AED')}"></label>
+                </div>
+              </div>
+              <div class="atr-form-section">
+                <h4>🏢 Parceria</h4>
+                <div class="atr-form-grid">
+                  <label>Fornecedor<input id="f_fornecedor" type="text" value="${escapeHtml(a.fornecedor||'')}"></label>
+                  <label>Contato / WhatsApp<input id="f_contato" type="text" value="${escapeHtml(a.contatoFornecedor||'')}"></label>
+                  <label>E-mail<input id="f_email" type="email" value="${escapeHtml(a.emailFornecedor||'')}"></label>
+                  <label>Validade do preço<input id="f_validade" type="date" value="${escapeHtml(a.validadePreco||'')}"></label>
+                </div>
+              </div>
+              <div class="atr-form-section">
+                <h4>⚙️ Operação</h4>
+                <div class="atr-form-grid">
+                  <label>Horário<input id="f_horario" type="text" value="${escapeHtml(a.horario||'')}" placeholder="08h-22h"></label>
+                  <label>Duração<input id="f_duracao" type="text" value="${escapeHtml(a.duracao||'')}" placeholder="2h"></label>
+                  <label>Capacidade<input id="f_capacidade" type="number" step="1" value="${a.capacidade||0}"></label>
+                  <label>Idade mínima<input id="f_idadeMin" type="number" step="1" value="${a.idadeMin||0}"></label>
+                  <label class="full">O que está incluso<input id="f_incluso" type="text" value="${escapeHtml(a.incluso||'')}"></label>
+                  <label class="full">Observações operacionais<textarea id="f_obs" rows="2">${escapeHtml(a.observacoesOp||'')}</textarea></label>
+                </div>
+              </div>
+              <div class="atr-form-section">
+                <h4>📦 Vínculos e Status</h4>
+                <div class="atr-form-grid">
+                  <label class="full">Pacotes vinculados (separe por vírgula)<input id="f_pacotes" type="text" value="${escapeHtml((a.pacotes||[]).join(', '))}" placeholder="Dubai GTA, Dubai Explorer, Dubai Family"></label>
+                  <label class="full">Status<select id="f_status">${stats.map(s=>`<option value="${s}" ${(a.status||'ativa')===s?'selected':''}>${s}</option>`).join('')}</select></label>
+                </div>
+              </div>
+            </div>
+            <div class="atr-modal-actions">
+              <button class="apple-btn ghost" data-act="cancel">Cancelar</button>
+              <button class="apple-btn" data-act="save">Salvar</button>
+            </div>
+          </div>`;
+        document.body.appendChild(ov);
+        const close = () => ov.remove();
+        ov.querySelector('.atr-modal-close').addEventListener('click', close);
+        ov.querySelector('[data-act="cancel"]').addEventListener('click', close);
+        ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+        ov.querySelector('[data-act="save"]').addEventListener('click', () => {
+          const get = (id) => ov.querySelector('#'+id)?.value;
+          const nome = (get('f_nome')||'').trim();
+          if (!nome) { alert('Nome é obrigatório.'); return; }
+          const pacotesStr = (get('f_pacotes')||'').trim();
+          const pacotes = pacotesStr ? pacotesStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+          const payload = {
+            id: a.id || newId(),
+            nome,
+            categoria: get('f_categoria') || '',
+            cidade: get('f_cidade') || '',
+            localizacao: (get('f_localizacao')||'').trim(),
+            mapsUrl: (get('f_maps')||'').trim(),
+            descricaoCurta: (get('f_descCurta')||'').trim(),
+            descricaoCompleta: (get('f_descCompleta')||'').trim(),
+            fotoUrl: (get('f_fotoUrl')||'').trim(),
+            videoUrl: (get('f_videoUrl')||'').trim(),
+            custoB2B: Number(get('f_custoB2B'))||0,
+            precoMercado: Number(get('f_precoMercado'))||0,
+            precoVenda: Number(get('f_precoVenda'))||0,
+            moedaOriginal: (get('f_moeda')||'').trim(),
+            fornecedor: (get('f_fornecedor')||'').trim(),
+            contatoFornecedor: (get('f_contato')||'').trim(),
+            emailFornecedor: (get('f_email')||'').trim(),
+            validadePreco: get('f_validade') || '',
+            horario: (get('f_horario')||'').trim(),
+            duracao: (get('f_duracao')||'').trim(),
+            capacidade: Number(get('f_capacidade'))||0,
+            idadeMin: Number(get('f_idadeMin'))||0,
+            incluso: (get('f_incluso')||'').trim(),
+            observacoesOp: (get('f_obs')||'').trim(),
+            pacotes,
+            status: get('f_status') || 'ativa',
+            criadoEm: a.criadoEm || Date.now(),
+            atualizadoEm: Date.now(),
+          };
+          const list = getList();
+          const ix = list.findIndex(x => x.id === payload.id);
+          if (ix >= 0) list[ix] = { ...list[ix], ...payload };
+          else list.push(payload);
+          persist(); close(); render();
+        });
+      }
+
+      function openDetail(id) {
+        const a = getById(id); if (!a) return;
+        const m = margin(a.precoVenda, a.custoB2B);
+        const ov = document.createElement('div');
+        ov.className = 'atr-modal-overlay';
+        const heroBg = (a.fotoUrl||'').trim() ? `style="background-image:url('${escapeHtml(a.fotoUrl)}')"` : '';
+        ov.innerHTML = `
+          <div class="atr-modal atr-modal-detail">
+            <div class="atr-detail-hero" ${heroBg}>
+              <button class="atr-modal-close" type="button">✕</button>
+              <div class="atr-detail-hero-grad">
+                <span class="atr-card-status status-${escapeHtml(a.status||'ativa')}">${escapeHtml(a.status||'ativa')}</span>
+                <h2>${escapeHtml(a.nome)}</h2>
+                <div class="atr-detail-meta">
+                  ${a.categoria?`<span>${escapeHtml(a.categoria)}</span> `:''}
+                  ${a.cidade?`<span>· ${escapeHtml(a.cidade)}</span> `:''}
+                  ${a.localizacao?`<span>· ${escapeHtml(a.localizacao)}</span>`:''}
+                </div>
+              </div>
+            </div>
+            <div class="atr-detail-body">
+              ${(a.videoUrl||'').trim() ? `<div class="atr-detail-video">🎬 ${escapeHtml(a.videoUrl)}</div>` : ''}
+              <div class="atr-detail-kpis">
+                <div><span class="lbl">Venda</span><strong>${fmtBRL(a.precoVenda)}</strong></div>
+                <div><span class="lbl">Custo</span><strong>${fmtBRL(a.custoB2B)}</strong></div>
+                <div><span class="lbl">Mercado</span><strong>${fmtBRL(a.precoMercado)}</strong></div>
+                <div><span class="lbl">Margem R$</span><strong>${fmtBRL(m.abs)}</strong></div>
+                <div><span class="lbl">Margem %</span><strong>${m.pct.toFixed(1)}%</strong></div>
+              </div>
+              ${a.descricaoCurta ? `<p class="atr-detail-short">${escapeHtml(a.descricaoCurta)}</p>` : ''}
+              ${a.descricaoCompleta ? `<p class="atr-detail-long">${escapeHtml(a.descricaoCompleta)}</p>` : ''}
+              <div class="atr-detail-grid">
+                <div class="atr-detail-block"><h4>⚙️ Operação</h4><dl>
+                  ${a.horario?`<dt>Horário</dt><dd>${escapeHtml(a.horario)}</dd>`:''}
+                  ${a.duracao?`<dt>Duração</dt><dd>${escapeHtml(a.duracao)}</dd>`:''}
+                  ${a.capacidade?`<dt>Capacidade</dt><dd>${a.capacidade}/horário</dd>`:''}
+                  ${a.idadeMin?`<dt>Idade mín</dt><dd>${a.idadeMin}</dd>`:''}
+                  ${a.incluso?`<dt>Incluso</dt><dd>${escapeHtml(a.incluso)}</dd>`:''}
+                  ${a.observacoesOp?`<dt>Obs</dt><dd>${escapeHtml(a.observacoesOp)}</dd>`:''}
+                </dl></div>
+                <div class="atr-detail-block"><h4>🏢 Parceria</h4><dl>
+                  ${a.fornecedor?`<dt>Fornecedor</dt><dd>${escapeHtml(a.fornecedor)}</dd>`:''}
+                  ${a.contatoFornecedor?`<dt>Contato</dt><dd>${escapeHtml(a.contatoFornecedor)}</dd>`:''}
+                  ${a.emailFornecedor?`<dt>E-mail</dt><dd>${escapeHtml(a.emailFornecedor)}</dd>`:''}
+                  ${a.validadePreco?`<dt>Preço válido até</dt><dd>${escapeHtml(a.validadePreco)}</dd>`:''}
+                  ${a.moedaOriginal?`<dt>Moeda</dt><dd>${escapeHtml(a.moedaOriginal)}</dd>`:''}
+                </dl></div>
+                <div class="atr-detail-block"><h4>📦 Pacotes</h4>
+                  <div class="atr-detail-pacs">
+                    ${(a.pacotes||[]).length ? (a.pacotes||[]).map(p=>`<span class="atr-chip">${escapeHtml(p)}</span>`).join('') : '<em style="color:rgba(255,255,255,.45);font-size:12px;">nenhum pacote vinculado</em>'}
+                  </div>
+                </div>
+                ${a.mapsUrl ? `<div class="atr-detail-block"><h4>📍 Mapa</h4><a class="apple-btn ghost small" href="${escapeHtml(a.mapsUrl)}" target="_blank" rel="noopener">Abrir no Google Maps ↗</a></div>` : ''}
+              </div>
+            </div>
+            <div class="atr-modal-actions">
+              <button class="apple-btn ghost" data-act="close-detail">Fechar</button>
+              <button class="apple-btn" data-act="edit-from-detail">✎ Editar</button>
+            </div>
+          </div>`;
+        document.body.appendChild(ov);
+        const close = () => ov.remove();
+        ov.querySelector('.atr-modal-close').addEventListener('click', close);
+        ov.querySelector('[data-act="close-detail"]').addEventListener('click', close);
+        ov.querySelector('[data-act="edit-from-detail"]').addEventListener('click', () => { close(); openEditor(a.id); });
+        ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+      }
+
+      render();
+      try { window.__jamesContext && window.__jamesContext.trackNavigation && window.__jamesContext.trackNavigation('atracoes', 'central'); } catch (e) {}
+    }
+
     function renderMetasItemView(item, topicData, idx) {
       itemView.innerHTML = '';
       const topicName = (currentTopic && currentTopic.name) || 'tópico';
@@ -17415,7 +17889,7 @@
       it.id = it.id || base.id;
       it.categoria = it.categoria || '';
       it.folder = it.folder || '';
-      it.format = ['pacotes', 'presskit', 'hierarchy', 'bases', 'sellers', 'influencers', 'metas', 'operacoes', 'default'].includes(it.format) ? it.format : 'default';
+      it.format = ['pacotes', 'presskit', 'hierarchy', 'bases', 'sellers', 'influencers', 'metas', 'operacoes', 'atracoes', 'default'].includes(it.format) ? it.format : 'default';
       it.descricao = it.descricao || '';
       it.inclui = Array.isArray(it.inclui) ? it.inclui : [];
       it.publico = it.publico || '';
@@ -22705,6 +23179,11 @@
           switchTo('item');
           return;
         }
+        if (it.format === 'atracoes') {
+          renderAtracoesFlyItemView(it, topicData, idx);
+          switchTo('item');
+          return;
+        }
       }
 
       const hub = document.createElement('div');
@@ -23551,6 +24030,14 @@
                 <div class="format-desc">Cérebro operacional · clientes em viagem · playbooks por pacote · bases · escala · contingências · logs · James</div>
               </div>
             </label>
+            <label class="format-opt ${it.format === 'atracoes' ? 'active' : ''}">
+              <input type="radio" name="m_format" value="atracoes" ${it.format === 'atracoes' ? 'checked' : ''}>
+              <div class="format-card atracoes">
+                <div class="format-ico">🎯</div>
+                <div class="format-name">Atrações <span class="format-badge">CENTRAL</span></div>
+                <div class="format-desc">Biblioteca de experiências · custos B2B · margem · vínculo com pacotes · mídia · fornecedores · alertas do James</div>
+              </div>
+            </label>
           </div>
 
           <!-- 🔗 CONNECTION REGISTRY · diagrama do format escolhido -->
@@ -23889,7 +24376,7 @@
         }
 
         const formatRadio = modal.querySelector('input[name="m_format"]:checked');
-        const chosenFormat = ['default', 'pacotes', 'presskit', 'hierarchy', 'bases', 'sellers', 'influencers', 'metas', 'operacoes'].includes(formatRadio?.value) ? formatRadio.value : 'default';
+        const chosenFormat = ['default', 'pacotes', 'presskit', 'hierarchy', 'bases', 'sellers', 'influencers', 'metas', 'operacoes', 'atracoes'].includes(formatRadio?.value) ? formatRadio.value : 'default';
         const updated = {
           id: it.id,
           name: modal.querySelector('#m_name').value.trim(),
