@@ -14725,22 +14725,36 @@
         '.ops-card h3, .ops-list li, ' +
         '.scale-item .name, .scale-item .desc'
       );
+      let basesNeedsPersist = false;
+      const basesSeen = {};
       editTargets.forEach((el, idx) => {
-        const key = 'bases_inline_' + idx;
-        // Restaurar valor salvo
-        if (inlineEdits[key] !== undefined) {
-          el.innerHTML = inlineEdits[key];
+        // CHAVE ESTÁVEL (independente da posição/idx) — sincroniza
+        // entre aparelhos mesmo se o DOM tiver pequenas diferenças.
+        const newKey = _flyStableInlineKey(el, 'bases', basesSeen);
+
+        // Migração da chave antiga puramente posicional (bases_inline_<idx>).
+        // Como o seletor não mudou, o elemento no índice idx é o mesmo de
+        // antes — basta copiar o valor antigo pra nova chave.
+        const oldKey = 'bases_inline_' + idx;
+        if (inlineEdits[oldKey] !== undefined && inlineEdits[newKey] === undefined) {
+          inlineEdits[newKey] = inlineEdits[oldKey];
+          delete inlineEdits[oldKey];
+          basesNeedsPersist = true;
         }
-        el.setAttribute('data-inline-key', key);
+
+        if (inlineEdits[newKey] !== undefined) {
+          el.innerHTML = inlineEdits[newKey];
+        }
+        el.setAttribute('data-inline-key', newKey);
         el.setAttribute('contenteditable', 'plaintext-only');
         el.classList.add('bases-inline-editable');
         el.addEventListener('blur', () => {
-          inlineEdits[key] = el.innerText.trim();
+          inlineEdits[newKey] = el.innerText.trim();
           persistInline();
         });
-        // Não navegar quando clica em um campo editável
         el.addEventListener('click', (e) => e.stopPropagation());
       });
+      if (basesNeedsPersist) persistInline();
 
       // ============================================================
       // SISTEMA DE MAPA · imagem PNG + zoom + pan + pins customizados
@@ -17098,6 +17112,41 @@
     // ============================================================
     // HIERARQUIA · INLINE EDITING (todos os textos/valores editáveis)
     // ============================================================
+    /**
+     * Gera uma chave de inline-edit ESTÁVEL entre aparelhos.
+     * Não depende de índice DOM — depende de:
+     *   • anchor estável (data-base-id/emp-id/hier-id do ancestral)
+     *   • tag + 3 primeiras classes + conteúdo de texto (até 60 chars)
+     *   • ocorrência (se o mesmo conjunto repetir, vira #1, #2, …)
+     * Resultado: o MESMO texto em PC A e PC B gera a MESMA chave →
+     * o edit feito num aparelho aparece nos outros.
+     */
+    function _flyStableInlineKey(el, prefix, seen) {
+      let anchor = '';
+      let p = el;
+      while (p && p !== document.body) {
+        if (p.dataset) {
+          const id = p.dataset.baseId || p.dataset.empId || p.dataset.hierId || p.dataset.atrId;
+          if (id) { anchor = id; break; }
+        }
+        p = p.parentElement;
+      }
+      const tag = (el.tagName || '').toLowerCase();
+      const clsRaw = (typeof el.className === 'string') ? el.className : ((el.className && el.className.baseVal) || '');
+      const cls = clsRaw.split(/\s+/).filter(Boolean).slice(0, 3).join('.');
+      const txt = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60);
+      const base = anchor + '|' + tag + '|' + cls + '|' + txt;
+      const occ = (seen[base] = (seen[base] || 0) + 1) - 1;
+      const final = base + (occ ? ('#' + occ) : '');
+      let hash = '';
+      try { hash = btoa(unescape(encodeURIComponent(final))).replace(/[^A-Za-z0-9]/g, ''); }
+      catch (e) {
+        let h = 0; for (let i = 0; i < final.length; i++) { h = ((h << 5) - h) + final.charCodeAt(i); h |= 0; }
+        hash = 'h' + Math.abs(h);
+      }
+      return prefix + '_' + hash.slice(0, 28);
+    }
+
     const HIER_INLINE_KEY = 'fly_hierarquia_inline_v1';
     function hierLoadInlineEdits() {
       try { return JSON.parse(localStorage.getItem(flyModeKey(HIER_INLINE_KEY)) || '{}'); } catch (e) { return {}; }
@@ -17107,40 +17156,51 @@
     }
     function hierEnableInlineEditing(panel) {
       const inlineEdits = hierLoadInlineEdits();
-      // Selecionar TODOS os elementos com texto puro — exceto interativos/icônicos
+      let needsPersist = false;
+      const seen = {};
       const all = panel.querySelectorAll('*');
-      let counter = 0;
       all.forEach((el) => {
         if (el.classList.contains('hier-inline-editable')) return;
-        // Excluir interativos/visuais
         const tag = el.tagName;
         if (['INPUT','TEXTAREA','SELECT','BUTTON','SVG','CANVAS','IMG','IFRAME','SCRIPT','STYLE'].includes(tag)) return;
-        // Só elementos folha (sem children que sejam elementos com texto)
         const hasChildEl = Array.from(el.children).some(c => c.nodeType === 1);
         if (hasChildEl) return;
-        // Texto não vazio, não muito longo, e que tem caracteres não-numéricos puros (evita ícones)
         const txt = el.textContent.trim();
         if (!txt) return;
         if (txt.length > 200) return;
-        // Indexar com data-attr para chave estável
-        if (!el.dataset.hierKey) {
-          el.dataset.hierKey = 'hier_' + (counter++) + '_' + btoa(unescape(encodeURIComponent(tag + '|' + (el.className||'').slice(0,30) + '|' + txt.slice(0,40)))).slice(0,16);
+
+        // CHAVE ESTÁVEL (independente de posição/contador) — mesmo texto
+        // em PC A e PC B gera a mesma chave → edit sincroniza.
+        const newKey = _flyStableInlineKey(el, 'hier', seen);
+
+        // Migração de chaves antigas (formato hier_<counter>_<hash16>).
+        // O hash16 antigo era btoa(tag+'|'+className.slice(0,30)+'|'+txt.slice(0,40)).slice(0,16) — estável.
+        // Procuro qualquer chave antiga que termine com esse hash e migro pra a nova.
+        if (inlineEdits[newKey] === undefined) {
+          let oldHash = '';
+          try { oldHash = btoa(unescape(encodeURIComponent(tag.toLowerCase() + '|' + ((el.className||'').toString().slice(0,30)) + '|' + txt.slice(0,40)))).slice(0,16); } catch (e) {}
+          if (oldHash) {
+            const oldKey = Object.keys(inlineEdits).find(k => k.startsWith('hier_') && k.endsWith('_' + oldHash));
+            if (oldKey && oldKey !== newKey) {
+              inlineEdits[newKey] = inlineEdits[oldKey];
+              delete inlineEdits[oldKey];
+              needsPersist = true;
+            }
+          }
         }
-        const key = el.dataset.hierKey;
-        if (inlineEdits[key] !== undefined) el.textContent = inlineEdits[key];
+
+        el.dataset.hierKey = newKey;
+        if (inlineEdits[newKey] !== undefined) el.textContent = inlineEdits[newKey];
         el.setAttribute('contenteditable', 'plaintext-only');
         el.classList.add('hier-inline-editable');
         el.addEventListener('blur', () => {
-          inlineEdits[key] = el.innerText.trim();
+          inlineEdits[newKey] = el.innerText.trim();
           hierPersistInlineEdits(inlineEdits);
         });
-        el.addEventListener('click', (e) => {
-          if (e.target === el) e.stopPropagation();
-        });
-        el.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el.blur(); }
-        });
+        el.addEventListener('click', (e) => { if (e.target === el) e.stopPropagation(); });
+        el.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el.blur(); } });
       });
+      if (needsPersist) hierPersistInlineEdits(inlineEdits);
     }
 
     function buildYearSwitcher(t) {
