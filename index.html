@@ -16319,9 +16319,26 @@
         });
       }
 
+      let _atrTab = 'biblioteca';
+      function listSystemPackages() {
+        try {
+          const root = (typeof data !== 'undefined' && (data['ECOSSISTEMA FLY'] || data)) || {};
+          const items = (root.PRODUTOS && root.PRODUTOS.items) || [];
+          return items.filter(it => it && it.format === 'pacotes' && it.name).map(it => it.name);
+        } catch (e) { return []; }
+      }
+
       function render() {
         const list = getList();
         const s = computeSummary();
+        const TABS = [
+          { id: 'biblioteca',   label: '📚 Biblioteca',     n: list.length },
+          { id: 'por-pacote',   label: '📦 Por Pacote' },
+          { id: 'vendas',       label: '💰 Vendas & Margem' },
+          { id: 'marketing',    label: '📱 Marketing' },
+          { id: 'fornecedores', label: '🏢 Fornecedores' },
+          { id: 'alertas',      label: '🚨 Alertas',        n: s.pendentes },
+        ];
         wrap.innerHTML = `
           <div class="atr-hero">
             <div class="atr-hero-text">
@@ -16342,6 +16359,34 @@
             <div class="atr-stat ${s.pendentes ? 'warn' : ''}"><div class="lbl">Pendências</div><div class="val">${s.pendentes}</div><div class="sub">críticas</div></div>
             <div class="atr-stat"><div class="lbl">Conteúdos</div><div class="val">${s.conteudos}</div><div class="sub">com mídia</div></div>
           </div>
+          <div class="atr-tabs">
+            ${TABS.map(t => `<button class="atr-tab ${_atrTab===t.id?'active':''}" data-tab="${t.id}">${t.label}${t.n?` <span class="atr-tab-n">${t.n}</span>`:''}</button>`).join('')}
+          </div>
+          <div class="atr-tab-content" id="atr-tab-content"></div>
+        `;
+        wrap.querySelector('[data-act="add"]').addEventListener('click', () => openEditor(null));
+        wrap.querySelectorAll('.atr-tab').forEach(b => b.addEventListener('click', () => { _atrTab = b.dataset.tab; render(); }));
+        renderTab();
+      }
+
+      function renderTab() {
+        const cont = wrap.querySelector('#atr-tab-content');
+        if (!cont) return;
+        cont.innerHTML = '';
+        switch (_atrTab) {
+          case 'biblioteca':   renderBiblioteca(cont); break;
+          case 'por-pacote':   renderPorPacote(cont); break;
+          case 'vendas':       renderVendas(cont); break;
+          case 'marketing':    renderMarketing(cont); break;
+          case 'fornecedores': renderFornecedores(cont); break;
+          case 'alertas':      renderAlertas(cont); break;
+          default:             renderBiblioteca(cont);
+        }
+      }
+
+      function renderBiblioteca(cont) {
+        const list = getList();
+        cont.innerHTML = `
           <div class="atr-filters">
             <input class="atr-search" type="search" placeholder="🔎 Buscar por nome, categoria, local…">
             <select class="atr-fcat">
@@ -16363,13 +16408,11 @@
             ` : list.map(a => renderCard(a)).join('')}
           </div>
         `;
-
-        wrap.querySelector('[data-act="add"]').addEventListener('click', () => openEditor(null));
-        const search = wrap.querySelector('.atr-search');
-        const fcat = wrap.querySelector('.atr-fcat');
-        const fstatus = wrap.querySelector('.atr-fstatus');
+        const search = cont.querySelector('.atr-search');
+        const fcat = cont.querySelector('.atr-fcat');
+        const fstatus = cont.querySelector('.atr-fstatus');
         [search, fcat, fstatus].forEach(el => el && el.addEventListener('input', applyFilters));
-        wrap.querySelectorAll('.atr-card').forEach(card => {
+        cont.querySelectorAll('.atr-card').forEach(card => {
           const id = card.getAttribute('data-id');
           card.querySelector('[data-act="edit"]')?.addEventListener('click', (e) => { e.stopPropagation(); openEditor(id); });
           card.querySelector('[data-act="delete"]')?.addEventListener('click', (e) => {
@@ -16381,6 +16424,220 @@
           });
           card.addEventListener('click', () => openDetail(id));
         });
+      }
+
+      function renderPorPacote(cont) {
+        const list = getList();
+        if (!list.length) {
+          cont.innerHTML = `<div class="atr-empty"><div class="atr-empty-ico">📦</div><h3>Nenhuma atração cadastrada</h3><p>Adicione atrações primeiro pra organizá-las por pacote.</p></div>`;
+          return;
+        }
+        const byPacote = {};
+        list.forEach(a => {
+          const pacs = Array.isArray(a.pacotes) ? a.pacotes : [];
+          if (pacs.length === 0) (byPacote['__sem'] = byPacote['__sem'] || []).push(a);
+          else pacs.forEach(p => { (byPacote[p] = byPacote[p] || []).push(a); });
+        });
+        const entries = Object.entries(byPacote).sort((a,b) => a[0]==='__sem'?1:(b[0]==='__sem'?-1:a[0].localeCompare(b[0])));
+        cont.innerHTML = `
+          <div class="atr-pacotes">
+            ${entries.map(([nome, atrs]) => {
+              const isSem = nome === '__sem';
+              const custoTotal    = atrs.reduce((s,a)=>s+(Number(a.custoB2B)||0),0);
+              const custoTotalAed = atrs.reduce((s,a)=>s+(Number(a.custoB2BAed)||0),0);
+              const vendaTotal    = atrs.reduce((s,a)=>s+(Number(a.precoVenda)||0),0);
+              const mercadoTotal  = atrs.reduce((s,a)=>s+(Number(a.precoMercado)||0),0);
+              const margemAbs = vendaTotal - custoTotal;
+              const margemPct = vendaTotal > 0 ? (margemAbs/vendaTotal*100) : 0;
+              const pendentes = atrs.filter(a => !Number(a.precoVenda) || !(a.fornecedor||'').trim()).length;
+              const mc = margemAbs<0?'neg':(margemPct<25?'warn':'pos');
+              return `
+                <div class="atr-pacote-card ${isSem?'avulsa':''}">
+                  <div class="atr-pacote-head">
+                    <h3>${isSem?'🎯 Atrações avulsas (sem pacote)':'📦 '+escapeHtml(nome)}</h3>
+                    <div class="atr-pacote-kpis">
+                      <span>${atrs.length} atrações</span>
+                      <span>· custo ${fmtBRL(custoTotal)}${custoTotalAed?` <em>(${custoTotalAed} AED)</em>`:''}</span>
+                      ${vendaTotal>0?`<span>· venda Fly ${fmtBRL(vendaTotal)}</span>`:''}
+                      ${mercadoTotal>0?`<span>· mercado ${fmtBRL(mercadoTotal)}</span>`:''}
+                      ${vendaTotal>0?`<span class="${mc}">· margem ${margemPct.toFixed(0)}% (${fmtBRL(margemAbs)})</span>`:''}
+                      ${pendentes?`<span class="warn">· ${pendentes} pend</span>`:''}
+                    </div>
+                  </div>
+                  <div class="atr-pacote-list">
+                    ${atrs.map(a => `
+                      <div class="atr-pacote-item" data-id="${escapeHtml(a.id)}">
+                        <div class="atr-pacote-item-thumb" style="${a.fotoUrl?`background-image:url('${escapeHtml(a.fotoUrl)}')`:''}">${a.fotoUrl?'':'🎯'}</div>
+                        <div class="atr-pacote-item-text">
+                          <strong>${escapeHtml(a.nome)}</strong>
+                          <span>${escapeHtml(a.categoria||'')}${a.cidade?' · '+escapeHtml(a.cidade):''}</span>
+                        </div>
+                        <div class="atr-pacote-item-num">
+                          <span>${fmtBRL(a.precoVenda)}</span>
+                          <small>custo ${fmtBRL(a.custoB2B)}</small>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+        cont.querySelectorAll('.atr-pacote-item').forEach(el => el.addEventListener('click', () => openDetail(el.dataset.id)));
+      }
+
+      function renderVendas(cont) {
+        const list = getList();
+        if (!list.length) { cont.innerHTML = `<div class="atr-empty"><div class="atr-empty-ico">💰</div><h3>Sem atrações</h3></div>`; return; }
+        const byMargemAbs = [...list].filter(a=>Number(a.precoVenda)>0).sort((a,b)=>margin(b.precoVenda,b.custoB2B).abs-margin(a.precoVenda,a.custoB2B).abs);
+        const byMargemPct = [...list].filter(a=>Number(a.precoVenda)>0).sort((a,b)=>margin(b.precoVenda,b.custoB2B).pct-margin(a.precoVenda,a.custoB2B).pct);
+        const byPreco     = [...list].filter(a=>Number(a.precoVenda)>0).sort((a,b)=>(Number(b.precoVenda)||0)-(Number(a.precoVenda)||0));
+        const totCusto = list.reduce((s,a)=>s+(Number(a.custoB2B)||0),0);
+        const totVenda = list.reduce((s,a)=>s+(Number(a.precoVenda)||0),0);
+        const totMarg  = totVenda - totCusto;
+        cont.innerHTML = `
+          <div class="atr-callout">📊 Vendas reais ainda não são trackadas (Phase 3 do roadmap). Aqui mostro margem teórica por atração + ranking. Quando o tracking de vendas reais entrar, este painel acende com receita real, ticket médio, vendas/mês.</div>
+          <div class="atr-rankings">
+            <div class="atr-rank-block"><h4>🥇 MAIOR MARGEM R$ (por unidade)</h4><ol>${byMargemAbs.slice(0,7).map(a=>{const m=margin(a.precoVenda,a.custoB2B);return `<li><span>${escapeHtml(a.nome)}</span><strong>${fmtBRL(m.abs)}</strong></li>`;}).join('') || '<li><em style="color:rgba(255,255,255,.45)">— defina preços —</em></li>'}</ol></div>
+            <div class="atr-rank-block"><h4>📈 MAIOR MARGEM %</h4><ol>${byMargemPct.slice(0,7).map(a=>{const m=margin(a.precoVenda,a.custoB2B);return `<li><span>${escapeHtml(a.nome)}</span><strong>${m.pct.toFixed(0)}%</strong></li>`;}).join('') || '<li><em style="color:rgba(255,255,255,.45)">— defina preços —</em></li>'}</ol></div>
+            <div class="atr-rank-block"><h4>💵 MAIOR TICKET (preço Fly)</h4><ol>${byPreco.slice(0,7).map(a=>`<li><span>${escapeHtml(a.nome)}</span><strong>${fmtBRL(a.precoVenda)}</strong></li>`).join('') || '<li><em style="color:rgba(255,255,255,.45)">— defina preços —</em></li>'}</ol></div>
+          </div>
+          <div style="margin-top:10px;padding:11px 14px;background:rgba(70,200,120,.06);border:1px solid rgba(70,200,120,.22);border-radius:8px;color:#6dffb0;font-size:12px;">
+            <strong>Totais (somando 1 venda de cada atração):</strong>
+            custo ${fmtBRL(totCusto)} · venda ${fmtBRL(totVenda)} · margem ${fmtBRL(totMarg)} (${totVenda>0?(totMarg/totVenda*100).toFixed(0):0}%)
+          </div>
+          <table class="atr-table" style="margin-top:16px;">
+            <thead><tr><th>Atração</th><th>Cat</th><th>Custo</th><th>Mercado</th><th>Venda Fly</th><th>Margem R$</th><th>%</th><th>Pacotes</th></tr></thead>
+            <tbody>
+              ${list.map(a=>{const m=margin(a.precoVenda,a.custoB2B); const mc=m.abs<0?'neg':(m.pct<25&&Number(a.precoVenda)>0?'warn':'pos'); return `
+                <tr data-id="${escapeHtml(a.id)}">
+                  <td><strong>${escapeHtml(a.nome)}</strong></td>
+                  <td>${escapeHtml(a.categoria||'')}</td>
+                  <td>${fmtBRL(a.custoB2B)}</td>
+                  <td>${fmtBRL(a.precoMercado)}</td>
+                  <td>${fmtBRL(a.precoVenda)}</td>
+                  <td class="${mc}">${fmtBRL(m.abs)}</td>
+                  <td class="${mc}">${m.pct.toFixed(0)}%</td>
+                  <td>${(a.pacotes||[]).slice(0,3).map(p=>`<span class="atr-chip mini">${escapeHtml(p)}</span>`).join(' ')}</td>
+                </tr>`;}).join('')}
+            </tbody>
+          </table>
+        `;
+        cont.querySelectorAll('tbody tr[data-id]').forEach(tr => { tr.style.cursor='pointer'; tr.addEventListener('click', () => openDetail(tr.dataset.id)); });
+      }
+
+      function renderMarketing(cont) {
+        const list = getList();
+        if (!list.length) { cont.innerHTML = `<div class="atr-empty"><div class="atr-empty-ico">📱</div><h3>Sem atrações</h3></div>`; return; }
+        const withMedia    = list.filter(a => (a.fotoUrl||'').trim() || (a.videoUrl||'').trim());
+        const withoutMedia = list.filter(a => !(a.fotoUrl||'').trim() && !(a.videoUrl||'').trim());
+        const withVideo    = list.filter(a => (a.videoUrl||'').trim());
+        cont.innerHTML = `
+          <div class="atr-mkt-stats">
+            <div class="atr-stat"><div class="lbl">Com mídia</div><div class="val">${withMedia.length}</div><div class="sub">foto ou vídeo</div></div>
+            <div class="atr-stat"><div class="lbl">Com vídeo</div><div class="val">${withVideo.length}</div><div class="sub">conteúdo forte</div></div>
+            <div class="atr-stat ${withoutMedia.length?'warn':''}"><div class="lbl">Sem mídia</div><div class="val">${withoutMedia.length}</div><div class="sub">priorizar gravação</div></div>
+          </div>
+          ${withMedia.length ? `
+            <h4 style="margin:20px 0 10px;color:#FFE099;font-size:13px;letter-spacing:.5px;">📸 CONTEÚDO DISPONÍVEL</h4>
+            <div class="atr-mkt-grid">
+              ${withMedia.map(a=>`
+                <div class="atr-mkt-card" data-id="${escapeHtml(a.id)}">
+                  <div class="atr-mkt-media" style="${a.fotoUrl?`background-image:url('${escapeHtml(a.fotoUrl)}')`:''}">
+                    ${a.fotoUrl?'':'🎯'}
+                    ${(a.videoUrl||'').trim()?'<span class="atr-badge-video">▶ vídeo</span>':''}
+                  </div>
+                  <div class="atr-mkt-name">${escapeHtml(a.nome)}</div>
+                </div>
+              `).join('')}
+            </div>
+          `:''}
+          ${withoutMedia.length ? `
+            <h4 style="margin:24px 0 10px;color:#ff8c8c;font-size:13px;letter-spacing:.5px;">⚠️ SEM MÍDIA — PRIORIZAR GRAVAÇÃO</h4>
+            <div class="atr-mkt-warn">
+              ${withoutMedia.map(a=>`<button class="atr-chip" data-id="${escapeHtml(a.id)}" type="button" style="cursor:pointer;border-color:rgba(255,140,140,.3);background:rgba(255,140,140,.07);color:#ffb088;">${escapeHtml(a.nome)}</button>`).join('')}
+            </div>
+          `:''}
+        `;
+        cont.querySelectorAll('.atr-mkt-card,.atr-mkt-warn [data-id]').forEach(el => el.addEventListener('click', () => openDetail(el.dataset.id)));
+      }
+
+      function renderFornecedores(cont) {
+        const list = getList();
+        if (!list.length) { cont.innerHTML = `<div class="atr-empty"><div class="atr-empty-ico">🏢</div><h3>Sem atrações</h3></div>`; return; }
+        const byForn = {};
+        list.forEach(a => { const f = (a.fornecedor||'').trim() || '__sem'; (byForn[f] = byForn[f] || []).push(a); });
+        const entries = Object.entries(byForn).sort((a,b) => a[0]==='__sem'?1:(b[0]==='__sem'?-1:a[0].localeCompare(b[0])));
+        const today = new Date(); today.setHours(0,0,0,0);
+        cont.innerHTML = `
+          <table class="atr-table">
+            <thead><tr><th>Fornecedor</th><th>Atrações</th><th>Contato</th><th>Próx. validade</th><th>Custo total (R$)</th></tr></thead>
+            <tbody>
+              ${entries.map(([forn, atrs])=>{
+                const isSem = forn === '__sem';
+                const custos = atrs.reduce((s,a)=>s+(Number(a.custoB2B)||0),0);
+                const validades = atrs.map(a=>a.validadePreco).filter(Boolean).sort();
+                const proxVal = validades[0] || '';
+                const venc = proxVal ? (new Date(proxVal) < today) : false;
+                const contatos = [...new Set(atrs.map(a=>(a.contatoFornecedor||'').trim()).filter(Boolean))];
+                return `
+                  <tr>
+                    <td><strong>${isSem?'<em style="color:#ff8c8c">— sem fornecedor —</em>':escapeHtml(forn)}</strong></td>
+                    <td>${atrs.map(a=>`<span class="atr-chip mini" data-id="${escapeHtml(a.id)}" style="cursor:pointer">${escapeHtml(a.nome)}</span>`).join(' ')}</td>
+                    <td>${contatos.join(' · ') || '—'}</td>
+                    <td class="${venc?'neg':''}">${proxVal||'—'}${venc?' ⚠️':''}</td>
+                    <td>${fmtBRL(custos)}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+        cont.querySelectorAll('.atr-chip[data-id]').forEach(el => el.addEventListener('click', () => openDetail(el.dataset.id)));
+      }
+
+      function renderAlertas(cont) {
+        const list = getList();
+        const alerts = [];
+        const today = new Date(); today.setHours(0,0,0,0);
+        list.forEach(a => {
+          if (!Number(a.precoVenda))                                            alerts.push({ icon:'💰', sev:'high',   msg:'Sem preço de venda definido', atr:a });
+          if (!(a.fornecedor||'').trim())                                        alerts.push({ icon:'🏢', sev:'high',   msg:'Sem fornecedor cadastrado', atr:a });
+          if (!(a.fotoUrl||'').trim() && !(a.videoUrl||'').trim())               alerts.push({ icon:'📸', sev:'medium', msg:'Sem foto/vídeo cadastrado', atr:a });
+          const m = margin(a.precoVenda, a.custoB2B);
+          if (Number(a.precoVenda) > 0 && m.pct < 25)                            alerts.push({ icon:'📉', sev:'medium', msg:`Margem baixa (${m.pct.toFixed(0)}%)`, atr:a });
+          if (a.validadePreco) {
+            const dt = new Date(a.validadePreco); dt.setHours(0,0,0,0);
+            const days = Math.floor((dt - today)/(1000*60*60*24));
+            if (days < 0)        alerts.push({ icon:'⏰', sev:'high',   msg:`Preço VENCIDO há ${-days}d (${a.validadePreco})`, atr:a });
+            else if (days < 15)  alerts.push({ icon:'⏰', sev:'medium', msg:`Preço vence em ${days}d (${a.validadePreco})`, atr:a });
+          }
+          if ((a.status||'') === 'problema')                                     alerts.push({ icon:'🚨', sev:'high', msg:'Marcada como problema operacional', atr:a });
+          if (Array.isArray(a.pacotes) && a.pacotes.length === 0 && (a.status||'ativa') === 'ativa') alerts.push({ icon:'📦', sev:'low', msg:'Ativa mas sem pacote vinculado', atr:a });
+        });
+        if (alerts.length === 0) {
+          cont.innerHTML = `<div class="atr-empty" style="padding:50px"><div class="atr-empty-ico">✅</div><h3>Nenhum alerta crítico</h3><p>Todas as atrações estão com preço, fornecedor, mídia e validade em ordem. Bom trabalho 🎯</p></div>`;
+          return;
+        }
+        const sevRank = { high: 0, medium: 1, low: 2 };
+        alerts.sort((a,b) => sevRank[a.sev] - sevRank[b.sev]);
+        cont.innerHTML = `
+          <div class="atr-callout">🚨 ${alerts.length} alerta(s) detectado(s) automaticamente. Resolva pra manter operação saudável.</div>
+          <div class="atr-alerts">
+            ${alerts.map(al => `
+              <div class="atr-alert sev-${al.sev}">
+                <span class="atr-alert-ico">${al.icon}</span>
+                <div class="atr-alert-body">
+                  <div class="atr-alert-msg">${escapeHtml(al.msg)}</div>
+                  <div class="atr-alert-atr">${escapeHtml(al.atr.nome)}${al.atr.categoria?' · '+escapeHtml(al.atr.categoria):''}${al.atr.cidade?' · '+escapeHtml(al.atr.cidade):''}</div>
+                </div>
+                <button class="apple-btn small" data-act="alert-edit" data-id="${escapeHtml(al.atr.id)}">✎ Corrigir</button>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        cont.querySelectorAll('[data-act="alert-edit"]').forEach(b => b.addEventListener('click', () => openEditor(b.dataset.id)));
       }
 
       function openEditor(id) {
