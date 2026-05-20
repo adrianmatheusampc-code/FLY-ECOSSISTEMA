@@ -16195,6 +16195,13 @@
         .atr-detail-block dd{margin:0;color:#fff;}
         .atr-detail-pacs{display:flex;flex-wrap:wrap;gap:5px;}
         .atr-detail-video{padding:10px 14px;background:rgba(126,207,255,.08);border:1px solid rgba(126,207,255,.25);border-radius:8px;color:#7ecfff;font-size:11px;word-break:break-all;margin-bottom:14px;}
+        /* Foto widget (upload PC + paste + URL) */
+        .atr-photo-widget{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:flex-start;margin-top:4px;}
+        .atr-photo-preview{width:120px;height:120px;border-radius:10px;background:#000 center/cover no-repeat;border:1px dashed rgba(245,184,66,.35);display:flex;align-items:center;justify-content:center;font-size:36px;opacity:.85;flex-shrink:0;}
+        .atr-photo-controls{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1;min-width:0;}
+        .atr-photo-controls .apple-btn.small{padding:6px 12px;font-size:11px;}
+        .atr-photo-hint{font-size:10px;color:rgba(255,255,255,.5);text-transform:none;letter-spacing:0;}
+        .atr-photo-status{font-size:11px;min-height:14px;font-weight:600;letter-spacing:0;text-transform:none;}
         /* format card theme */
         .format-card.atracoes{background:linear-gradient(135deg,rgba(245,182,66,.10),rgba(70,200,120,.06));border-color:rgba(245,182,66,.30);}
         .format-opt.active .format-card.atracoes,
@@ -16398,7 +16405,19 @@
               <div class="atr-form-section">
                 <h4>🎬 Mídia</h4>
                 <div class="atr-form-grid">
-                  <label class="full">URL da foto principal<input id="f_fotoUrl" type="url" value="${escapeHtml(a.fotoUrl||'')}" placeholder="https://res.cloudinary.com/..."></label>
+                  <label class="full">Foto principal
+                    <div class="atr-photo-widget">
+                      <div class="atr-photo-preview" id="f_fotoPreview" style="${a.fotoUrl ? `background-image:url('${escapeHtml(a.fotoUrl)}')` : ''}">${a.fotoUrl ? '' : '📷'}</div>
+                      <div class="atr-photo-controls">
+                        <input id="f_fotoFile" type="file" accept="image/*" hidden>
+                        <button type="button" class="apple-btn small" data-act="pick-photo">📷 Subir do PC</button>
+                        <button type="button" class="apple-btn small ghost" data-act="clear-photo" ${a.fotoUrl ? '' : 'style="display:none;"'}>Remover</button>
+                        <span class="atr-photo-hint">ou cole uma imagem (Cmd+V) · ou cole uma URL abaixo</span>
+                        <span class="atr-photo-status" id="f_fotoStatus"></span>
+                      </div>
+                    </div>
+                    <input id="f_fotoUrl" type="url" value="${escapeHtml(a.fotoUrl||'')}" placeholder="https://res.cloudinary.com/... (ou suba/cole acima)" style="margin-top:6px;">
+                  </label>
                   <label class="full">URL do vídeo (YouTube, Vimeo, MP4)<input id="f_videoUrl" type="url" value="${escapeHtml(a.videoUrl||'')}" placeholder="https://youtube.com/watch?..."></label>
                 </div>
               </div>
@@ -16449,6 +16468,62 @@
         ov.querySelector('.atr-modal-close').addEventListener('click', close);
         ov.querySelector('[data-act="cancel"]').addEventListener('click', close);
         ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+
+        // Upload de foto: PC (file picker), paste (Cmd+V) e URL manual.
+        const fotoFile  = ov.querySelector('#f_fotoFile');
+        const fotoUrlIn = ov.querySelector('#f_fotoUrl');
+        const fotoPrev  = ov.querySelector('#f_fotoPreview');
+        const fotoStat  = ov.querySelector('#f_fotoStatus');
+        const pickBtn   = ov.querySelector('[data-act="pick-photo"]');
+        const clearBtn  = ov.querySelector('[data-act="clear-photo"]');
+        function _atrSetFotoUrl(url) {
+          if (!fotoUrlIn) return;
+          fotoUrlIn.value = url || '';
+          if (url) { fotoPrev.style.backgroundImage = `url('${url}')`; fotoPrev.textContent = ''; if (clearBtn) clearBtn.style.display = ''; }
+          else     { fotoPrev.style.backgroundImage = '';              fotoPrev.textContent = '📷'; if (clearBtn) clearBtn.style.display = 'none'; }
+        }
+        function _atrStatus(msg, color) { if (!fotoStat) return; fotoStat.textContent = msg || ''; fotoStat.style.color = color || ''; }
+        async function _atrUploadFile(file) {
+          if (!file) return;
+          if (!window.__flyMedia || typeof window.__flyMedia.uploadImage !== 'function') {
+            alert('Módulo de mídia (fly-media.js) não carregou. Recarregue a página (Cmd+Shift+R).');
+            return;
+          }
+          try {
+            _atrStatus('⏳ Enviando pra nuvem…', '#ffd070');
+            if (pickBtn) pickBtn.disabled = true;
+            const url = await window.__flyMedia.uploadImage(file);
+            _atrSetFotoUrl(url);
+            _atrStatus('✅ Subiu (Cloudinary)', '#6dffb0');
+            setTimeout(() => _atrStatus(''), 2500);
+          } catch (e) {
+            _atrStatus('❌ Falhou: ' + (e && e.message || e), '#ff8c8c');
+          } finally {
+            if (pickBtn) pickBtn.disabled = false;
+          }
+        }
+        pickBtn?.addEventListener('click', () => fotoFile?.click());
+        fotoFile?.addEventListener('change', () => {
+          const f = fotoFile.files && fotoFile.files[0];
+          if (f) _atrUploadFile(f);
+          fotoFile.value = ''; // permite re-selecionar o mesmo arquivo
+        });
+        clearBtn?.addEventListener('click', () => _atrSetFotoUrl(''));
+        fotoUrlIn?.addEventListener('input', () => {
+          const url = fotoUrlIn.value.trim();
+          if (url) { fotoPrev.style.backgroundImage = `url('${url}')`; fotoPrev.textContent = ''; if (clearBtn) clearBtn.style.display = ''; }
+          else     { fotoPrev.style.backgroundImage = '';              fotoPrev.textContent = '📷'; if (clearBtn) clearBtn.style.display = 'none'; }
+        });
+        // Paste de imagem em qualquer lugar do modal (Cmd+V)
+        ov.addEventListener('paste', async (e) => {
+          if (!e.clipboardData) return;
+          const imgItem = Array.from(e.clipboardData.items || []).find(it => it.type && it.type.startsWith('image/'));
+          if (!imgItem) return;
+          e.preventDefault();
+          const file = imgItem.getAsFile();
+          if (file) await _atrUploadFile(file);
+        });
+
         ov.querySelector('[data-act="save"]').addEventListener('click', () => {
           const get = (id) => ov.querySelector('#'+id)?.value;
           const nome = (get('f_nome')||'').trim();
